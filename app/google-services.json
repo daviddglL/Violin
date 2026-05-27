@@ -1,0 +1,36 @@
+{
+  "//": "Replace this file with the real google-services.json from Firebase Console",
+  "//_instructions": "1. Go to https://console.firebase.google.com/ → Project Settings → General → Your apps → Download google-services.json 2. Replace this placeholder file 3. Ensure Google Sign-In is enabled in Authentication → Sign-in method",
+  "project_info": {
+    "project_number": "YOUR_PROJECT_NUMBER",
+    "project_id": "YOUR_PROJECT_ID",
+    "storage_bucket": "YOUR_PROJECT_ID.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "YOUR_MOBILE_SDK_APP_ID",
+        "android_client_info": {
+          "package_name": "com.violinmaster.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "YOUR_OAUTH_CLIENT_ID",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "YOUR_API_KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

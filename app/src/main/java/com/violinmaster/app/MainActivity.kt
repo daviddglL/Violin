@@ -70,6 +70,7 @@ import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.ui.viewmodel.TunerViewModel
 import com.violinmaster.app.ui.viewmodel.MetronomeViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
+import com.violinmaster.app.data.auth.GoogleAuthRepository
 import com.violinmaster.app.di.SessionManager
 import javax.inject.Inject
 
@@ -77,13 +78,14 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
   @Inject lateinit var sessionManager: SessionManager
+  @Inject lateinit var googleAuthRepository: GoogleAuthRepository
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
       MyApplicationTheme {
-        MainLayout(sessionManager)
+        MainLayout(sessionManager, googleAuthRepository)
       }
     }
   }
@@ -91,7 +93,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainLayout(sessionManager: SessionManager) {
+fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthRepository) {
   val currentUser by sessionManager.currentUser.collectAsState()
   val lang by sessionManager.appLanguage.collectAsState()
   val currentTab by sessionManager.currentTab.collectAsState()
@@ -125,6 +127,8 @@ fun MainLayout(sessionManager: SessionManager) {
     ) { innerPadding ->
       AuthenticationScreen(
         authViewModel = authViewModel,
+        googleAuthRepository = googleAuthRepository,
+        sessionManager = sessionManager,
         appLanguage = lang,
         modifier = Modifier.padding(innerPadding)
       )

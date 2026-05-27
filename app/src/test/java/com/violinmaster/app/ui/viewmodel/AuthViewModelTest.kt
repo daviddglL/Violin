@@ -285,7 +285,36 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `logout clears auth messages and unauthenticated state`() = runTest {
+    fun `sessionManager isGoogleSignedIn defaults to false`() {
+        // SessionManager.isGoogleSignedIn should default to false
+        // (no Google sign-in state persisted in SharedPreferences)
+        assertEquals(false, sessionManager.isGoogleSignedIn.value)
+        // Companion key for SharedPreferences should NOT be null (access check)
+        assertNotNull(sessionManager.getSavedUserId())
+    }
+
+    @Test
+    fun `sessionManager setGoogleSignedIn updates state`() = runTest {
+        // Initially false
+        assertEquals(false, sessionManager.isGoogleSignedIn.value)
+
+        // Act: set Google signed in
+        sessionManager.setGoogleSignedIn(true)
+        advanceUntilIdle()
+
+        // Assert: state updated
+        assertEquals(true, sessionManager.isGoogleSignedIn.value)
+
+        // Act: set Google signed out
+        sessionManager.setGoogleSignedIn(false)
+        advanceUntilIdle()
+
+        // Assert: state reverted
+        assertEquals(false, sessionManager.isGoogleSignedIn.value)
+    }
+
+    @Test
+    fun `login with valid credentials sets currentUser`() = runTest {
         // Arrange
         securityUtils.savePasscode("4321")
         viewModel.register("testuser", "1234", "STUDENT")

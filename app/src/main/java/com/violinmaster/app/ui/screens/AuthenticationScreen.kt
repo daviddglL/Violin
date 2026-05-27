@@ -1,5 +1,8 @@
 package com.violinmaster.app.ui.screens
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -17,31 +21,75 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
+import com.violinmaster.app.data.auth.GoogleAuthRepository
+import com.violinmaster.app.di.SessionManager
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun AuthenticationScreen(
     authViewModel: AuthViewModel,
+    googleAuthRepository: GoogleAuthRepository,
+    sessionManager: SessionManager,
     appLanguage: AppLanguage,
     modifier: Modifier = Modifier
 ) {
     val lang = appLanguage
     val errKey by authViewModel.loginError.collectAsState()
     val successKey by authViewModel.signupSuccess.collectAsState()
+    val isGoogleSignedIn by sessionManager.isGoogleSignedIn.collectAsState()
 
     var isRegisterMode by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
     var pin by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf("STUDENT") } // "TEACHER", "STUDENT", "FREELANCER"
     var teacherCodeToLink by remember { mutableStateOf("") }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // Google Sign-In launcher
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            coroutineScope.launch {
+                try {
+                    val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    val account = task.getResult(ApiException::class.java)
+                    val idToken = account.idToken
+                    if (idToken != null) {
+                        val signInResult = googleAuthRepository.signIn(idToken)
+                        signInResult.onSuccess {
+                            sessionManager.setGoogleSignedIn(true)
+                        }.onFailure { error ->
+                            snackbarHostState.showSnackbar(
+                                "Google Sign-In failed: ${error.message ?: "Unknown error"}"
+                            )
+                        }
+                    } else {
+                        snackbarHostState.showSnackbar("Google Sign-In failed: no ID token received")
+                    }
+                } catch (e: ApiException) {
+                    snackbarHostState.showSnackbar("Google Sign-In failed: ${e.statusCode}")
+                } catch (e: Exception) {
+                    snackbarHostState.showSnackbar("Google Sign-In failed: ${e.message}")
+                }
+            }
+        }
+    }
 
     // Resolve displayed message
     val resolvedError = errKey?.let { Localization.get(it, lang) }
@@ -274,6 +322,73 @@ fun AuthenticationScreen(
                         pin = ""
                     }
                     .padding(8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Divider before Google section
+            HorizontalDivider(
+                color = Color.White.copy(alpha = 0.12f),
+                modifier = Modifier.fillMaxWidth(0.6f)
+            )
+
+            // Google Sign-In section
+            if (isGoogleSignedIn) {
+                // Task 10: Feature gating — show AI features enabled badge
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .background(
+                            Color(0xFF1B5E20).copy(alpha = 0.3f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                        .testTag("ai_features_enabled")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "AI enabled",
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "AI features enabled",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFA5D6A7),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
+                // "Sign in with Google" button
+                Button(
+                    onClick = {
+                        val signInIntent = googleAuthRepository.getSignInIntent()
+                        googleSignInLauncher.launch(signInIntent)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF1A1A2E)
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .height(48.dp)
+                        .testTag("google_sign_in_button")
+                ) {
+                    Text(
+                        text = "Sign in with Google for AI features",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF1A1A2E)
+                    )
+                }
+            }
+
+            // SnackbarHost for Google Sign-In errors
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
     }

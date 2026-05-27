@@ -28,6 +28,9 @@ class SessionManager @Inject constructor(
     private val _currentOverlay = MutableStateFlow<String?>(null)
     val currentOverlay: StateFlow<String?> = _currentOverlay.asStateFlow()
 
+    private val _isGoogleSignedIn = MutableStateFlow(false)
+    val isGoogleSignedIn: StateFlow<Boolean> = _isGoogleSignedIn.asStateFlow()
+
     private fun loadSavedLanguage(): AppLanguage {
         val savedLangStr = prefs.getString(KEY_APP_LANG, AppLanguage.ENGLISH.name)
         return try {
@@ -52,6 +55,11 @@ class SessionManager @Inject constructor(
     }
 
     fun getSavedUserId(): String? = prefs.getString(KEY_CURRENT_USER_ID, null)
+
+    fun setGoogleSignedIn(signedIn: Boolean) {
+        _isGoogleSignedIn.value = signedIn
+        prefs.edit().putBoolean(KEY_GOOGLE_SIGNED_IN, signedIn).apply()
+    }
 
     fun clearSession() {
         _currentUser.value = null
@@ -78,5 +86,6 @@ class SessionManager @Inject constructor(
         private const val PREFS_NAME = "app_settings"
         private const val KEY_APP_LANG = "app_lang"
         private const val KEY_CURRENT_USER_ID = "current_user_id"
+        private const val KEY_GOOGLE_SIGNED_IN = "google_signed_in"
     }
 }

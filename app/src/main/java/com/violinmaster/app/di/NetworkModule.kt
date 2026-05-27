@@ -2,6 +2,7 @@ package com.violinmaster.app.di
 
 import com.violinmaster.app.BuildConfig
 import com.violinmaster.app.data.remote.GeminiApiService
+import com.violinmaster.app.data.remote.GeminiAuthInterceptor
 import com.violinmaster.app.data.remote.GeminiRepository
 import dagger.Module
 import dagger.Provides
@@ -12,17 +13,16 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
-import javax.inject.Named
 import javax.inject.Singleton
 
 /**
  * Hilt module providing network dependencies:
- * - OkHttpClient with logging interceptor
+ * - OkHttpClient with logging + Gemini OAuth interceptors
  * - Retrofit configured for generativelanguage.googleapis.com
  * - GeminiApiService (Retrofit-created proxy)
  * - GeminiRepository (wraps the API service)
  *
- * REQ-GEM-002: API key loaded from BuildConfig (Secrets Plugin → .env).
+ * REQ-GEM-002: Gemini auth via user OAuth token (GeminiAuthInterceptor).
  * REQ-DI-001: All dependencies provided via Hilt module.
  */
 @Module
@@ -31,7 +31,9 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(
+        geminiAuthInterceptor: GeminiAuthInterceptor
+    ): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
@@ -41,6 +43,7 @@ object NetworkModule {
         }
 
         return OkHttpClient.Builder()
+            .addInterceptor(geminiAuthInterceptor)
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -70,12 +73,5 @@ object NetworkModule {
         api: GeminiApiService
     ): GeminiRepository {
         return GeminiRepository(api)
-    }
-
-    @Provides
-    @Singleton
-    @Named("gemini_api_key")
-    fun provideGeminiApiKey(): String {
-        return BuildConfig.GEMINI_API_KEY
     }
 }

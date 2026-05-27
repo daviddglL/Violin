@@ -110,6 +110,10 @@
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.android.gms.**
 
+# --- ML Kit ---
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**
+
 # --- Remove logging in release ---
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);

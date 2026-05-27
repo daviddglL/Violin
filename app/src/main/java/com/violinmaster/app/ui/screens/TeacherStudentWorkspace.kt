@@ -26,8 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.violinmaster.app.data.Assignment
 import com.violinmaster.app.ui.theme.Localization
+import com.violinmaster.app.data.firebase.Message
+import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
+import com.violinmaster.app.ui.viewmodel.ChatViewModel
+import com.violinmaster.app.ui.viewmodel.VideoUploadViewModel
 import com.violinmaster.app.di.SessionManager
 
 // ----------------------------------------------------
@@ -38,6 +42,8 @@ import com.violinmaster.app.di.SessionManager
 fun TeacherDashboardTab(
     assignmentVM: AssignmentViewModel,
     sessionManager: SessionManager,
+    chatViewModel: ChatViewModel,
+    videoViewModel: VideoUploadViewModel? = null,
     modifier: Modifier = Modifier
 ) {
     val lang by sessionManager.appLanguage.collectAsState()
@@ -54,10 +60,49 @@ fun TeacherDashboardTab(
     var videoDurationSeconds by remember { mutableStateOf(120) } // Default 2 minutes
     var studentDropdownExpanded by remember { mutableStateOf(false) }
 
+    // Chat overlay state: Pair(assignmentId, assignmentTitle)
+    var selectedChatAssignment by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    // Video recording overlay state
+    var isRecordingVideo by remember { mutableStateOf(false) }
+
     val teacherCode = teacher?.teacherCode ?: "TEACH-0000"
 
     // Only get students linked to this teacher code
     val linkedStudents = allUsers.filter { it.role == "STUDENT" && it.teacherCode == teacherCode }
+
+    // ── Video recording overlay ──────────────────────────────────────
+    if (isRecordingVideo && videoViewModel != null) {
+        VideoRecordScreen(
+            viewModel = videoViewModel,
+            lang = lang,
+            onVideoSent = { videoUrl ->
+                isRecordingVideo = false
+                // Send video as chat message to current assignment
+                chatViewModel.sendVideoAttachment(videoUrl)
+            },
+            onCancel = {
+                isRecordingVideo = false
+                videoViewModel.cancelRecording()
+            }
+        )
+        return
+    }
+
+    // ── Chat overlay: render ChatScreen instead of assignment list ──────
+    if (selectedChatAssignment != null) {
+        val (assignmentId, assignmentTitle) = selectedChatAssignment!!
+        LaunchedEffect(assignmentId) {
+            chatViewModel.loadAssignment(assignmentId)
+        }
+        ChatScreen(
+            chatViewModel = chatViewModel,
+            assignmentTitle = assignmentTitle,
+            lang = lang,
+            onBack = { selectedChatAssignment = null }
+        )
+        return
+    }
 
     LazyColumn(
         modifier = modifier
@@ -453,16 +498,51 @@ fun TeacherDashboardTab(
                             )
                         }
 
-                        IconButton(
-                            onClick = { assignmentVM.deleteAssignment(task.id) },
-                            modifier = Modifier.size(28.dp)
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Chat button
+                            IconButton(
+                                onClick = {
+                                    selectedChatAssignment = Pair(task.id.toString(), task.title)
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Chat,
+                                    contentDescription = Localization.get("chat_button", lang),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+
+                            // Record Video button (teacher)
+                            if (videoViewModel != null) {
+                                IconButton(
+                                    onClick = {
+                                        chatViewModel.loadAssignment(task.id.toString())
+                                        isRecordingVideo = true
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Videocam,
+                                        contentDescription = Localization.get("video_record_button", lang),
+                                        tint = Color(0xFFFF5722),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            IconButton(
+                                onClick = { assignmentVM.deleteAssignment(task.id) },
+                                modifier = Modifier.size(28.dp)
+                            ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = Localization.get("delete_task", lang),
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(16.dp)
                             )
+                        }
                         }
                     }
 
@@ -520,6 +600,8 @@ fun StudentAssignmentsTab(
     assignmentVM: AssignmentViewModel,
     authVM: AuthViewModel,
     sessionManager: SessionManager,
+    chatViewModel: ChatViewModel,
+    videoViewModel: VideoUploadViewModel? = null,
     onPlayTutorialVideo: (String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -529,6 +611,44 @@ fun StudentAssignmentsTab(
 
     var inputTeacherCode by remember { mutableStateOf("") }
     val linkedTeacher = student?.teacherCode ?: ""
+
+    // Chat overlay state: Pair(assignmentId, assignmentTitle)
+    var selectedChatAssignment by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    // Video recording overlay state
+    var isRecordingVideo by remember { mutableStateOf(false) }
+
+    // ── Video recording overlay ──────────────────────────────────────
+    if (isRecordingVideo && videoViewModel != null) {
+        VideoRecordScreen(
+            viewModel = videoViewModel,
+            lang = lang,
+            onVideoSent = { videoUrl ->
+                isRecordingVideo = false
+                chatViewModel.sendVideoAttachment(videoUrl)
+            },
+            onCancel = {
+                isRecordingVideo = false
+                videoViewModel.cancelRecording()
+            }
+        )
+        return
+    }
+
+    // ── Chat overlay: render ChatScreen instead of assignment list ──────
+    if (selectedChatAssignment != null) {
+        val (assignmentId, assignmentTitle) = selectedChatAssignment!!
+        LaunchedEffect(assignmentId) {
+            chatViewModel.loadAssignment(assignmentId)
+        }
+        ChatScreen(
+            chatViewModel = chatViewModel,
+            assignmentTitle = assignmentTitle,
+            lang = lang,
+            onBack = { selectedChatAssignment = null }
+        )
+        return
+    }
 
     Column(
         modifier = modifier
@@ -735,6 +855,39 @@ fun StudentAssignmentsTab(
                                 }
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Chat button
+                                    IconButton(
+                                        onClick = {
+                                            selectedChatAssignment = Pair(task.id.toString(), task.title)
+                                        },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Chat,
+                                            contentDescription = Localization.get("chat_button", lang),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+
+                                    // Record Video button (student)
+                                    if (videoViewModel != null) {
+                                        IconButton(
+                                            onClick = {
+                                                chatViewModel.loadAssignment(task.id.toString())
+                                                isRecordingVideo = true
+                                            },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Videocam,
+                                                contentDescription = Localization.get("video_record_button", lang),
+                                                tint = Color(0xFFFF5722),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+
                                     Text(
                                         text = Localization.get("btn_complete", lang),
                                         style = MaterialTheme.typography.labelSmall,

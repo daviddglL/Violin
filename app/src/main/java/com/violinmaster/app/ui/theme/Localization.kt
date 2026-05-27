@@ -254,6 +254,41 @@ object Localization {
         "no_previous_history" to "No previous history logs.",
         "attached_video_label_short" to "Attached video:",
 
+        // Chat
+        "chat_title" to "Chat",
+        "chat_button" to "Open Chat",
+        "chat_input_hint" to "Type a message...",
+        "chat_empty" to "No messages yet. Start the conversation!",
+        "chat_send" to "Send message",
+        "chat_today" to "Today",
+        "chat_yesterday" to "Yesterday",
+        "chat_attachment_video" to "Video attachment",
+        "back_button" to "Back",
+
+        // Video Recording & Upload
+        "video_record" to "Record",
+        "video_stop" to "Stop",
+        "video_recording" to "Recording...",
+        "video_compressing" to "Compressing video...",
+        "video_uploading" to "Uploading...",
+        "video_send" to "Send to Chat",
+        "video_cancel" to "Cancel",
+        "video_retry" to "Retry",
+        "video_record_button" to "Record Video",
+        "video_upload_success" to "Video uploaded successfully!",
+        "video_time_remaining" to "Time remaining:",
+        "video_permission_title" to "Camera Access Needed",
+        "video_permission_rationale" to "Camera access is needed to record practice demonstration videos for your students.",
+        "video_permission_grant" to "Grant Access",
+        "video_permission_deny" to "Not Now",
+        "video_permission_required" to "Camera permission required to record videos. Please grant access in Settings.",
+
+        // Face Blur — Minor Student Protection (REQ-BLR-005, REQ-BLR-007)
+        "blur_processing" to "Protecting identity...",
+        "blur_progress" to "Processing frame %1\$d/%2\$d",
+        "blur_warning" to "Face blur could not be applied. Video sent without blur.",
+        "blur_disabled" to "Face blur not required (adult user)",
+
         // MasterclassTab
         "secure_student_pin" to "SECURE STUDENT ACCOUNT PIN",
         "secure_pin_desc" to "Create a master numeric passcode. Passwords are never stored in plain-text. They are hashed cryptographically with a unique secure salt to ensure extreme user data privacy.",
@@ -532,6 +567,41 @@ object Localization {
         "active_label" to "ACTIVO",
         "no_previous_history" to "Sin registros de historial previos.",
         "attached_video_label_short" to "Video adjunto:",
+
+        // Chat
+        "chat_title" to "Chat",
+        "chat_button" to "Abrir Chat",
+        "chat_input_hint" to "Escribe un mensaje...",
+        "chat_empty" to "Aún no hay mensajes. ¡Inicia la conversación!",
+        "chat_send" to "Enviar mensaje",
+        "chat_today" to "Hoy",
+        "chat_yesterday" to "Ayer",
+        "chat_attachment_video" to "Video adjunto",
+        "back_button" to "Volver",
+
+        // Video Recording & Upload
+        "video_record" to "Grabar",
+        "video_stop" to "Detener",
+        "video_recording" to "Grabando...",
+        "video_compressing" to "Comprimiendo video...",
+        "video_uploading" to "Subiendo...",
+        "video_send" to "Enviar al Chat",
+        "video_cancel" to "Cancelar",
+        "video_retry" to "Reintentar",
+        "video_record_button" to "Grabar Video",
+        "video_upload_success" to "¡Video subido exitosamente!",
+        "video_time_remaining" to "Tiempo restante:",
+        "video_permission_title" to "Acceso a la Cámara Requerido",
+        "video_permission_rationale" to "Se necesita acceso a la cámara para grabar videos de demostración para tus estudiantes.",
+        "video_permission_grant" to "Conceder Acceso",
+        "video_permission_deny" to "Ahora No",
+        "video_permission_required" to "Se requiere permiso de cámara para grabar videos. Concede acceso en Ajustes.",
+
+        // Face Blur — Minor Student Protection (REQ-BLR-005, REQ-BLR-007)
+        "blur_processing" to "Protegiendo identidad...",
+        "blur_progress" to "Procesando frame %1\$d/%2\$d",
+        "blur_warning" to "No se pudo aplicar el difuminado facial. Video enviado sin difuminar.",
+        "blur_disabled" to "Difuminado no requerido (usuario adulto)",
 
         // MasterclassTab
         "secure_student_pin" to "PIN SEGURO DE CUENTA",

@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.violinmaster.app.data.local.CachedMessage
 
 /**
  * Room database for Violin Master app.
@@ -14,15 +15,17 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v3: No schema changes — migration establishes safe upgrade path,
  *       replacing destructive fallback with explicit [MIGRATION_2_3].
  * - v4: Add birthYear column to UserAccount for age verification.
+ * - v5: Add cached_messages table for teacher-student chat offline cache.
  */
 @Database(
     entities = [
         PracticeSession::class,
         LessonProgress::class,
         UserAccount::class,
-        Assignment::class
+        Assignment::class,
+        CachedMessage::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class PracticeDatabase : RoomDatabase() {
@@ -52,6 +55,35 @@ abstract class PracticeDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "ALTER TABLE user_accounts ADD COLUMN birthYear INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
+        /**
+         * Migration from version 4 to version 5.
+         *
+         * Adds cached_messages table for teacher-student chat offline cache.
+         * REQ-CC-002: Room migration 4→5.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE cached_messages (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        assignmentId TEXT NOT NULL,
+                        senderUsername TEXT NOT NULL,
+                        senderRole TEXT NOT NULL,
+                        text TEXT NOT NULL,
+                        attachmentUrl TEXT NOT NULL DEFAULT '',
+                        attachmentType TEXT NOT NULL DEFAULT '',
+                        timestamp INTEGER NOT NULL,
+                        read INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX idx_cached_msg_assignment ON cached_messages(assignmentId, timestamp ASC)"
                 )
             }
         }

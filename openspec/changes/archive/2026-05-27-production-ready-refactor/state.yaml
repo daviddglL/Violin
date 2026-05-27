@@ -1,0 +1,13 @@
+schema: spec-driven
+change: production-ready-refactor
+status: archived
+phases:
+  propose: completed
+  spec: completed
+  design: completed
+  tasks: completed
+  apply: completed
+  verify: completed
+  archive: completed
+created: "2026-05-27"
+archived: "2026-05-27"

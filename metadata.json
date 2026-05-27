@@ -1,0 +1,6 @@
+{
+  "name": "Violin Master",
+  "description": "Sophisticated Dark violin learning and practice companion app with smart tuner, metronome, and curriculum metrics persistence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

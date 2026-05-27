@@ -11,8 +11,17 @@ data class UserAccount(
     val salt: String,
     val teacherCode: String = "", // For teachers, this is their OWN invite code; for students, this is who they linked to
     val points: Int = 0,
-    val skillLevel: String = "Beginner" // "Beginner", "Intermediate", "Advanced"
-)
+    val skillLevel: String = "Beginner", // "Beginner", "Intermediate", "Advanced"
+    val birthYear: Int = 0 // 0 = not set (legacy users). Required for new registrations.
+) {
+    /** Whether the user is a minor (under 18). Computed from birthYear. */
+    val isMinor: Boolean
+        get() {
+            if (birthYear <= 1900) return false
+            val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+            return (currentYear - birthYear) < 18
+        }
+}
 
 @Entity(tableName = "student_assignments")
 data class Assignment(

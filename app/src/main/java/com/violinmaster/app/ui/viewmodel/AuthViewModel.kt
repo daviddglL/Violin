@@ -56,13 +56,18 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun register(username: String, pin: String, role: String, teacherCodeInput: String = "") {
+    fun register(username: String, pin: String, role: String, teacherCodeInput: String = "", birthYear: Int = 0) {
         if (username.isBlank()) {
             _loginError.value = "error_username_empty"
             return
         }
         if (pin.length != 4) {
             _loginError.value = "error_pin_length"
+            return
+        }
+        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+        if (birthYear < 1900 || birthYear > currentYear) {
+            _loginError.value = "error_birth_year_invalid"
             return
         }
         _loginError.value = null
@@ -89,7 +94,8 @@ class AuthViewModel @Inject constructor(
                 role = role,
                 hashedPassword = hashed,
                 salt = Base64.encodeToString(salt, Base64.DEFAULT),
-                teacherCode = inviteCode
+                teacherCode = inviteCode,
+                birthYear = birthYear
             )
 
             repository.insertUser(newAccount)

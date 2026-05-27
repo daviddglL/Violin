@@ -55,6 +55,7 @@ fun AuthenticationScreen(
     var pin by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf("STUDENT") } // "TEACHER", "STUDENT", "FREELANCER"
     var teacherCodeToLink by remember { mutableStateOf("") }
+    var birthYear by remember { mutableStateOf("") } // Required for registration
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -244,6 +245,51 @@ fun AuthenticationScreen(
                 }
             }
 
+            // Birth year selector (required for registration)
+            if (isRegisterMode) {
+                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                val years = (currentYear downTo 1930).toList()
+                var expanded by remember { mutableStateOf(false) }
+
+                Text(
+                    text = Localization.get("birth_year_label", lang) + " *",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = birthYear,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(Localization.get("birth_year_hint", lang), fontSize = 11.sp) },
+                        trailingIcon = {
+                            Text(if (expanded) "▲" else "▼", fontSize = 12.sp)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { expanded = true },
+                        singleLine = true
+                    )
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.fillMaxWidth(0.9f)
+                    ) {
+                        years.forEach { year ->
+                            DropdownMenuItem(
+                                text = { Text(year.toString()) },
+                                onClick = {
+                                    birthYear = year.toString()
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             // Student target teacher code injection if register
             if (isRegisterMode && selectedRole == "STUDENT") {
                 OutlinedTextField(
@@ -297,7 +343,7 @@ fun AuthenticationScreen(
                 onValidate = {
                     if (pin.length == 4) {
                         if (isRegisterMode) {
-                            authViewModel.register(username, pin, selectedRole, teacherCodeToLink)
+                            authViewModel.register(username, pin, selectedRole, teacherCodeToLink, birthYear.toIntOrNull() ?: 0)
                         } else {
                             authViewModel.login(username, pin)
                         }

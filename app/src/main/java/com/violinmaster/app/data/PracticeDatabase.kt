@@ -13,6 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - v2: Current production schema (identityHash preserved)
  * - v3: No schema changes — migration establishes safe upgrade path,
  *       replacing destructive fallback with explicit [MIGRATION_2_3].
+ * - v4: Add birthYear column to UserAccount for age verification.
  */
 @Database(
     entities = [
@@ -21,7 +22,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         UserAccount::class,
         Assignment::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class PracticeDatabase : RoomDatabase() {
@@ -38,6 +39,20 @@ abstract class PracticeDatabase : RoomDatabase() {
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // No schema changes — data preserved as-is
+            }
+        }
+
+        /**
+         * Migration from version 3 to version 4.
+         *
+         * Adds birthYear INTEGER NOT NULL DEFAULT 0 to user_accounts.
+         * Existing users get 0 (legacy, not a minor).
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE user_accounts ADD COLUMN birthYear INTEGER NOT NULL DEFAULT 0"
+                )
             }
         }
     }

@@ -31,6 +31,10 @@ class SessionManager @Inject constructor(
     private val _isGoogleSignedIn = MutableStateFlow(false)
     val isGoogleSignedIn: StateFlow<Boolean> = _isGoogleSignedIn.asStateFlow()
 
+    /** Whether the currently logged-in user is a minor (under 18). */
+    val isCurrentUserMinor: Boolean
+        get() = _currentUser.value?.isMinor ?: false
+
     private fun loadSavedLanguage(): AppLanguage {
         val savedLangStr = prefs.getString(KEY_APP_LANG, AppLanguage.ENGLISH.name)
         return try {

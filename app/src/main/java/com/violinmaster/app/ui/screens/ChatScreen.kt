@@ -164,22 +164,14 @@ fun ChatScreen(
                 }
             }
 
-            // Error banner overlay (when messages exist but latest send failed)
-            AnimatedVisibility(
-                visible = error != null && messages.isNotEmpty(),
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-            ) {
+            // Error banner (when messages exist but latest send failed)
+            if (error != null && messages.isNotEmpty()) {
                 ErrorBanner(
                     message = error ?: "",
                     onDismiss = { chatViewModel.clearError() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                 )
             }
-        }
 
         // ── Bottom Input Bar ─────────────────────────────────────────────
         Row(

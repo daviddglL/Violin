@@ -70,7 +70,7 @@ class ChatRepository @Inject constructor(
      * @param assignmentId The assignment to observe messages for.
      * @return Flow of messages ordered by timestamp ascending.
      */
-    fun loadMessages(assignmentId: String): Flow<List<Message>> {
+    override fun loadMessages(assignmentId: String): Flow<List<Message>> {
         return callbackFlow {
             val collectionPath = FirebaseCollections.messagesPath(assignmentId)
 
@@ -127,7 +127,7 @@ class ChatRepository @Inject constructor(
      *
      * @param assignmentId The assignment whose messages should be cleared.
      */
-    suspend fun clearMessagesForAssignment(assignmentId: String) {
+    override suspend fun clearMessagesForAssignment(assignmentId: String) {
         val collectionPath = FirebaseCollections.messagesPath(assignmentId)
 
         // Delete from Firestore collection (batch delete all documents)

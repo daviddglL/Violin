@@ -128,7 +128,7 @@ class VideoRecordingService @Inject constructor(
         outputFile.parentFile?.mkdirs()
 
         val outputOptions = FileOutputOptions.Builder(outputFile).build()
-        val pendingRecording = videoCapture.output.prepareRecording(context, outputOptions)
+        val pendingRecording = capture.output.prepareRecording(context, outputOptions)
         activeRecording = pendingRecording.start(
             ContextCompat.getMainExecutor(context)
         ) { recordEvent ->

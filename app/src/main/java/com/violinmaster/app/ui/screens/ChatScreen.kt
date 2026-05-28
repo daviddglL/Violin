@@ -79,13 +79,12 @@ fun ChatScreen(
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .imePadding()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
         // ── Top App Bar ──────────────────────────────────────────────────
         TopAppBar(
             title = {

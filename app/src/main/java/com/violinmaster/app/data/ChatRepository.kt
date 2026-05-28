@@ -43,7 +43,7 @@ class ChatRepository @Inject constructor(
      * @param message The message to send (id is ignored, Firestore auto-generates).
      * @return The message with Firestore-generated document ID.
      */
-    suspend fun sendMessage(assignmentId: String, message: Message): Message {
+    override suspend fun sendMessage(assignmentId: String, message: Message): Message {
         val collectionPath = FirebaseCollections.messagesPath(assignmentId)
         val docRef = firestore.collection(collectionPath).document()
         val msgWithId = message.copy(id = docRef.id)

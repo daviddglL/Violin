@@ -176,7 +176,7 @@ class FaceBlurProcessor @Inject constructor() {
             // Set up ML Kit face detector (FAST mode, no contours)
             val faceDetectorOptions = FaceDetectorOptions.Builder()
                 .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-                .setContourMode(FaceDetectorOptions.NO_CONTOURS)
+                .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
                 .build()
             val faceDetector = FaceDetection.getClient(faceDetectorOptions)
 

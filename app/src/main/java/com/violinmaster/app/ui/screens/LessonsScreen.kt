@@ -36,6 +36,7 @@ import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.ui.viewmodel.TunerViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
+import com.violinmaster.app.ui.viewmodel.ChatViewModel
 import com.violinmaster.app.di.SessionManager
 
 // ----------------------------------------------------
@@ -339,6 +340,7 @@ fun LessonsScreen(
     authVM: AuthViewModel,
     assignmentVM: AssignmentViewModel,
     sessionManager: SessionManager,
+    chatViewModel: ChatViewModel,
     modifier: Modifier = Modifier
 ) {
     val lang by sessionManager.appLanguage.collectAsState()
@@ -460,11 +462,12 @@ fun LessonsScreen(
                 when (activeTabSubIndex) {
                     0 -> {
                         when (user?.role) {
-                            "TEACHER" -> TeacherDashboardTab(assignmentVM = assignmentVM, sessionManager = sessionManager)
+                            "TEACHER" -> TeacherDashboardTab(assignmentVM = assignmentVM, sessionManager = sessionManager, chatViewModel = chatViewModel)
                             "STUDENT" -> StudentAssignmentsTab(
                                 assignmentVM = assignmentVM,
                                 authVM = authVM,
                                 sessionManager = sessionManager,
+                                chatViewModel = chatViewModel,
                                 onPlayTutorialVideo = { url, title ->
                                     activeTutorVideoUrl = url
                                     activeTutorVideoTitle = title
@@ -474,7 +477,9 @@ fun LessonsScreen(
                                 levelProgressList = levelProgressList,
                                 isPracticing = isPracticing,
                                 practiceCategory = practiceCategory,
-                                appLanguage = lang
+                                appLanguage = lang,
+                                practiceVM = practiceVM,
+                                sessionManager = sessionManager
                             )
                         }
                     }
@@ -496,7 +501,9 @@ fun CurriculumTab(
     levelProgressList: List<LessonProgress>,
     isPracticing: Boolean,
     practiceCategory: String,
-    appLanguage: AppLanguage = AppLanguage.ENGLISH
+    appLanguage: AppLanguage = AppLanguage.ENGLISH,
+    practiceVM: PracticeViewModel,
+    sessionManager: SessionManager
 ) {
     val groupedLessons = levelProgressList.groupBy { it.difficulty }
     val difficultyOrder = listOf("Beginner", "Intermediate", "Advanced")

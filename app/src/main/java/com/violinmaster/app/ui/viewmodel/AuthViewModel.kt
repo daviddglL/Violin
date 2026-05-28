@@ -230,4 +230,9 @@ class AuthViewModel @Inject constructor(
         _selectedPremiumVideoId.value = null
         _securePlaybackUrl.value = null
     }
+
+    fun clearAuthMessages() {
+        _loginError.value = null
+        _signupSuccess.value = null
+    }
 }

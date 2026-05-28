@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.sp
 import com.violinmaster.app.data.Assignment
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.data.firebase.Message
-import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
 import com.violinmaster.app.ui.viewmodel.ChatViewModel
@@ -507,7 +506,7 @@ fun TeacherDashboardTab(
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Chat,
+                                    imageVector = Icons.Filled.Chat,
                                     contentDescription = Localization.get("chat_button", lang),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
@@ -524,7 +523,7 @@ fun TeacherDashboardTab(
                                     modifier = Modifier.size(28.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Videocam,
+                                        imageVector = Icons.Filled.Videocam,
                                         contentDescription = Localization.get("video_record_button", lang),
                                         tint = Color(0xFFFF5722),
                                         modifier = Modifier.size(16.dp)
@@ -863,7 +862,7 @@ fun StudentAssignmentsTab(
                                         modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Chat,
+                                            imageVector = Icons.Filled.Chat,
                                             contentDescription = Localization.get("chat_button", lang),
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(16.dp)
@@ -880,7 +879,7 @@ fun StudentAssignmentsTab(
                                             modifier = Modifier.size(28.dp)
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.Videocam,
+                                                imageVector = Icons.Filled.Videocam,
                                                 contentDescription = Localization.get("video_record_button", lang),
                                                 tint = Color(0xFFFF5722),
                                                 modifier = Modifier.size(16.dp)

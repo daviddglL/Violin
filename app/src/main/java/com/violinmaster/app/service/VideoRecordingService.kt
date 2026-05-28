@@ -3,10 +3,17 @@ package com.violinmaster.app.service
 import android.content.Context
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.MediaRecorder
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
-import androidx.camera.core.VideoCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.VideoCapture
+import androidx.camera.video.Recorder
+import androidx.camera.video.VideoRecordEvent
+import androidx.camera.video.FileOutputOptions
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recording
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -32,11 +39,11 @@ import javax.inject.Singleton
 class VideoRecordingService @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private var videoCapture: VideoCapture? = null
+    private var videoCapture: VideoCapture<Recorder>? = null
     private var preview: Preview? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    private var activeRecording: VideoCapture.OutputFileResults? = null
+    private var activeRecording: Recording? = null
     private var outputFile: File? = null
     private var isRecordingFlag: Boolean = false
     private var onRecordingError: ((String) -> Unit)? = null
@@ -63,10 +70,10 @@ class VideoRecordingService @Inject constructor(
                     .build()
                     .also { it.setSurfaceProvider(previewSurfaceProvider) }
 
-                videoCapture = VideoCapture.Builder()
-                    .setVideoFrameRate(30)
-                    .setBitRate(1_000_000)
+                val recorder = Recorder.Builder()
+                    .setQualitySelector(QualitySelector.from(Quality.HD))
                     .build()
+                videoCapture = VideoCapture.withOutput(recorder)
 
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
@@ -120,24 +127,26 @@ class VideoRecordingService @Inject constructor(
 
         outputFile.parentFile?.mkdirs()
 
-        val outputOptions = VideoCapture.OutputFileOptions.Builder(outputFile).build()
-
-        capture.startRecording(
-            outputOptions,
-            cameraExecutor,
-            object : VideoCapture.OnVideoSavedCallback {
-                override fun onVideoSaved(outputFileResults: VideoCapture.OutputFileResults) {
-                    activeRecording = outputFileResults
-                    isRecordingFlag = false
+        val outputOptions = FileOutputOptions.Builder(outputFile).build()
+        val pendingRecording = videoCapture.output.prepareRecording(context, outputOptions)
+        activeRecording = pendingRecording.start(
+            ContextCompat.getMainExecutor(context)
+        ) { recordEvent ->
+            when (recordEvent) {
+                is VideoRecordEvent.Start -> {
+                    isRecordingFlag = true
                 }
-
-                override fun onError(videoCaptureError: Int, message: String, cause: Throwable?) {
+                is VideoRecordEvent.Finalize -> {
                     isRecordingFlag = false
-                    onRecordingError?.invoke("Recording error ($videoCaptureError): $message")
+                    if (recordEvent.hasError()) {
+                        onRecordingError?.invoke("Recording error: ${recordEvent.error}")
+                    }
+                }
+                is VideoRecordEvent.Status -> {
+                    // Recording status updates (duration, etc.)
                 }
             }
-        )
-        isRecordingFlag = true
+        }
     }
 
     /**
@@ -152,7 +161,9 @@ class VideoRecordingService @Inject constructor(
         if (!isRecordingFlag) {
             throw IllegalStateException("No recording in progress")
         }
-        videoCapture?.stopRecording()
+        activeRecording?.stop()
+        activeRecording?.close()
+        activeRecording = null
         isRecordingFlag = false
         return outputFile ?: throw IllegalStateException("Output file was null")
     }

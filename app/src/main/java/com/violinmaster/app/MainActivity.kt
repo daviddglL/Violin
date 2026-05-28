@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -70,6 +70,7 @@ import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.ui.viewmodel.TunerViewModel
 import com.violinmaster.app.ui.viewmodel.MetronomeViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
+import com.violinmaster.app.ui.viewmodel.ChatViewModel
 import com.violinmaster.app.data.auth.GoogleAuthRepository
 import com.violinmaster.app.di.SessionManager
 import javax.inject.Inject
@@ -103,6 +104,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
   val tunerVM: TunerViewModel = hiltViewModel()
   val metronomeVM: MetronomeViewModel = hiltViewModel()
   val assignmentVM: AssignmentViewModel = hiltViewModel()
+  val chatViewModel: ChatViewModel = hiltViewModel()
 
   if (currentUser == null) {
     Scaffold(
@@ -268,7 +270,8 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
               tunerVM = tunerVM,
               authVM = authViewModel,
               assignmentVM = assignmentVM,
-              sessionManager = sessionManager
+              sessionManager = sessionManager,
+              chatViewModel = chatViewModel
             )
             2 -> StatsScreen(
               practiceVM = practiceVM,

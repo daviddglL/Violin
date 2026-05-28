@@ -362,7 +362,7 @@ fun VideoRecordScreen(
                     ) {
                         // Shield icon for privacy protection
                         Icon(
-                            Icons.Default.Security,
+                            Icons.Filled.Security,
                             contentDescription = null,
                             tint = Color(0xFF4FC3F7),
                             modifier = Modifier.size(48.dp)
@@ -538,7 +538,7 @@ fun VideoRecordScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        Icons.Default.Error,
+                        Icons.Filled.Error,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(64.dp)

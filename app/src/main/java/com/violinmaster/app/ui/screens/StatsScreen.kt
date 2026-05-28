@@ -53,6 +53,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.violinmaster.app.ui.theme.Localization
+import com.violinmaster.app.ui.theme.AppLanguage
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -441,6 +442,7 @@ fun StatsScreen(
                 items(sessions) { log ->
                     HistoryLogItem(
                         log = log,
+                        appLanguage = appLanguage,
                         onDelete = { practiceVM.deleteSession(log.id) }
                     )
                 }
@@ -586,7 +588,7 @@ fun StatsScreen(
 }
 
 @Composable
-fun HistoryLogItem(log: PracticeSession, onDelete: () -> Unit) {
+fun HistoryLogItem(log: PracticeSession, appLanguage: AppLanguage, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

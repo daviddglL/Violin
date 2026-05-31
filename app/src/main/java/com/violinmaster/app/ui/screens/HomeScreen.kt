@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import java.util.Locale
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -48,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.di.SessionManager
 import androidx.compose.foundation.layout.PaddingValues
@@ -435,7 +435,7 @@ fun HomeScreen(
                     .clickable { sessionManager.showOverlay("tuner") }
                     .testTag("tuner_tool_button"),
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                border = ButtonDefaults.outlinedButtonBorder,
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true),
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -470,7 +470,7 @@ fun HomeScreen(
                     .clickable { sessionManager.showOverlay("metronome") }
                     .testTag("metronome_tool_button"),
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                border = ButtonDefaults.outlinedButtonBorder,
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true),
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),

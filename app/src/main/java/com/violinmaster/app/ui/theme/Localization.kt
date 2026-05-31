@@ -1,12 +1,25 @@
 package com.violinmaster.app.ui.theme
 
-enum class AppLanguage {
-    ENGLISH,
-    SPANISH
+sealed class AppLanguage {
+  data object ENGLISH : AppLanguage()
+  data object SPANISH : AppLanguage()
+  companion object {
+    fun values(): Array<AppLanguage> {
+      return arrayOf(ENGLISH, SPANISH)
+    }
+
+    fun valueOf(value: String): AppLanguage {
+      return when (value) {
+        "ENGLISH" -> ENGLISH
+        "SPANISH" -> SPANISH
+        else -> throw IllegalArgumentException("No object com.violinmaster.app.ui.theme.AppLanguage.$value")
+      }
+    }
+  }
 }
 
 object Localization {
-    
+
     // Simple state flow inside ViewModel mapped here for convenience
     // Keys defined centrally to enforce clean practices
     private val en = mapOf(

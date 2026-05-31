@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION") // GoogleSignIn deprecated in play-services-auth 21+
+
 package com.violinmaster.app.ui.screens
 
 import android.app.Activity
@@ -11,6 +13,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
@@ -106,7 +110,9 @@ fun AuthenticationScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.widthIn(max = 440.dp)
+            modifier = Modifier
+                .widthIn(max = 440.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             // Header Shield Icon
             Box(

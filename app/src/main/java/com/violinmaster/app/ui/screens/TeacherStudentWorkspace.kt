@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -145,7 +146,7 @@ fun TeacherDashboardTab(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    Divider(color = Color.White.copy(alpha = 0.08f))
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
@@ -507,7 +508,7 @@ fun TeacherDashboardTab(
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Filled.Chat,
+                                    imageVector = Icons.AutoMirrored.Filled.Chat,
                                     contentDescription = Localization.get("chat_button", lang),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
@@ -863,7 +864,7 @@ fun StudentAssignmentsTab(
                                         modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Filled.Chat,
+                                            imageVector = Icons.AutoMirrored.Filled.Chat,
                                             contentDescription = Localization.get("chat_button", lang),
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(16.dp)
@@ -927,7 +928,7 @@ fun StudentAssignmentsTab(
 
                             if (task.videoTitle.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(14.dp))
-                                Divider(color = Color.White.copy(alpha = 0.05f))
+                                HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
                                 Spacer(modifier = Modifier.height(12.dp))
 
                                 Row(

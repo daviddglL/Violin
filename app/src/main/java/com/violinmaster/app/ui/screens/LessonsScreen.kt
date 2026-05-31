@@ -692,7 +692,7 @@ fun CurriculumTab(
                             // Expandable Details Section
                             AnimatedVisibility(visible = isExpanded) {
                                 Column(modifier = Modifier.padding(top = 16.dp)) {
-                                    Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                                     Spacer(modifier = Modifier.height(12.dp))
 
                                     if (extraDetails != null) {

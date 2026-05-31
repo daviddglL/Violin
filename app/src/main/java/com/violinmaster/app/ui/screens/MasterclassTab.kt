@@ -536,7 +536,7 @@ fun UnlockedMasterclassHub(
                         lineHeight = 16.sp
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Divider(color = Color.White.copy(alpha = 0.05f))
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -724,7 +724,7 @@ fun SecureMediaPlaybackConsole(
                     lineHeight = 15.sp
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Divider(color = Color.White.copy(alpha = 0.1f))
+                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
                 Spacer(modifier = Modifier.height(8.dp))
 
                 val parsedParams = signedUrl.substringAfter("?").split("&")
@@ -738,7 +738,7 @@ fun SecureMediaPlaybackConsole(
                 SecurityLogItem(label = Localization.get("hmac_sha256_signature", appLanguage), value = ticket, isValueCrucial = true)
 
                 Spacer(modifier = Modifier.height(8.dp))
-                Divider(color = Color.White.copy(alpha = 0.1f))
+                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(

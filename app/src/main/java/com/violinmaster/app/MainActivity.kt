@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
@@ -150,7 +150,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
                   modifier = Modifier.testTag("overlay_back_button")
                 ) {
                   Icon(
-                     imageVector = Icons.Default.ArrowBack,
+                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                      contentDescription = "Back",
                      tint = Color.White
                   )

@@ -9,10 +9,10 @@ import com.squareup.moshi.JsonClass
  */
 @JsonClass(generateAdapter = true)
 data class GeminiResponse(
-    @Json(name = "candidates") val candidates: List<Candidate> = emptyList()
+    @field:Json(name = "candidates") val candidates: List<Candidate> = emptyList()
 )
 
 @JsonClass(generateAdapter = true)
 data class Candidate(
-    @Json(name = "content") val content: Content? = null
+    @field:Json(name = "content") val content: Content? = null
 )

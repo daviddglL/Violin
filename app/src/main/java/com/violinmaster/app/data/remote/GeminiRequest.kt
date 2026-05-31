@@ -9,15 +9,15 @@ import com.squareup.moshi.JsonClass
  */
 @JsonClass(generateAdapter = true)
 data class GeminiRequest(
-    @Json(name = "contents") val contents: List<Content>
+    @field:Json(name = "contents") val contents: List<Content>
 )
 
 @JsonClass(generateAdapter = true)
 data class Content(
-    @Json(name = "parts") val parts: List<Part>
+    @field:Json(name = "parts") val parts: List<Part>
 )
 
 @JsonClass(generateAdapter = true)
 data class Part(
-    @Json(name = "text") val text: String
+    @field:Json(name = "text") val text: String
 )

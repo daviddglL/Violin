@@ -112,7 +112,7 @@ class VideoCompressionService @Inject constructor() {
                 setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, I_FRAME_INTERVAL)
                 setInteger(
                     MediaFormat.KEY_COLOR_FORMAT,
-                    MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
+                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
                 )
             }
 

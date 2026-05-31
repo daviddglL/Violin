@@ -237,6 +237,21 @@ class FaceBlurProcessor @Inject constructor() {
             faceDetector.close()
 
             // ── 3. Re-encode video with blurred face regions ────────────
+            //
+            // FIXME(blur): Face detection collects faceBounds correctly above,
+            // but the re-encoding loop below feeds raw compressed frames from
+            // MediaExtractor straight to MediaCodec without decoding them to
+            // pixel data. This means face blur is NEVER actually applied to
+            // the output video — the faceBounds map is populated but unused.
+            //
+            // To fix: decode each frame via MediaCodec (decoder) → apply
+            // Gaussian blur to face bounding boxes on the decoded Bitmap →
+            // re-encode via MediaCodec (encoder) + MediaMuxer. This requires
+            // a full decode→modify→encode pipeline (transcoding), not the
+            // current passthrough approach.
+            //
+            // REQ-BLR-001 through REQ-BLR-005 are partially implemented;
+            // blur is detected but not rendered.
             // Set up MediaExtractor for re-encoding
             extractor = MediaExtractor()
             extractor.setDataSource(inputFile.absolutePath)
@@ -263,7 +278,7 @@ class FaceBlurProcessor @Inject constructor() {
                 setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, I_FRAME_INTERVAL)
                 setInteger(
                     MediaFormat.KEY_COLOR_FORMAT,
-                    MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
+                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
                 )
             }
 

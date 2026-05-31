@@ -87,14 +87,7 @@ class VideoUploadService @Inject constructor(
                                 StorageException.ERROR_NOT_AUTHENTICATED ->
                                     SecurityException("Firebase Storage: not authenticated")
                                 StorageException.ERROR_QUOTA_EXCEEDED ->
-                                    StorageException::class.java
-                                        .getDeclaredConstructor(
-                                            Int::class.javaPrimitiveType,
-                                            Throwable::class.java
-                                        )
-                                        .let {
-                                            throw exception // rethrow original
-                                        }
+                                    IOException("Firebase Storage quota exceeded", exception)
                                 else -> exception
                             }
                         }

@@ -1,7 +1,6 @@
 package com.violinmaster.app.di
 
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.storage.FirebaseStorage
 import com.violinmaster.app.data.ChatRepository
 import com.violinmaster.app.data.IChatRepository
@@ -32,11 +31,9 @@ abstract class FirebaseModule {
         @Provides
         @Singleton
         fun provideFirebaseFirestore(): FirebaseFirestore {
-            return FirebaseFirestore.getInstance().apply {
-                firestoreSettings = FirebaseFirestoreSettings.Builder()
-                    .setPersistenceEnabled(true)
-                    .build()
-            }
+            // Firestore enables offline persistence by default on Android.
+            // Explicit setPersistenceEnabled is deprecated as of firebase-bom 34.x.
+            return FirebaseFirestore.getInstance()
         }
 
         @Provides

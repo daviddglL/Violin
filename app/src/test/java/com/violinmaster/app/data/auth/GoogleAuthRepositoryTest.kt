@@ -2,6 +2,9 @@ package com.violinmaster.app.data.auth
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -28,10 +31,17 @@ import org.robolectric.RobolectricTestRunner
 class GoogleAuthRepositoryTest {
 
     private lateinit var context: Context
+    private lateinit var signInClient: GoogleSignInClient
 
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
+        // Robolectric shadows GoogleSignIn; we use DEFAULT_SIGN_IN for test
+        // since the actual ID token flow requires a real Firebase project.
+        signInClient = GoogleSignIn.getClient(
+            context,
+            GoogleSignInOptions.DEFAULT_SIGN_IN
+        )
     }
 
     // ---- GoogleUser data class tests ----
@@ -68,26 +78,26 @@ class GoogleAuthRepositoryTest {
     @Test
     fun `isSignedIn returns false when no Firebase user`() {
         // Real repository: FirebaseAuth has no signed-in user → isSignedIn = false
-        val repo = GoogleAuthRepository(context)
+        val repo = GoogleAuthRepository(context, signInClient)
         assertFalse("Default state: no user signed in", repo.isSignedIn())
     }
 
     @Test
     fun `signedInFlow defaults to false`() = runTest {
-        val repo = GoogleAuthRepository(context)
+        val repo = GoogleAuthRepository(context, signInClient)
         assertEquals(false, repo.signedInFlow.first())
     }
 
     @Test
     fun `getAccessToken returns null when no Firebase user`() {
-        val repo = GoogleAuthRepository(context)
+        val repo = GoogleAuthRepository(context, signInClient)
         assertNull("No token when no user signed in", repo.getAccessToken())
     }
 
     @Test
     fun `subclass can override getAccessToken for testing`() {
         // Tests that open methods work correctly for interceptor testing
-        val repo = object : GoogleAuthRepository(context) {
+        val repo = object : GoogleAuthRepository(context, signInClient) {
             override fun getAccessToken(): String? = "ya29.fake-token-for-test"
             override fun isSignedIn(): Boolean = true
         }

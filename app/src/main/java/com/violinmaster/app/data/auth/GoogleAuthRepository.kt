@@ -1,8 +1,9 @@
+@file:Suppress("DEPRECATION") // GoogleSignInClient deprecated in play-services-auth 21+
+
 package com.violinmaster.app.data.auth
 
 import android.content.Context
 import android.content.Intent
-import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
@@ -22,16 +23,17 @@ import javax.inject.Singleton
  *
  * FirebaseAuth and GoogleSignInClient cannot run in unit tests;
  * test subclasses override [getAccessToken] and [isSignedIn] for testing.
+ *
+ * TODO(auth): GoogleSignInClient is deprecated in play-services-auth 21+.
+ * Migrate to Credential Manager API (androidx.credentials) when ready.
  */
 @Singleton
 open class GoogleAuthRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val googleSignInClient: GoogleSignInClient
 ) {
     // Lazily initialized to avoid Firebase instantiation in unit tests
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
-    private val googleSignInClient: GoogleSignInClient by lazy {
-        GoogleSignIn.getClient(context, com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN)
-    }
 
     private val _signedInFlow = MutableStateFlow(false)
     open val signedInFlow: StateFlow<Boolean> = _signedInFlow.asStateFlow()

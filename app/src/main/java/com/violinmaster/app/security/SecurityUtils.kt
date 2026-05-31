@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SecurityUtils @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     companion object {
         private const val PREFS_NAME = "secure_user_prefs"

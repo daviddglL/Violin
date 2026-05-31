@@ -37,7 +37,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class VideoRecordingService @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private var videoCapture: VideoCapture<Recorder>? = null
     private var preview: Preview? = null

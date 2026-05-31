@@ -12,7 +12,20 @@
           "package_name": "com.violinmaster.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "865401856375-biuf81p22uas8dh0qpu93rmbi2otjl6d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.violinmaster.app",
+            "certificate_hash": "b9b8790e5ace2dea0e2cf15a714a58af7be1a94d"
+          }
+        },
+        {
+          "client_id": "865401856375-bq66ns4fblfeqp8dnit77sgmeou149ob.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD5OllCmTZY6izE7r5qMDwNYT6Mf9SjP-U"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "865401856375-bq66ns4fblfeqp8dnit77sgmeou149ob.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

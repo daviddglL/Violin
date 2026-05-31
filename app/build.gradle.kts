@@ -6,6 +6,7 @@ plugins {
   alias(libs.plugins.secrets)
   alias(libs.plugins.hilt.android.gradle.plugin)
   alias(libs.plugins.ktlint)
+  alias(libs.plugins.google.services)
 }
 
 android {

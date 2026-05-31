@@ -29,7 +29,7 @@ class GeminiRepository @Inject constructor(
      * @return [Result] containing the generated text or an error message.
      */
     suspend fun generateLessonFeedback(prompt: String): Result<String> {
-        return try {
+        return try{
             val request = GeminiRequest(
                 contents = listOf(
                     Content(

@@ -9,15 +9,19 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.math.sin
 
+@Singleton
 class ViolinAudioEngine @Inject constructor() {
     private val sampleRate = 44100
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // Reference Pitch Playback state
     private var toneJob: Job? = null
@@ -283,5 +287,6 @@ class ViolinAudioEngine @Inject constructor() {
     fun releaseAll() {
         stopTone()
         stopMetronome()
+        scope.cancel()
     }
 }

@@ -1,7 +1,7 @@
 package com.violinmaster.app.data
 
 import kotlinx.coroutines.flow.Flow
-
+import com.violinmaster.app.data.PracticeSession
 class PracticeRepository(private val practiceDao: PracticeDao) {
 
     val allSessions: Flow<List<PracticeSession>> = practiceDao.getAllSessions()

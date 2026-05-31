@@ -35,6 +35,7 @@ internal object YinPitchDetector {
      * @param maxFrequency Maximum detectable frequency in Hz (default 2000)
      * @return [PitchResult] with detected frequency and confidence, or null if no pitch found
      */
+
     fun detectPitch(
         buffer: ShortArray,
         sampleRate: Int = 44100,
@@ -59,7 +60,7 @@ internal object YinPitchDetector {
             diff[tau] = sum
         }
 
-        // Step 2: Cumulative mean normalized difference d'(τ)
+        // Step 2: Cumulative mean normalized difference d(τ)
         val cmnd = DoubleArray(maxTau + 1)
         cmnd[0] = 1.0
         var runningSum = 0.0
@@ -82,7 +83,7 @@ internal object YinPitchDetector {
 
         if (tauEstimate < 0) return null
 
-        // Step 4: Parabolic interpolation for sub-sample τ accuracy
+        // Step 4: Parabolic interpolation for subsample τ accuracy
         val refinedTau = parabolicInterpolation(cmnd, tauEstimate)
 
         // Step 5: Convert τ to frequency
@@ -120,7 +121,7 @@ internal object YinPitchDetector {
     ): PitchResult {
         val ratio = referencePitchA.toFloat() / 440.0f
 
-        // Find closest violin string
+        // Find the closest violin string
         var bestNote: String? = null
         var bestDist = Float.MAX_VALUE
         var bestTargetFreq = 0f

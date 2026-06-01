@@ -48,7 +48,7 @@ class MigrationTest {
         }
 
         // Migrate to version 3
-        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, MIGRATION_2_3)
+        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, PracticeDatabase.MIGRATION_2_3)
         dbV3.use { db ->
             // Verify practice_sessions table still exists and has data
             val cursor = db.query("SELECT * FROM practice_sessions ORDER BY id ASC")
@@ -80,7 +80,7 @@ class MigrationTest {
             close()
         }
 
-        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, MIGRATION_2_3)
+        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, PracticeDatabase.MIGRATION_2_3)
         dbV3.use { db ->
             val cursor = db.query("SELECT * FROM lesson_progress ORDER BY lessonId ASC")
             assertEquals("Should have 2 lesson progress rows after migration", 2, cursor.count)
@@ -111,7 +111,7 @@ class MigrationTest {
             close()
         }
 
-        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, MIGRATION_2_3)
+        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, PracticeDatabase.MIGRATION_2_3)
         dbV3.use { db ->
             val cursor = db.query("SELECT * FROM user_accounts ORDER BY username ASC")
             assertEquals("Should have 2 user accounts after migration", 2, cursor.count)
@@ -150,7 +150,7 @@ class MigrationTest {
             close()
         }
 
-        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, MIGRATION_2_3)
+        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, PracticeDatabase.MIGRATION_2_3)
         dbV3.use { db ->
             val cursor = db.query("SELECT * FROM student_assignments ORDER BY id ASC")
             assertEquals("Should have 2 assignments after migration", 2, cursor.count)
@@ -172,7 +172,7 @@ class MigrationTest {
     @Test
     fun `schema version 3 has all expected tables`() {
         val dbV2 = helper.createDatabase(TEST_DB_NAME, 2).apply { close() }
-        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, MIGRATION_2_3)
+        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, PracticeDatabase.MIGRATION_2_3)
         dbV3.use { db ->
             // Query sqlite_master to verify all tables exist
             val cursor = db.query(
@@ -219,7 +219,7 @@ class MigrationTest {
             close()
         }
 
-        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, MIGRATION_2_3)
+        val dbV3 = helper.runMigrationsAndValidate(TEST_DB_NAME, 3, true, PracticeDatabase.MIGRATION_2_3)
         dbV3.use { db ->
             // Verify each entity type
             val sessionCursor = db.query("SELECT * FROM practice_sessions")

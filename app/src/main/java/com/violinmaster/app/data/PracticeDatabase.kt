@@ -29,6 +29,15 @@ import com.violinmaster.app.data.local.CachedMessage
     exportSchema = true
 )
 abstract class PracticeDatabase : RoomDatabase() {
+    abstract fun sessionDao(): SessionDao
+    abstract fun lessonDao(): LessonDao
+    abstract fun userDao(): UserDao
+    abstract fun assignmentDao(): AssignmentDao
+
+    @Deprecated(
+        "Use individual DAOs (sessionDao, lessonDao, userDao, assignmentDao) instead.",
+        replaceWith = ReplaceWith("sessionDao()")
+    )
     abstract fun practiceDao(): PracticeDao
 
     companion object {

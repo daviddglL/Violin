@@ -35,9 +35,10 @@ class TunerEngineTest {
         val result = YinPitchDetector.detectPitch(buffer, SAMPLE_RATE)
 
         assertNotNull("Pitch should be detected for clean 440Hz sine", result)
-        val cents = centsFrom440(result.frequency)
+        val pitch = result!!
+        val cents = centsFrom440(pitch.frequency)
         assertTrue(
-            "Detected freq ${result.frequency}Hz should be within ±2 cents of 440Hz (got ${"%.2f".format(cents)} cents)",
+            "Detected freq ${result!!.frequency}Hz should be within ±2 cents of 440Hz (got ${"%.2f".format(cents)} cents)",
             abs(cents) < 2.1f
         )
     }
@@ -48,9 +49,9 @@ class TunerEngineTest {
         val result = YinPitchDetector.detectPitch(buffer, SAMPLE_RATE)
 
         assertNotNull("Pitch should be detected for clean 196Hz sine", result)
-        val cents = 1200.0 * log2(result.frequency.toDouble() / 196.0)
+        val cents = 1200.0 * log2(result!!.frequency.toDouble() / 196.0)
         assertTrue(
-            "Detected freq ${result.frequency}Hz should be within ±2 cents of 196Hz (got ${"%.2f".format(cents)} cents)",
+            "Detected freq ${result!!.frequency}Hz should be within ±2 cents of 196Hz (got ${"%.2f".format(cents)} cents)",
             abs(cents) < 2.1f
         )
     }
@@ -61,9 +62,9 @@ class TunerEngineTest {
         val result = YinPitchDetector.detectPitch(buffer, SAMPLE_RATE)
 
         assertNotNull("Pitch should be detected for clean 293.66Hz sine", result)
-        val cents = 1200.0 * log2(result.frequency.toDouble() / 293.66)
+        val cents = 1200.0 * log2(result!!.frequency.toDouble() / 293.66)
         assertTrue(
-            "Detected freq ${result.frequency}Hz should be within ±2 cents of 293.66Hz (got ${"%.2f".format(cents)} cents)",
+            "Detected freq ${result!!.frequency}Hz should be within ±2 cents of 293.66Hz (got ${"%.2f".format(cents)} cents)",
             abs(cents) < 2.1f
         )
     }
@@ -74,9 +75,9 @@ class TunerEngineTest {
         val result = YinPitchDetector.detectPitch(buffer, SAMPLE_RATE)
 
         assertNotNull("Pitch should be detected for clean 659.25Hz sine", result)
-        val cents = 1200.0 * log2(result.frequency.toDouble() / 659.25)
+        val cents = 1200.0 * log2(result!!.frequency.toDouble() / 659.25)
         assertTrue(
-            "Detected freq ${result.frequency}Hz should be within ±2 cents of 659.25Hz (got ${"%.2f".format(cents)} cents)",
+            "Detected freq ${result!!.frequency}Hz should be within ±2 cents of 659.25Hz (got ${"%.2f".format(cents)} cents)",
             abs(cents) < 2.1f
         )
     }
@@ -88,7 +89,7 @@ class TunerEngineTest {
         val result = YinPitchDetector.frequencyToNoteAndCents(440.0f, 440)
         assertEquals("A", result.note)
         assertEquals(0f, result.cents, 0.01f)
-        assertEquals(440.0f, result.frequency)
+        assertEquals(440.0f, result!!.frequency)
     }
 
     @Test
@@ -157,13 +158,13 @@ class TunerEngineTest {
     @Test
     fun `frequencyToNote returns high confidence for exact match`() {
         val result = YinPitchDetector.frequencyToNoteAndCents(440.0f, 440)
-        assertEquals(1.0f, result.confidence, 0.01f)
+        assertEquals(1.0f, result!!.confidence, 0.01f)
     }
 
     @Test
     fun `frequencyToNote returns low confidence for far-off frequency`() {
         val result = YinPitchDetector.frequencyToNoteAndCents(500.0f, 440)
-        assertTrue("Confidence should decrease with distance from note", result.confidence < 0.5f)
+        assertTrue("Confidence should decrease with distance from note", result!!.confidence < 0.5f)
     }
 
     // ---- Parabolic interpolation improves accuracy ----
@@ -177,11 +178,11 @@ class TunerEngineTest {
         // Detect pitch with interpolation (default)
         val resultWithInterp = YinPitchDetector.detectPitch(buffer, SAMPLE_RATE)
         assertNotNull(resultWithInterp)
-        val centsWithInterp = abs(centsFrom440(resultWithInterp.frequency))
+        val centsWithInterp = abs(centsFrom440(resultWithInterp!!.frequency))
 
         // The interpolated result should be very close to 440Hz
         assertTrue(
-            "Interpolated result should be within 2 cents. Got ${resultWithInterp.frequency}Hz (${"%.2f".format(centsWithInterp)} cents)",
+            "Interpolated result should be within 2 cents. Got ${resultWithInterp!!.frequency}Hz (${"%.2f".format(centsWithInterp)} cents)",
             centsWithInterp < 2.1f
         )
     }
@@ -195,8 +196,8 @@ class TunerEngineTest {
 
         assertNotNull(result)
         assertTrue(
-            "Confidence should be > 0.9 for clean sine wave, got ${result.confidence}",
-            result.confidence > 0.9f
+            "Confidence should be > 0.9 for clean sine wave, got ${result!!.confidence}",
+            result!!.confidence > 0.9f
         )
     }
 

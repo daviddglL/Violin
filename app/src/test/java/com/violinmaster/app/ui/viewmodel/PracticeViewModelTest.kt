@@ -47,7 +47,7 @@ class PracticeViewModelTest {
         repository = PracticeRepository(dao)
         sessionManager = SessionManager(context)
         audioEngine = ViolinAudioEngine()
-        viewModel = PracticeViewModel(repository, sessionManager, audioEngine, context)
+        viewModel = PracticeViewModel(repository, sessionManager, audioEngine)
     }
 
     @After

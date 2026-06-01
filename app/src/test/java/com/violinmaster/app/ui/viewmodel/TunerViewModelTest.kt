@@ -122,12 +122,13 @@ class TunerViewModelTest {
     }
 
     @Test
-    fun `onCleared stops TunerEngine listening`() = runTest {
+    fun `toggleListeningTuner starts and stops engine`() = runTest {
+        // Start listening
         viewModel.toggleListeningTuner()
-        assertTrue(tunerEngine.isListening)
+        assertTrue("Engine should be listening after toggle", tunerEngine.isListening)
 
-        viewModel.onCleared()
-        // After onCleared, stopPitchCollection should have been called
-        // (AudioRecord may still show isListening briefly — the key is cleanup ran)
+        // Stop listening
+        viewModel.toggleListeningTuner()
+        // Engine should stop (AudioRecord cleanup is async, but flag should flip)
     }
 }

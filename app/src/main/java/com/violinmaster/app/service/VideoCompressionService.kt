@@ -29,7 +29,7 @@ import javax.inject.Singleton
  * cost of some throughput. Optimizations can follow.
  */
 @Singleton
-class VideoCompressionService @Inject constructor() {
+open class VideoCompressionService @Inject constructor() {
 
     companion object {
         private const val TARGET_BITRATE = 1_000_000  // 1 Mbps
@@ -52,7 +52,7 @@ class VideoCompressionService @Inject constructor() {
      * @param onProgress Progress callback (0.0 to 1.0).
      * @return The compressed output file, or the original input if compression didn't help.
      */
-    suspend fun compressVideo(
+    open suspend fun compressVideo(
         inputFile: File,
         outputFile: File,
         onProgress: (Float) -> Unit

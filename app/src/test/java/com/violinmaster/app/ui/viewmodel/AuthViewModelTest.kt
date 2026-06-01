@@ -11,6 +11,7 @@ import com.violinmaster.app.di.SessionManager
 import com.violinmaster.app.security.SecurityUtils
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -314,7 +315,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `login with valid credentials sets currentUser`() = runTest {
+    fun `logout clears unlocked area and resets auth state`() = runTest {
         // Arrange
         securityUtils.savePasscode("4321")
         viewModel.register("testuser", "1234", "STUDENT")

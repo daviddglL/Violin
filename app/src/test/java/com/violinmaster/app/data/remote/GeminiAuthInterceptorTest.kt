@@ -22,11 +22,14 @@ import org.junit.Test
  */
 class GeminiAuthInterceptorTest {
 
+    private val context: android.content.Context =
+        androidx.test.core.app.ApplicationProvider.getApplicationContext()
+
     /** Simulates a signed-in user with a valid OAuth token. */
     @Test
     fun `intercept adds Bearer token to Gemini requests`() {
         // Arrange: authenticated repository with a token
-        val repository = FakeGoogleAuthRepository(isSignedIn = true, token = "ya29.test-oauth-token")
+        val repository = FakeGoogleAuthRepository(isSignedIn = true, token = "ya29.test-oauth-token", context)
         val interceptor = GeminiAuthInterceptor(repository)
         val geminiRequest = Request.Builder()
             .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
@@ -51,7 +54,7 @@ class GeminiAuthInterceptorTest {
     @Test
     fun `intercept does NOT add token to non-Gemini requests`() {
         // Arrange: authenticated repository with a token
-        val repository = FakeGoogleAuthRepository(isSignedIn = true, token = "ya29.test-oauth-token")
+        val repository = FakeGoogleAuthRepository(isSignedIn = true, token = "ya29.test-oauth-token", context)
         val interceptor = GeminiAuthInterceptor(repository)
         val nonGeminiRequest = Request.Builder()
             .url("https://example.com/api/health")
@@ -73,7 +76,7 @@ class GeminiAuthInterceptorTest {
     @Test
     fun `intercept does NOT add token when user is signed out`() {
         // Arrange: no signed-in user (token = null)
-        val repository = FakeGoogleAuthRepository(isSignedIn = false, token = null)
+        val repository = FakeGoogleAuthRepository(isSignedIn = false, token = null, context)
         val interceptor = GeminiAuthInterceptor(repository)
         val geminiRequest = Request.Builder()
             .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
@@ -95,7 +98,7 @@ class GeminiAuthInterceptorTest {
     @Test
     fun `intercept does NOT add token to non-HTTPS Gemini-like URL`() {
         // Regression: only HTTPS Gemini hosts should get the header
-        val repository = FakeGoogleAuthRepository(isSignedIn = true, token = "ya29.token")
+        val repository = FakeGoogleAuthRepository(isSignedIn = true, token = "ya29.token", context)
         val interceptor = GeminiAuthInterceptor(repository)
 
         // A URL that contains "generativelanguage" but is http (not https)
@@ -115,7 +118,7 @@ class GeminiAuthInterceptorTest {
     @Test
     fun `intercept matches subdomain variations of Gemini host`() {
         // The host check should match generativelanguage.googleapis.com in any position
-        val repository = FakeGoogleAuthRepository(isSignedIn = true, token = "ya29.token123")
+        val repository = FakeGoogleAuthRepository(isSignedIn = true, token = "ya29.token123", context)
         val interceptor = GeminiAuthInterceptor(repository)
 
         val regionalRequest = Request.Builder()
@@ -140,8 +143,17 @@ class GeminiAuthInterceptorTest {
      */
     private class FakeGoogleAuthRepository(
         private val isSignedIn: Boolean,
-        private val token: String?
-    ) : GoogleAuthRepository(null, null) {
+        private val token: String?,
+        context: android.content.Context
+    ) : GoogleAuthRepository(
+        context,
+        com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(
+            context,
+            com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder()
+                .requestIdToken("test-client-id")
+                .build()
+        )
+    ) {
         override fun getAccessToken(): String? = token
         override fun isSignedIn(): Boolean = isSignedIn
         override val signedInFlow = MutableStateFlow(isSignedIn)

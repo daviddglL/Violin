@@ -3,7 +3,7 @@ package com.violinmaster.app.ui.viewmodel
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.violinmaster.app.data.CachedMessage
+import com.violinmaster.app.data.local.CachedMessage
 import com.violinmaster.app.data.IChatRepository
 import com.violinmaster.app.data.PracticeDao
 import com.violinmaster.app.data.PracticeDatabase
@@ -385,7 +385,9 @@ class ChatViewModelTest {
         var lastSentAssignmentId: String? = null
 
         fun insertMessage(message: Message, assignmentId: String) {
-            dao.insertCachedMessages(listOf(message.toCachedMessage(assignmentId)))
+            kotlinx.coroutines.runBlocking {
+                dao.insertCachedMessages(listOf(message.toCachedMessage(assignmentId)))
+            }
         }
 
         override suspend fun sendMessage(assignmentId: String, message: Message): Message {

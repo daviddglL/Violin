@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.di.SessionManager
 import com.violinmaster.app.service.VideoCompressionService
 import com.violinmaster.app.service.VideoRecordingService
+import com.violinmaster.app.service.FaceBlurProcessor
 import com.violinmaster.app.service.VideoUploadService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -39,6 +40,7 @@ import java.io.File
 @Config(sdk = [36])
 class VideoUploadViewModelTest {
 
+    private lateinit var fakeFaceBlurProcessor: FakeFaceBlurProcessor
     private lateinit var fakeRecordingService: FakeVideoRecordingService
     private lateinit var fakeCompressionService: FakeVideoCompressionService
     private lateinit var fakeUploadService: FakeVideoUploadService
@@ -48,12 +50,14 @@ class VideoUploadViewModelTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        fakeRecordingService = FakeVideoRecordingService()
+        fakeFaceBlurProcessor = FakeFaceBlurProcessor()
+        fakeRecordingService = FakeVideoRecordingService(context)
         fakeCompressionService = FakeVideoCompressionService()
         fakeUploadService = FakeVideoUploadService()
         sessionManager = SessionManager(context)
         viewModel = VideoUploadViewModel(
             recordingService = fakeRecordingService,
+            faceBlurProcessor = fakeFaceBlurProcessor,
             compressionService = fakeCompressionService,
             uploadService = fakeUploadService,
             sessionManager = sessionManager
@@ -314,14 +318,19 @@ class VideoUploadViewModelTest {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
+     * Fake FaceBlurProcessor — no-op for tests.
+     */
+    class FakeFaceBlurProcessor : FaceBlurProcessor()
+
+    /**
      * Fake VideoRecordingService backed by a temp file.
      * Does NOT use CameraX — just creates an empty file to simulate recording.
      */
-    class FakeVideoRecordingService {
+    class FakeVideoRecordingService(context: android.content.Context) : VideoRecordingService(context) {
         var isRecordingFlag: Boolean = false
         private var currentFile: File? = null
 
-        fun startRecording(outputFile: File, onError: (String) -> Unit) {
+        override fun startRecording(outputFile: File, onError: (String) -> Unit) {
             isRecordingFlag = true
             currentFile = outputFile
             outputFile.parentFile?.mkdirs()
@@ -329,12 +338,12 @@ class VideoUploadViewModelTest {
             outputFile.writeBytes(ByteArray(1024)) // 1KB dummy content
         }
 
-        fun stopRecording(): File {
+        override fun stopRecording(): File {
             isRecordingFlag = false
             return currentFile ?: throw IllegalStateException("No recording in progress")
         }
 
-        fun isRecording(): Boolean = isRecordingFlag
+        override fun isRecording(): Boolean = isRecordingFlag
 
         fun cleanup() {
             currentFile?.delete()
@@ -345,10 +354,10 @@ class VideoUploadViewModelTest {
     /**
      * Fake VideoCompressionService — simulates compression with progress.
      */
-    class FakeVideoCompressionService {
+    class FakeVideoCompressionService : VideoCompressionService() {
         var shouldFail: Boolean = false
 
-        suspend fun compressVideo(
+        override suspend fun compressVideo(
             inputFile: File,
             outputFile: File,
             onProgress: (Float) -> Unit
@@ -370,10 +379,12 @@ class VideoUploadViewModelTest {
     /**
      * Fake VideoUploadService — simulates Firebase Storage upload with progress.
      */
-    class FakeVideoUploadService {
+    class FakeVideoUploadService : VideoUploadService(
+        com.google.firebase.storage.FirebaseStorage.getInstance()
+    ) {
         var shouldFail: Boolean = false
 
-        suspend fun uploadVideo(
+        override suspend fun uploadVideo(
             videoFile: File,
             teacherUsername: String,
             assignmentId: String,

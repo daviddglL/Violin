@@ -264,7 +264,7 @@ class FaceBlurProcessorTest {
     @Test
     fun `processVideo copies file when isMinor is false`() {
         // Given a test input file with some content
-        val context = ApplicationProvider.getApplicationContext()
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val inputFile = File(context.cacheDir, "test_input_${System.nanoTime()}.mp4")
         inputFile.parentFile?.mkdirs()
         inputFile.writeBytes(ByteArray(2048)) // 2KB dummy content
@@ -290,7 +290,7 @@ class FaceBlurProcessorTest {
     @Test
     fun `processVideo returns input when isMinor is false`() {
         // Given
-        val context = ApplicationProvider.getApplicationContext()
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val inputFile = File(context.cacheDir, "test_skip_${System.nanoTime()}.mp4")
         inputFile.parentFile?.mkdirs()
         inputFile.writeBytes(ByteArray(1024))

@@ -43,7 +43,7 @@ import javax.inject.Singleton
  * REQ-BLR-004: kernelSize = max(faceBox.width / 10, 15), always odd.
  */
 @Singleton
-class FaceBlurProcessor @Inject constructor() {
+open class FaceBlurProcessor @Inject constructor() {
 
     companion object {
         private const val SAMPLE_RATE = 5         // Every 5th frame

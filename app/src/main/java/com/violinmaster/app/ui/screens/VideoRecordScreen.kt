@@ -167,7 +167,7 @@ fun VideoRecordScreen(
                         implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                         // Bind CameraX lifecycle when the view is attached
                         post {
-                            viewModel.sessionManager.let {
+                            viewModel.authManager.let {
                                 // CameraX binding happens via recordingService
                                 // which requires explicit bindToLifecycle call
                             }

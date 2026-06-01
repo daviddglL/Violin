@@ -73,12 +73,16 @@ import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
 import com.violinmaster.app.ui.viewmodel.ChatViewModel
 import com.violinmaster.app.data.auth.GoogleAuthRepository
 import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.NavigationManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
   @Inject lateinit var sessionManager: SessionManager
+  @Inject lateinit var authManager: AuthManager
+  @Inject lateinit var navigationManager: NavigationManager
   @Inject lateinit var googleAuthRepository: GoogleAuthRepository
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,7 +90,7 @@ class MainActivity : ComponentActivity() {
     enableEdgeToEdge()
     setContent {
       MyApplicationTheme {
-        MainLayout(sessionManager, googleAuthRepository)
+        MainLayout(sessionManager, authManager, navigationManager, googleAuthRepository)
       }
     }
   }
@@ -94,11 +98,16 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthRepository) {
-  val currentUser by sessionManager.currentUser.collectAsState()
+fun MainLayout(
+  sessionManager: SessionManager,
+  authManager: AuthManager,
+  navigationManager: NavigationManager,
+  googleAuthRepository: GoogleAuthRepository
+) {
+  val currentUser by authManager.currentUser.collectAsState()
   val lang by sessionManager.appLanguage.collectAsState()
-  val currentTab by sessionManager.currentTab.collectAsState()
-  val activeOverlay by sessionManager.currentOverlay.collectAsState()
+  val currentTab by navigationManager.currentTab.collectAsState()
+  val activeOverlay by navigationManager.currentOverlay.collectAsState()
   val authViewModel: AuthViewModel = hiltViewModel()
   val practiceVM: PracticeViewModel = hiltViewModel()
   val tunerVM: TunerViewModel = hiltViewModel()
@@ -146,7 +155,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
             ) {
               if (activeOverlay != null) {
                   IconButton(
-                    onClick = { sessionManager.showOverlay(null) },
+                    onClick = { navigationManager.showOverlay(null) },
                   modifier = Modifier.testTag("overlay_back_button")
                 ) {
                   Icon(
@@ -213,7 +222,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
            ) {
              NavigationBarItem(
                 selected = currentTab == 0,
-                onClick = { sessionManager.selectTab(0) },
+                onClick = { navigationManager.selectTab(0) },
                icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
                label = { Text(Localization.get("tab_home", lang), fontSize = 11.sp) },
                colors = NavigationBarItemColors(),
@@ -221,7 +230,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
              )
              NavigationBarItem(
                 selected = currentTab == 1,
-                onClick = { sessionManager.selectTab(1) },
+                onClick = { navigationManager.selectTab(1) },
                icon = { Text("🎻", fontSize = 20.sp) },
                label = { Text(Localization.get("tab_lessons", lang), fontSize = 11.sp) },
                colors = NavigationBarItemColors(),
@@ -229,7 +238,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
              )
              NavigationBarItem(
                 selected = currentTab == 2,
-                onClick = { sessionManager.selectTab(2) },
+                onClick = { navigationManager.selectTab(2) },
                icon = { Text("📈", fontSize = 20.sp) },
                label = { Text(Localization.get("tab_stats", lang), fontSize = 11.sp) },
                colors = NavigationBarItemColors(),
@@ -237,7 +246,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
              )
              NavigationBarItem(
                 selected = currentTab == 3,
-                onClick = { sessionManager.selectTab(3) },
+                onClick = { navigationManager.selectTab(3) },
                icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
                label = { Text(Localization.get("tab_settings", lang), fontSize = 11.sp) },
                colors = NavigationBarItemColors(),

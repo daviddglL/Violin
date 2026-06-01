@@ -4,92 +4,104 @@ import android.content.Context
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.ui.theme.AppLanguage
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Facade over the decomposed managers: [AuthManager], [UserPreferencesManager],
+ * and [NavigationManager].
+ *
+ * Maintains backward compatibility — all existing call sites continue to
+ * work without changes. New code should inject the specific manager directly.
+ *
+ * @param authManager Authentication state (currentUser, isGoogleSignedIn, session persistence).
+ * @param userPreferencesManager User preferences (appLanguage, daily tasks).
+ * @param navigationManager UI navigation state (currentTab, currentOverlay).
+ */
 @Singleton
 class SessionManager @Inject constructor(
-    @param:ApplicationContext private val context: Context
+  private val authManager: AuthManager,
+  private val userPreferencesManager: UserPreferencesManager,
+  private val navigationManager: NavigationManager
 ) {
-    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    private val _appLanguage = MutableStateFlow(loadSavedLanguage())
-    val appLanguage: StateFlow<AppLanguage> = _appLanguage.asStateFlow()
+  /**
+   * @deprecated Use the primary constructor with [AuthManager], [UserPreferencesManager],
+   *   and [NavigationManager]. This secondary constructor creates the sub-managers
+   *   internally for backward compatibility with direct instantiation (e.g., in tests).
+   */
+  @Suppress("DEPRECATION")
+  @Deprecated(
+    message = "Use AuthManager, UserPreferencesManager, NavigationManager directly",
+    replaceWith = ReplaceWith("SessionManager(AuthManager(context), UserPreferencesManager(context), NavigationManager())")
+  )
+  constructor(@ApplicationContext context: Context) : this(
+    AuthManager(context),
+    UserPreferencesManager(context),
+    NavigationManager()
+  )
 
-    private val _currentUser = MutableStateFlow<UserAccount?>(null)
-    val currentUser: StateFlow<UserAccount?> = _currentUser.asStateFlow()
+  // ── Delegated: UserPreferencesManager ────────────────────────────────
 
-    private val _currentTab = MutableStateFlow(0)
-    val currentTab: StateFlow<Int> = _currentTab.asStateFlow()
+  val appLanguage: StateFlow<AppLanguage>
+    get() = userPreferencesManager.appLanguage
 
-    private val _currentOverlay = MutableStateFlow<String?>(null)
-    val currentOverlay: StateFlow<String?> = _currentOverlay.asStateFlow()
+  fun setAppLanguage(lang: AppLanguage) {
+    userPreferencesManager.setAppLanguage(lang)
+  }
 
-    private val _isGoogleSignedIn = MutableStateFlow(false)
-    val isGoogleSignedIn: StateFlow<Boolean> = _isGoogleSignedIn.asStateFlow()
+  fun getDailyTasksCompleted(today: String): Set<String> {
+    return userPreferencesManager.getDailyTasksCompleted(today)
+  }
 
-    /** Whether the currently logged-in user is a minor (under 18). */
-    val isCurrentUserMinor: Boolean
-        get() = _currentUser.value?.isMinor ?: false
+  fun saveDailyTaskCompleted(today: String, tasks: Set<String>) {
+    userPreferencesManager.saveDailyTaskCompleted(today, tasks)
+  }
 
-    private fun loadSavedLanguage(): AppLanguage {
-        val savedLangStr = prefs.getString(KEY_APP_LANG, AppLanguage.ENGLISH.name)
-        return try {
-            AppLanguage.valueOf(savedLangStr ?: "ENGLISH")
-        } catch (e: Exception) {
-            AppLanguage.ENGLISH
-        }
-    }
+  // ── Delegated: AuthManager ───────────────────────────────────────────
 
-    fun setAppLanguage(lang: AppLanguage) {
-        _appLanguage.value = lang
-        prefs.edit().putString(KEY_APP_LANG, lang.name).apply()
-    }
+  val currentUser: StateFlow<UserAccount?>
+    get() = authManager.currentUser
 
-    fun saveCurrentUser(user: UserAccount) {
-        _currentUser.value = user
-        prefs.edit().putString(KEY_CURRENT_USER_ID, user.username).apply()
-    }
+  val isGoogleSignedIn: StateFlow<Boolean>
+    get() = authManager.isGoogleSignedIn
 
-    fun restoreCurrentUser(user: UserAccount) {
-        _currentUser.value = user
-    }
+  /** Whether the currently logged-in user is a minor (under 18). */
+  val isCurrentUserMinor: Boolean
+    get() = authManager.isCurrentUserMinor
 
-    fun getSavedUserId(): String? = prefs.getString(KEY_CURRENT_USER_ID, null)
+  fun saveCurrentUser(user: UserAccount) {
+    authManager.saveCurrentUser(user)
+  }
 
-    fun setGoogleSignedIn(signedIn: Boolean) {
-        _isGoogleSignedIn.value = signedIn
-        prefs.edit().putBoolean(KEY_GOOGLE_SIGNED_IN, signedIn).apply()
-    }
+  fun restoreCurrentUser(user: UserAccount) {
+    authManager.restoreCurrentUser(user)
+  }
 
-    fun clearSession() {
-        _currentUser.value = null
-        prefs.edit().remove(KEY_CURRENT_USER_ID).apply()
-    }
+  fun getSavedUserId(): String? = authManager.getSavedUserId()
 
-    fun selectTab(index: Int) {
-        _currentTab.value = index
-    }
+  fun setGoogleSignedIn(signedIn: Boolean) {
+    authManager.setGoogleSignedIn(signedIn)
+  }
 
-    fun showOverlay(overlay: String?) {
-        _currentOverlay.value = overlay
-    }
+  fun clearSession() {
+    authManager.clearSession()
+  }
 
-    fun getDailyTasksCompleted(today: String): Set<String> {
-        return prefs.getStringSet("daily_completed_$today", emptySet()) ?: emptySet()
-    }
+  // ── Delegated: NavigationManager ─────────────────────────────────────
 
-    fun saveDailyTaskCompleted(today: String, tasks: Set<String>) {
-        prefs.edit().putStringSet("daily_completed_$today", tasks).apply()
-    }
+  val currentTab: StateFlow<Int>
+    get() = navigationManager.currentTab
 
-    companion object {
-        private const val PREFS_NAME = "app_settings"
-        private const val KEY_APP_LANG = "app_lang"
-        private const val KEY_CURRENT_USER_ID = "current_user_id"
-        private const val KEY_GOOGLE_SIGNED_IN = "google_signed_in"
-    }
+  val currentOverlay: StateFlow<String?>
+    get() = navigationManager.currentOverlay
+
+  fun selectTab(index: Int) {
+    navigationManager.selectTab(index)
+  }
+
+  fun showOverlay(overlay: String?) {
+    navigationManager.showOverlay(overlay)
+  }
 }

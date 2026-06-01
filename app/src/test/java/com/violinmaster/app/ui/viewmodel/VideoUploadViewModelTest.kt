@@ -2,7 +2,7 @@ package com.violinmaster.app.ui.viewmodel
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.service.VideoCompressionService
 import com.violinmaster.app.service.VideoRecordingService
 import com.violinmaster.app.service.FaceBlurProcessor
@@ -44,7 +44,7 @@ class VideoUploadViewModelTest {
     private lateinit var fakeRecordingService: FakeVideoRecordingService
     private lateinit var fakeCompressionService: FakeVideoCompressionService
     private lateinit var fakeUploadService: FakeVideoUploadService
-    private lateinit var sessionManager: SessionManager
+    private lateinit var authManager: AuthManager
     private lateinit var viewModel: VideoUploadViewModel
 
     @Before
@@ -54,13 +54,13 @@ class VideoUploadViewModelTest {
         fakeRecordingService = FakeVideoRecordingService(context)
         fakeCompressionService = FakeVideoCompressionService()
         fakeUploadService = FakeVideoUploadService()
-        sessionManager = SessionManager(context)
+        authManager = AuthManager(context)
         viewModel = VideoUploadViewModel(
             recordingService = fakeRecordingService,
             faceBlurProcessor = fakeFaceBlurProcessor,
             compressionService = fakeCompressionService,
             uploadService = fakeUploadService,
-            sessionManager = sessionManager
+            authManager = authManager
         )
     }
 

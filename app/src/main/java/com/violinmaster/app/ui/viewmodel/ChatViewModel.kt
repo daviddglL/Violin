@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.data.IChatRepository
 import com.violinmaster.app.data.firebase.Message
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,15 +17,15 @@ import javax.inject.Inject
  * ViewModel for teacher-student chat.
  *
  * REQ-CHAT-005: Exposes messages StateFlow, sendMessage(), and loading/error states.
- * Reads currentUser from SessionManager to populate sender identity on message send.
+ * Reads currentUser from AuthManager to populate sender identity on message send.
  *
  * @param chatRepository Repository for Firestore + Room message persistence.
- * @param sessionManager Provides current user identity and app state.
+ * @param authManager Provides current user identity.
  */
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: IChatRepository,
-    internal val sessionManager: SessionManager
+    internal val authManager: AuthManager
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
@@ -88,7 +88,7 @@ class ChatViewModel @Inject constructor(
             return
         }
 
-        val currentUser = sessionManager.currentUser.value
+        val currentUser = authManager.currentUser.value
         if (currentUser == null) {
             _error.value = "Failed to send: no user logged in"
             return
@@ -127,7 +127,7 @@ class ChatViewModel @Inject constructor(
             return
         }
 
-        val currentUser = sessionManager.currentUser.value
+        val currentUser = authManager.currentUser.value
         if (currentUser == null) {
             _error.value = "Failed to send video: no user logged in"
             return

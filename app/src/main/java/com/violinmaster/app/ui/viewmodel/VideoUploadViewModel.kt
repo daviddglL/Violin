@@ -3,7 +3,7 @@ package com.violinmaster.app.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.data.firebase.Message
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.service.FaceBlurProcessor
 import com.violinmaster.app.service.VideoCompressionService
 import com.violinmaster.app.service.VideoRecordingService
@@ -32,7 +32,7 @@ import javax.inject.Inject
  * @param faceBlurProcessor ML Kit-based face blur for minor students.
  * @param compressionService MediaCodec-based H.264 compression.
  * @param uploadService Firebase Storage upload + download URL retrieval.
- * @param sessionManager Provides current user identity.
+ * @param authManager Provides current user identity and minor status.
  */
 @HiltViewModel
 class VideoUploadViewModel @Inject constructor(
@@ -40,7 +40,7 @@ class VideoUploadViewModel @Inject constructor(
     private val faceBlurProcessor: FaceBlurProcessor,
     private val compressionService: VideoCompressionService,
     private val uploadService: VideoUploadService,
-    internal val sessionManager: SessionManager
+    internal val authManager: AuthManager
 ) : ViewModel() {
 
     /**
@@ -142,7 +142,7 @@ class VideoUploadViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 // ── Determine if blur is needed ────────────────────────
-                val isMinor = sessionManager.isCurrentUserMinor
+                val isMinor = authManager.isCurrentUserMinor
 
                 // File that will be used for compression (blurred or original)
                 var fileToCompress: File = rawFile
@@ -207,7 +207,7 @@ class VideoUploadViewModel @Inject constructor(
                 _uploadState.value = UploadState.Uploading(progress = 0f)
                 _transitionHistory.add(_uploadState.value)
 
-                val currentUser = sessionManager.currentUser.value
+                val currentUser = authManager.currentUser.value
                 val teacherUsername = currentUser?.username ?: "unknown"
                 val assignmentId = "default" // Will be overridden when wired to chat
 

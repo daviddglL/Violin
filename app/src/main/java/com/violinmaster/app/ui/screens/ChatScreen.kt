@@ -74,7 +74,7 @@ fun ChatScreen(
     val messages by chatViewModel.messages.collectAsState()
     val isLoading by chatViewModel.isLoading.collectAsState()
     val error by chatViewModel.error.collectAsState()
-    val currentUser by chatViewModel.sessionManager.currentUser.collectAsState()
+    val currentUser by chatViewModel.authManager.currentUser.collectAsState()
 
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()

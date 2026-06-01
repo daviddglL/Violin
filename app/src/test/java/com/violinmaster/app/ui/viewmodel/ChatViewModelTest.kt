@@ -11,7 +11,7 @@ import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.data.firebase.Message
 import com.violinmaster.app.data.local.toCachedMessage
 import com.violinmaster.app.data.local.toMessage
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -48,7 +48,7 @@ class ChatViewModelTest {
     private lateinit var database: PracticeDatabase
     private lateinit var dao: PracticeDao
     private lateinit var fakeRepo: FakeChatRepository
-    private lateinit var sessionManager: SessionManager
+    private lateinit var authManager: AuthManager
     private lateinit var viewModel: ChatViewModel
 
     @Before
@@ -57,8 +57,8 @@ class ChatViewModelTest {
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
         dao = database.practiceDao()
         fakeRepo = FakeChatRepository(dao)
-        sessionManager = SessionManager(context)
-        viewModel = ChatViewModel(fakeRepo, sessionManager)
+        authManager = AuthManager(context)
+        viewModel = ChatViewModel(fakeRepo, authManager)
     }
 
     @After
@@ -76,7 +76,7 @@ class ChatViewModelTest {
             salt = "salt",
             teacherCode = if (role == "TEACHER") "TCH-001" else ""
         )
-        sessionManager.restoreCurrentUser(user)
+        authManager.restoreCurrentUser(user)
     }
 
     // ── T-006 Test: sendMessage adds message to the list ─────────────────

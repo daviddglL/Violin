@@ -40,7 +40,7 @@ class HomeScreenTest {
         context = ApplicationProvider.getApplicationContext()
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
         dao = database.practiceDao()
-        repository = PracticeRepository(dao)
+        repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
         sessionManager = SessionManager(context)
         audioEngine = ViolinAudioEngine()
         viewModel = PracticeViewModel(repository, sessionManager, audioEngine)

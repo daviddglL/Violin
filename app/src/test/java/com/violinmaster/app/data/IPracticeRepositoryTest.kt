@@ -34,7 +34,7 @@ class IPracticeRepositoryTest {
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
-        repository = PracticeRepository(database.practiceDao())
+        repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
     }
 
     @After

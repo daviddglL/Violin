@@ -24,12 +24,12 @@ import javax.inject.Singleton
  * REQ-CHAT-001–004, REQ-CHAT-008.
  *
  * @param firestore Firebase Firestore instance for real-time messaging.
- * @param dao Room DAO for offline message caching.
+ * @param chatDao Room DAO for offline message caching.
  */
 @Singleton
 class ChatRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
-    private val dao: PracticeDao
+    private val chatDao: ChatDao
 ) : IChatRepository {
 
     /**
@@ -51,7 +51,7 @@ class ChatRepository @Inject constructor(
         docRef.set(msgWithId).await()
 
         // Cache locally after successful Firestore write
-        dao.insertCachedMessages(listOf(msgWithId.toCachedMessage(assignmentId)))
+        chatDao.insertCachedMessages(listOf(msgWithId.toCachedMessage(assignmentId)))
 
         return msgWithId
     }
@@ -94,14 +94,14 @@ class ChatRepository @Inject constructor(
                         if (cachedMessages.isNotEmpty()) {
                             // Fire-and-forget: cache update triggers Room Flow emissions
                             CoroutineScope(Dispatchers.IO).launch {
-                                    dao.insertCachedMessages(cachedMessages)
+                                    chatDao.insertCachedMessages(cachedMessages)
                                 }
                         }
                     }
                 }
 
             // Room cache Flow → mapped to Message objects
-            val roomFlow = dao.getCachedMessagesByAssignment(assignmentId)
+            val roomFlow = chatDao.getCachedMessagesByAssignment(assignmentId)
                 .map { cachedList -> cachedList.map { it.toMessage() } }
 
             // Re-emit Room Flow into this callbackFlow
@@ -139,6 +139,6 @@ class ChatRepository @Inject constructor(
         batch.commit().await()
 
         // Clear Room cache
-        dao.clearCachedMessagesForAssignment(assignmentId)
+        chatDao.clearCachedMessagesForAssignment(assignmentId)
     }
 }

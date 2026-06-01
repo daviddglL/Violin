@@ -19,8 +19,17 @@ interface SessionDao {
     @Query("SELECT * FROM practice_sessions WHERE dateString BETWEEN :startDate AND :endDate ORDER BY timestamp DESC")
     fun getSessionsForDateRange(startDate: String, endDate: String): Flow<List<PracticeSession>>
 
+    @Query("SELECT * FROM practice_sessions WHERE dateString = :dateString")
+    fun getSessionsByDate(dateString: String): Flow<List<PracticeSession>>
+
     @Delete
     suspend fun deleteSession(session: PracticeSession)
+
+    @Query("DELETE FROM practice_sessions WHERE id = :id")
+    suspend fun deleteSessionById(id: Int)
+
+    @Query("DELETE FROM practice_sessions")
+    suspend fun clearAllSessions()
 
     @Query("SELECT COALESCE(SUM(durationSeconds), 0) FROM practice_sessions WHERE dateString BETWEEN :startDate AND :endDate")
     fun getTotalPracticeTimeForDateRange(startDate: String, endDate: String): Flow<Int>

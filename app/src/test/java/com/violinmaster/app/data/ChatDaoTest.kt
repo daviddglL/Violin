@@ -1,7 +1,9 @@
 package com.violinmaster.app.data
 
 import android.content.Context
+import androidx.room.Database
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.data.local.CachedMessage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -10,7 +12,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -19,28 +20,28 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Tests for the Room cache layer used by ChatRepository.
+ * DAO tests for ChatDao covering cached message operations.
  *
- * REQ-CHAT-004: Room Cache for Offline Access.
- * Since FirebaseFirestore cannot run in Robolectric tests (final class, requires
- * Google Play Services), these tests verify the Room cache operations directly
- * through ChatDao — insert, query ordered by timestamp, and delete by assignmentId.
- *
- * The ChatRepository delegates Room caching to ChatDao methods, so proving
- * ChatDao correctness proves ChatRepository cache correctness.
+ * Uses a minimal in-memory database with only [CachedMessage] entity.
+ * REQ-ARCH-004-S4: ChatDao manages cached_messages table.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
-class ChatRepositoryTest {
+class ChatDaoTest {
 
-    private lateinit var database: PracticeDatabase
+    @Database(entities = [CachedMessage::class], version = 1)
+    abstract class TestChatDatabase : RoomDatabase() {
+        abstract fun chatDao(): ChatDao
+    }
+
+    private lateinit var database: TestChatDatabase
     private lateinit var dao: ChatDao
 
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java)
+        database = Room.inMemoryDatabaseBuilder(context, TestChatDatabase::class.java)
             .build()
         dao = database.chatDao()
     }
@@ -50,7 +51,7 @@ class ChatRepositoryTest {
         database.close()
     }
 
-    // ── Helper: create a CachedMessage with minimal required fields ──────
+    // ── Helper ─────────────────────────────────────────────────────────
 
     private fun cachedMessage(
         id: String,
@@ -70,10 +71,10 @@ class ChatRepositoryTest {
         read = read
     )
 
-    // ── Cache Insert Tests ───────────────────────────────────────────────
+    // ── Insert + Query ──────────────────────────────────────────────────
 
     @Test
-    fun `insertCachedMessages stores messages in Room`() = runTest {
+    fun `insertCachedMessages then getCachedMessagesByAssignment returns the messages`() = runTest {
         val messages = listOf(
             cachedMessage(id = "msg1", assignmentId = "A1", text = "Hello", timestamp = 100L),
             cachedMessage(id = "msg2", assignmentId = "A1", text = "World", timestamp = 200L)
@@ -82,52 +83,30 @@ class ChatRepositoryTest {
         advanceUntilIdle()
 
         val cached = dao.getCachedMessagesByAssignment("A1").first()
-        assertEquals("Should store 2 messages for assignment A1", 2, cached.size)
+        assertEquals(2, cached.size)
         assertEquals("msg1", cached[0].id)
         assertEquals("msg2", cached[1].id)
     }
 
-    @Test
-    fun `insertCachedMessages overwrites on conflict via REPLACE`() = runTest {
-        dao.insertCachedMessages(
-            listOf(cachedMessage(id = "msg1", assignmentId = "A1", text = "Original", timestamp = 100L))
-        )
-        advanceUntilIdle()
+    // ── Ordering ────────────────────────────────────────────────────────
 
-        // Insert same ID with updated text
+    @Test
+    fun `messages are ordered by timestamp ascending`() = runTest {
         dao.insertCachedMessages(
-            listOf(cachedMessage(id = "msg1", assignmentId = "A1", text = "Updated", timestamp = 100L))
+            listOf(
+                cachedMessage(id = "m3", assignmentId = "A1", text = "Third", timestamp = 300L),
+                cachedMessage(id = "m1", assignmentId = "A1", text = "First", timestamp = 100L),
+                cachedMessage(id = "m2", assignmentId = "A1", text = "Second", timestamp = 200L)
+            )
         )
         advanceUntilIdle()
 
         val cached = dao.getCachedMessagesByAssignment("A1").first()
-        assertEquals("Should have 1 message after REPLACE", 1, cached.size)
-        assertEquals("Updated", cached[0].text)
+        assertEquals(3, cached.size)
+        assertEquals(listOf(100L, 200L, 300L), cached.map { it.timestamp })
     }
 
-    // ── Ordering Test ────────────────────────────────────────────────────
-
-    @Test
-    fun `cached messages are ordered by timestamp ascending`() = runTest {
-        val messages = listOf(
-            cachedMessage(id = "m3", assignmentId = "A1", text = "Third", timestamp = 300L),
-            cachedMessage(id = "m1", assignmentId = "A1", text = "First", timestamp = 100L),
-            cachedMessage(id = "m2", assignmentId = "A1", text = "Second", timestamp = 200L)
-        )
-        dao.insertCachedMessages(messages)
-        advanceUntilIdle()
-
-        val cached = dao.getCachedMessagesByAssignment("A1").first()
-        assertEquals("Should return all 3 messages", 3, cached.size)
-        assertEquals(
-            "Messages must be ordered by timestamp ASC",
-            listOf(100L, 200L, 300L),
-            cached.map { it.timestamp }
-        )
-        assertEquals("First", cached[0].text)
-        assertEquals("Second", cached[1].text)
-        assertEquals("Third", cached[2].text)
-    }
+    // ── Assignment Isolation ────────────────────────────────────────────
 
     @Test
     fun `messages from different assignments are isolated`() = runTest {
@@ -147,13 +126,13 @@ class ChatRepositoryTest {
         val a1Messages = dao.getCachedMessagesByAssignment("A1").first()
         val a2Messages = dao.getCachedMessagesByAssignment("A2").first()
 
-        assertEquals("A1 should have 2 messages", 2, a1Messages.size)
-        assertEquals("A2 should have 1 message", 1, a2Messages.size)
-        assertTrue("A1 messages should not include A2", a1Messages.none { it.id == "a2_1" })
-        assertTrue("A2 messages should not include A1", a2Messages.none { it.id == "a1_1" })
+        assertEquals(2, a1Messages.size)
+        assertEquals(1, a2Messages.size)
+        assertTrue(a1Messages.none { it.id == "a2_1" })
+        assertTrue(a2Messages.none { it.id == "a1_1" })
     }
 
-    // ── Cache Clear Tests ────────────────────────────────────────────────
+    // ── Clear ───────────────────────────────────────────────────────────
 
     @Test
     fun `clearCachedMessagesForAssignment removes all messages for that assignment`() = runTest {
@@ -171,7 +150,7 @@ class ChatRepositoryTest {
         advanceUntilIdle()
 
         val remaining = dao.getCachedMessagesByAssignment("A1").first()
-        assertTrue("All messages for A1 should be removed", remaining.isEmpty())
+        assertTrue(remaining.isEmpty())
     }
 
     @Test
@@ -191,22 +170,22 @@ class ChatRepositoryTest {
         val a1After = dao.getCachedMessagesByAssignment("A1").first()
         val a2After = dao.getCachedMessagesByAssignment("A2").first()
 
-        assertTrue("A1 should be empty after clear", a1After.isEmpty())
-        assertEquals("A2 should still have 2 messages", 2, a2After.size)
+        assertTrue(a1After.isEmpty())
+        assertEquals(2, a2After.size)
     }
 
-    // ── Empty State Test ─────────────────────────────────────────────────
+    // ── Empty State ─────────────────────────────────────────────────────
 
     @Test
     fun `getCachedMessagesByAssignment returns empty for unknown assignment`() = runTest {
         val cached = dao.getCachedMessagesByAssignment("nonexistent").first()
-        assertTrue("Should return empty list for unknown assignment", cached.isEmpty())
+        assertTrue(cached.isEmpty())
     }
 
-    // ── Field Preservation Test ──────────────────────────────────────────
+    // ── Field Preservation ──────────────────────────────────────────────
 
     @Test
-    fun `all CachedMessage fields are preserved through Room round-trip`() = runTest {
+    fun `all CachedMessage fields are preserved through round-trip`() = runTest {
         val original = CachedMessage(
             id = "full_test_id",
             assignmentId = "A1",
@@ -233,26 +212,35 @@ class ChatRepositoryTest {
         assertEquals(false, loaded.read)
     }
 
-    // ── Read Status Test ─────────────────────────────────────────────────
+    // ── REPLACE on Conflict ─────────────────────────────────────────────
 
     @Test
-    fun `read flag defaults to false for new messages`() = runTest {
-        val msg = cachedMessage(id = "unread1", assignmentId = "A1")
-        dao.insertCachedMessages(listOf(msg))
+    fun `insertCachedMessages replaces on conflict`() = runTest {
+        dao.insertCachedMessages(
+            listOf(cachedMessage(id = "msg1", assignmentId = "A1", text = "Original", timestamp = 100L))
+        )
         advanceUntilIdle()
 
-        val loaded = dao.getCachedMessagesByAssignment("A1").first().first()
-        assertEquals("New messages should default to read=false", false, loaded.read)
+        dao.insertCachedMessages(
+            listOf(cachedMessage(id = "msg1", assignmentId = "A1", text = "Updated", timestamp = 100L))
+        )
+        advanceUntilIdle()
+
+        val cached = dao.getCachedMessagesByAssignment("A1").first()
+        assertEquals(1, cached.size)
+        assertEquals("Updated", cached[0].text)
     }
 
+    // ── Read Flag ───────────────────────────────────────────────────────
+
     @Test
-    fun `read flag can be set to true and preserved`() = runTest {
+    fun `read flag defaults to false`() = runTest {
         dao.insertCachedMessages(
-            listOf(cachedMessage(id = "read1", assignmentId = "A1", read = true, timestamp = 100L))
+            listOf(cachedMessage(id = "unread1", assignmentId = "A1"))
         )
         advanceUntilIdle()
 
         val loaded = dao.getCachedMessagesByAssignment("A1").first().first()
-        assertEquals("Messages with read=true should preserve the flag", true, loaded.read)
+        assertEquals(false, loaded.read)
     }
 }

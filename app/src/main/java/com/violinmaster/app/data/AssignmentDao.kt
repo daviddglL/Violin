@@ -29,6 +29,12 @@ interface AssignmentDao {
     @Query("UPDATE student_assignments SET completed = :completed WHERE id = :id")
     suspend fun markAssignmentCompleted(id: Int, completed: Boolean)
 
+    @Query("UPDATE student_assignments SET completed = :completed WHERE id = :id")
+    suspend fun updateAssignmentCompletion(id: Int, completed: Boolean)
+
     @Delete
     suspend fun deleteAssignment(assignment: Assignment)
+
+    @Query("DELETE FROM student_assignments WHERE id = :id")
+    suspend fun deleteAssignmentById(id: Int)
 }

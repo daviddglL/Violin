@@ -2,70 +2,75 @@ package com.violinmaster.app.data
 
 import kotlinx.coroutines.flow.Flow
 
-class PracticeRepository(private val practiceDao: PracticeDao) : IPracticeRepository {
+class PracticeRepository(
+    private val sessionDao: SessionDao,
+    private val lessonDao: LessonDao,
+    private val userDao: UserDao,
+    private val assignmentDao: AssignmentDao
+) : IPracticeRepository {
 
-    override val allSessions: Flow<List<PracticeSession>> = practiceDao.getAllSessions()
-    override val allLevelProgress: Flow<List<LessonProgress>> = practiceDao.getAllLessonProgress()
+    override val allSessions: Flow<List<PracticeSession>> = sessionDao.getAllSessions()
+    override val allLevelProgress: Flow<List<LessonProgress>> = lessonDao.getAllLessons()
 
     override fun getSessionsByDate(dateString: String): Flow<List<PracticeSession>> {
-        return practiceDao.getSessionsByDate(dateString)
+        return sessionDao.getSessionsByDate(dateString)
     }
 
     override suspend fun insertSession(session: PracticeSession) {
-        practiceDao.insertSession(session)
+        sessionDao.insertSession(session)
     }
 
     override suspend fun deleteSession(id: Int) {
-        practiceDao.deleteSessionById(id)
+        sessionDao.deleteSessionById(id)
     }
 
     override suspend fun clearSessions() {
-        practiceDao.clearAllSessions()
+        sessionDao.clearAllSessions()
     }
 
     override suspend fun insertLessonProgress(progress: LessonProgress) {
-        practiceDao.insertLessonProgress(progress)
+        lessonDao.insertLessonProgress(progress)
     }
 
     override suspend fun updateLessonCompletion(lessonId: String, completed: Boolean) {
-        practiceDao.updateLessonCompletion(lessonId, completed)
+        lessonDao.updateLessonCompletion(lessonId, completed)
     }
 
     override suspend fun getLessonProgressById(lessonId: String): LessonProgress? {
-        return practiceDao.getLessonProgressById(lessonId)
+        return lessonDao.getLessonProgressById(lessonId)
     }
 
     // --- User Management ---
-    override val allUsers: Flow<List<UserAccount>> = practiceDao.getAllUsers()
+    override val allUsers: Flow<List<UserAccount>> = userDao.getAllUsers()
 
     override suspend fun insertUser(user: UserAccount) {
-        practiceDao.insertUser(user)
+        userDao.insertUser(user)
     }
 
     override suspend fun getUserByUsername(username: String): UserAccount? {
-        return practiceDao.getUserByUsername(username)
+        return userDao.getUserByUsername(username)
     }
 
     // --- Assignments Management ---
-    override val allAssignments: Flow<List<Assignment>> = practiceDao.getAllAssignments()
+    override val allAssignments: Flow<List<Assignment>> = assignmentDao.getAllAssignments()
 
     override fun getAssignmentsForStudent(studentUsername: String): Flow<List<Assignment>> {
-        return practiceDao.getAssignmentsForStudent(studentUsername)
+        return assignmentDao.getAssignmentsForStudent(studentUsername)
     }
 
     override fun getAssignmentsByTeacher(teacherUsername: String): Flow<List<Assignment>> {
-        return practiceDao.getAssignmentsByTeacher(teacherUsername)
+        return assignmentDao.getAssignmentsByTeacher(teacherUsername)
     }
 
     override suspend fun insertAssignment(assignment: Assignment) {
-        practiceDao.insertAssignment(assignment)
+        assignmentDao.insertAssignment(assignment)
     }
 
     override suspend fun updateAssignmentCompletion(id: Int, completed: Boolean) {
-        practiceDao.updateAssignmentCompletion(id, completed)
+        assignmentDao.updateAssignmentCompletion(id, completed)
     }
 
     override suspend fun deleteAssignmentById(id: Int) {
-        practiceDao.deleteAssignmentById(id)
+        assignmentDao.deleteAssignmentById(id)
     }
 }

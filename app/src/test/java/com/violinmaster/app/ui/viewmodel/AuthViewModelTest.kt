@@ -42,7 +42,7 @@ class AuthViewModelTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
         dao = database.practiceDao()
-        repository = PracticeRepository(dao)
+        repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
         sessionManager = SessionManager(context)
         securityUtils = SecurityUtils(context)
         viewModel = AuthViewModel(repository, sessionManager, securityUtils)

@@ -3,7 +3,7 @@ package com.violinmaster.app.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.data.Assignment
-import com.violinmaster.app.data.PracticeRepository
+import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.SessionManager
 import com.violinmaster.app.security.VideoSecurityService
@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AssignmentViewModel @Inject constructor(
-    private val repository: PracticeRepository,
+    private val repository: IPracticeRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 

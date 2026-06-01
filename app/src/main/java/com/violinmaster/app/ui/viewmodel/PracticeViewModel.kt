@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.audio.ViolinAudioEngine
 import com.violinmaster.app.data.LessonProgress
-import com.violinmaster.app.data.PracticeRepository
+import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeSession
 import com.violinmaster.app.di.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +27,7 @@ import kotlin.random.Random
 
 @HiltViewModel
 class PracticeViewModel @Inject constructor(
-    private val repository: PracticeRepository,
+    private val repository: IPracticeRepository,
     private val sessionManager: SessionManager,
     private val audioEngine: ViolinAudioEngine
 ) : ViewModel() {

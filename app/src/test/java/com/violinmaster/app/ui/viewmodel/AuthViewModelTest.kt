@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.data.PracticeDao
 import com.violinmaster.app.data.PracticeDatabase
+import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.SessionManager
@@ -31,7 +32,7 @@ class AuthViewModelTest {
 
     private lateinit var database: PracticeDatabase
     private lateinit var dao: PracticeDao
-    private lateinit var repository: PracticeRepository
+    private lateinit var repository: IPracticeRepository
     private lateinit var sessionManager: SessionManager
     private lateinit var securityUtils: SecurityUtils
     private lateinit var viewModel: AuthViewModel

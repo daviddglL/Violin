@@ -48,40 +48,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Locale
+import com.violinmaster.app.ui.component.DailyTasksSection
+import com.violinmaster.app.ui.component.PracticeTimerControls
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.di.SessionManager
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import com.violinmaster.app.ui.theme.Localization
-
-data class DailyTaskItem(
-    val id: String,
-    val titleEn: String,
-    val titleEs: String,
-    val descEn: String,
-    val descEs: String,
-    val category: String
-)
-
-val beginnerDailyTasks = listOf(
-    DailyTaskItem("beg_dt1", "Open Resonance Bowing", "Alineación y Arcos de Cuerda al Aire", "Practice full whole bows on open strings D and A.", "Practica arcos enteros en cuerdas libres Re y La.", "Open Strings Tuning & Bowing"),
-    DailyTaskItem("beg_dt2", "Bow Hold Pinky Taps", "Toques de Meñique en el Arco", "Perform 15 clean pinky taps to build finger flexibility.", "Realiza 15 toques de meñique para ganar flexibilidad.", "Posture Check & Bow Grip"),
-    DailyTaskItem("beg_dt3", "Precision Ear Tuner", "Afinación Auditiva de Precisión", "Match 3 strings to the smart tuner perfect pitches.", "Sincroniza 3 cuerdas al aire con el afinador inteligente.", "Smart Tuner Tuning")
-)
-
-val intermediateDailyTasks = listOf(
-    DailyTaskItem("int_dt1", "Smooth Shifting Slide", "Deslizamiento Fa# en 3ª Posición", "Glide finger 2 up to third position and verify pitch.", "Desliza el dedo 2 a la tercera posición y analiza el tono.", "Shifting to Third Position (III)"),
-    DailyTaskItem("int_dt2", "Warm Pulsed Vibrato", "Vibrato de Calor Pulsado", "Oscillate fingers on the G string for 1 minute.", "Oscila los dedos en cuerda Sol con vibrato por 1 minuto.", "Relaxing Left Hand & Vibrato"),
-    DailyTaskItem("int_dt3", "Double Stop Stability", "Estabilidad en Doble Cuerda", "Play fourths & fifths balancing bow hair weight.", "Toca cuartas y quintas equilibrando el peso del arco.", "Double Stop Balance & Harmony")
-)
-
-val advancedDailyTasks = listOf(
-    DailyTaskItem("adv_dt1", "Gravity Spiccato Nodes", "Rebotes de Madera Spiccato", "Bounce the bow rapid sixteenths at 110 BPM.", "Rebota el arco en velocidad de semicorcheas a 110 BPM.", "Bowing Styles: Martelé, Spiccato"),
-    DailyTaskItem("adv_dt2", "Violin Neck Extreme Shift", "Cambio Extremo de Diapasón", "Perform shifts to 5th position on the A string.", "Realiza cambios a la quinta posición en la cuerda La.", "High Position Shifts (5th & 7th)"),
-    DailyTaskItem("adv_dt3", "Paganini Velocity Run", "Arpegio del Diablo Paganini", "Coordinate rapid string crossings cleanly.", "Coordina arpegios rápidos en cruzado de cuerdas limpio.", "Paganini Practice Theme (A minor)")
-)
 
 @Composable
 fun HomeScreen(
@@ -99,9 +70,6 @@ fun HomeScreen(
     val userAccount by sessionManager.currentUser.collectAsState()
     val appLanguage by sessionManager.appLanguage.collectAsState()
     val dailyTasksCompleted by practiceVM.dailyTasksCompleted.collectAsState()
-
-    var activeTaskForCompletion by remember { mutableStateOf<DailyTaskItem?>(null) }
-    var selectedAttemptsCount by remember { mutableStateOf(1) }
 
     val todayFinishedMinutes = todayFinishedSeconds / 60
     val progressPercent = if (dailyGoalMinutes > 0) {
@@ -322,95 +290,13 @@ fun HomeScreen(
         }
 
         // --- Ticking Practice Overlay Section (Shows when timer is running) ---
-        AnimatedVisibility(visible = isPracticing) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("active_timer_card"),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = Localization.get("active_practice_label", appLanguage),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = practiceCategory,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val mins = practiceElapsed / 60
-                    val secs = practiceElapsed % 60
-                    val timerDisplay = String.format(Locale.getDefault(), "%02d:%02d", mins, secs)
-
-                    Text(
-                        text = timerDisplay,
-                        style = MaterialTheme.typography.displayLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 48.sp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { practiceVM.stopAndSavePracticeSession() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                contentColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .testTag("save_practice_button")
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = Localization.get("save_practice_cd", appLanguage))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(Localization.get("save_and_log_button", appLanguage), fontWeight = FontWeight.Bold)
-                        }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Button(
-                            onClick = { practiceVM.cancelPracticeTimer() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFC53030),
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .height(48.dp)
-                                .testTag("cancel_practice_button")
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = Localization.get("cancel_practice_cd", appLanguage))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(Localization.get("discard_button", appLanguage))
-                        }
-                    }
-                }
-            }
-        }
+        PracticeTimerControls(
+            practiceVM = practiceVM,
+            practiceCategory = practiceCategory,
+            practiceElapsed = practiceElapsed,
+            appLanguage = appLanguage,
+            visible = isPracticing
+        )
 
         // --- Quick Tools Grid ---
         Text(
@@ -610,211 +496,14 @@ fun HomeScreen(
         }
 
         // --- Daily Tasks Section based on active Skill Level ---
-        val userLevel = userAccount?.skillLevel ?: "Beginner"
-        val dailyTasksList = when (userLevel) {
-            "Intermediate" -> intermediateDailyTasks
-            "Advanced" -> advancedDailyTasks
-            else -> beginnerDailyTasks
-        }
-
-        Text(
-            text = Localization.get("daily_tasks_title", appLanguage),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.secondary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 4.dp, top = 4.dp),
-            letterSpacing = 1.5.sp
+        DailyTasksSection(
+            practiceVM = practiceVM,
+            sessionManager = sessionManager,
+            appLanguage = appLanguage,
+            skillLevel = userAccount?.skillLevel ?: "Beginner",
+            dailyTasksCompleted = dailyTasksCompleted
         )
-
-        dailyTasksList.forEach { task ->
-            val isCompleted = dailyTasksCompleted.contains(task.id)
-            val titleText = if (appLanguage == com.violinmaster.app.ui.theme.AppLanguage.SPANISH) task.titleEs else task.titleEn
-            val descText = if (appLanguage == com.violinmaster.app.ui.theme.AppLanguage.SPANISH) task.descEs else task.descEn
-
-            Card(
-                modifier = Modifier.fillMaxWidth()
-                    .testTag("daily_task_item_${task.id}"),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isCompleted) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface
-                ),
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isCompleted) Color(0xFF81C784).copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (isCompleted) {
-                                Text("✅", fontSize = 16.sp, modifier = Modifier.padding(end = 6.dp))
-                            } else {
-                                Text("🎯", fontSize = 16.sp, modifier = Modifier.padding(end = 6.dp))
-                            }
-                            Text(
-                                text = titleText,
-                                style = MaterialTheme.typography.titleSmall,
-                                color = if (isCompleted) Color(0xFF81C784) else Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = descText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 16.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    
-                    if (isCompleted) {
-                        Surface(
-                            color = Color(0xFF81C784).copy(alpha = 0.15f),
-                            contentColor = Color(0xFF81C784),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = Localization.get("completed_btn", appLanguage),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                            )
-                        }
-                    } else {
-                        Column(horizontalAlignment = Alignment.End) {
-                            Button(
-                                onClick = {
-                                    practiceVM.startPracticeTimer(task.category)
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                ),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Text(
-                                    text = Localization.get("start_task", appLanguage),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Button(
-                                onClick = {
-                                    activeTaskForCompletion = task
-                                    selectedAttemptsCount = 1
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                ),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                modifier = Modifier.height(28.dp)
-                                    .testTag("complete_task_${task.id}")
-                            ) {
-                                Text(
-                                    text = "✓",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         Spacer(modifier = Modifier.height(24.dp))
-    }
-
-    // --- Attempts selection Dialog ---
-    val taskToComplete = activeTaskForCompletion
-    if (taskToComplete != null) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { activeTaskForCompletion = null },
-            title = {
-                Text(
-                    text = Localization.get("attempts_needed_title", appLanguage),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = Localization.get("attempts_needed_subtitle", appLanguage),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
-                    listOf(1, 2, 3, 4).forEach { attemptOption ->
-                        val label = when (attemptOption) {
-                            1 -> Localization.get("attempt_1", appLanguage)
-                            2 -> Localization.get("attempt_2", appLanguage)
-                            3 -> Localization.get("attempt_3", appLanguage)
-                            else -> Localization.get("attempt_4", appLanguage)
-                        }
-                        val isSelected = selectedAttemptsCount == attemptOption
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedAttemptsCount = attemptOption }
-                                .clip(RoundedCornerShape(8.dp)),
-                            color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
-                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                androidx.compose.material3.RadioButton(
-                                    selected = isSelected,
-                                    onClick = { selectedAttemptsCount = attemptOption }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        practiceVM.completeDailyTask(taskToComplete.id, selectedAttemptsCount)
-                        activeTaskForCompletion = null
-                    }
-                ) {
-                    Text(
-                        text = Localization.get("confirm_completion", appLanguage),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(
-                    onClick = { activeTaskForCompletion = null }
-                ) {
-                    Text(text = Localization.get("cancel_button", appLanguage))
-                }
-            }
-        )
     }
 }

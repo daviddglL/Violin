@@ -36,6 +36,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.violinmaster.app.data.auth.GoogleAuthRepository
 import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.ui.component.LoginKeypadGrid
+import com.violinmaster.app.ui.component.RoleSelector
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
@@ -199,58 +201,11 @@ fun AuthenticationScreen(
             }
 
             // Role selection panel
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = Localization.get("role_label", lang),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val roles = listOf(
-                        "STUDENT" to "role_student",
-                        "TEACHER" to "role_teacher",
-                        "FREELANCER" to "role_freelancer"
-                    )
-
-                    roles.forEach { (roleKey, transKey) ->
-                        val isSelected = selectedRole == roleKey
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                )
-                                .border(
-                                    1.dp,
-                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .clickable { selectedRole = roleKey }
-                                .padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = Localization.get(transKey, lang),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                fontSize = 10.sp
-                            )
-                        }
-                    }
-                }
-            }
+            RoleSelector(
+                selectedRole = selectedRole,
+                onRoleSelected = { selectedRole = it },
+                lang = lang
+            )
 
             // Birth year selector (required for registration)
             if (isRegisterMode) {
@@ -454,74 +409,3 @@ fun AuthenticationScreen(
     }
 }
 
-@Composable
-fun LoginKeypadGrid(
-    currentValue: String,
-    onValueChange: (String) -> Unit,
-    onValidate: () -> Unit,
-    lang: AppLanguage,
-    isCorrectLength: Boolean
-) {
-    val keys = listOf(
-        "1", "2", "3",
-        "4", "5", "6",
-        "7", "8", "9",
-        "CLR", "0", "OK"
-    )
-
-    Column(
-        modifier = Modifier.width(320.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        val rows = keys.chunked(3)
-        rows.forEach { rowKeys ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                rowKeys.forEach { key ->
-                    val isAction = key == "CLR" || key == "OK"
-                    val isOkActive = key == "OK" && isCorrectLength
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                when {
-                                    isOkActive -> MaterialTheme.colorScheme.primary
-                                    isAction -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                                    else -> MaterialTheme.colorScheme.surface
-                                }
-                            )
-                            .clickable {
-                                when (key) {
-                                    "CLR" -> onValueChange("")
-                                    "OK" -> onValidate()
-                                    else -> {
-                                        if (currentValue.length < 4) {
-                                            onValueChange(currentValue + key)
-                                        }
-                                    }
-                                }
-                            }
-                            .testTag("login_keypad_$key"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = key,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                isOkActive -> MaterialTheme.colorScheme.onPrimary
-                                key == "CLR" -> MaterialTheme.colorScheme.onSurfaceVariant
-                                else -> Color.White
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}

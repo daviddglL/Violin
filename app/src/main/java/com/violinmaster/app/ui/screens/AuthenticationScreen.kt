@@ -41,6 +41,7 @@ import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthenticationScreen(
     authViewModel: AuthViewModel,
@@ -264,24 +265,31 @@ fun AuthenticationScreen(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 4.dp)
                 )
-                Box(modifier = Modifier.fillMaxWidth()) {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it }
+                ) {
                     OutlinedTextField(
                         value = birthYear,
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(Localization.get("birth_year_hint", lang), fontSize = 11.sp) },
-                        trailingIcon = {
-                            Text(if (expanded) "▲" else "▼", fontSize = 12.sp)
-                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { expanded = true },
-                        singleLine = true
+                            .menuAnchor(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.12f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
                     )
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        modifier = Modifier.fillMaxWidth(0.9f)
+                        onDismissRequest = { expanded = false }
                     ) {
                         years.forEach { year ->
                             DropdownMenuItem(

@@ -1,8 +1,8 @@
 package com.violinmaster.app.ui.theme
 
-sealed class AppLanguage {
-  data object ENGLISH : AppLanguage()
-  data object SPANISH : AppLanguage()
+sealed class AppLanguage(val name: String) {
+  data object ENGLISH : AppLanguage("ENGLISH")
+  data object SPANISH : AppLanguage("SPANISH")
   companion object {
     fun values(): Array<AppLanguage> {
       return arrayOf(ENGLISH, SPANISH)

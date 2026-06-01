@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.data.Assignment
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.security.VideoSecurityService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -20,7 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AssignmentViewModel @Inject constructor(
     private val repository: IPracticeRepository,
-    private val sessionManager: SessionManager
+    private val authManager: AuthManager
 ) : ViewModel() {
 
     // --- Student / Teacher Assignments flows ---
@@ -41,7 +41,7 @@ class AssignmentViewModel @Inject constructor(
 
         var assignmentsJob: Job? = null
         viewModelScope.launch {
-            sessionManager.currentUser.collect { user ->
+            authManager.currentUser.collect { user ->
                 assignmentsJob?.cancel()
                 if (user != null) {
                     assignmentsJob = viewModelScope.launch {
@@ -68,7 +68,7 @@ class AssignmentViewModel @Inject constructor(
     }
 
     fun publishAssignment(title: String, description: String, targetStudent: String, videoTitle: String, durationSeconds: Int) {
-        val userVal = sessionManager.currentUser.value ?: return
+        val userVal = authManager.currentUser.value ?: return
         if (userVal.role != "TEACHER") return
 
         viewModelScope.launch {
@@ -94,11 +94,11 @@ class AssignmentViewModel @Inject constructor(
             repository.updateAssignmentCompletion(assignmentId, completed)
             if (completed) {
                 // Award 200 points via repository
-                val userVal = sessionManager.currentUser.value
+                val userVal = authManager.currentUser.value
                 if (userVal != null) {
                     val updatedUser = userVal.copy(points = userVal.points + 200)
                     repository.insertUser(updatedUser)
-                    sessionManager.restoreCurrentUser(updatedUser)
+                    authManager.restoreCurrentUser(updatedUser)
                 }
             }
         }

@@ -1,11 +1,11 @@
 package com.violinmaster.app.ui.viewmodel
 
-import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.domain.util.Base64Encoder
 import com.violinmaster.app.security.SecurityUtils
 import com.violinmaster.app.security.VideoSecurityService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,13 +13,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.util.Arrays
 import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val repository: IPracticeRepository,
-    private val sessionManager: SessionManager,
+    private val authManager: AuthManager,
     private val securityUtils: SecurityUtils
 ) : ViewModel() {
 
@@ -45,7 +46,7 @@ class AuthViewModel @Inject constructor(
 
     init {
         // Restore user session from SharedPreferences
-        val savedUserId = sessionManager.getSavedUserId()
+        val savedUserId = authManager.getSavedUserId()
         if (savedUserId != null) {
             viewModelScope.launch {
                 val dbUser = repository.getUserByUsername(savedUserId)
@@ -65,7 +66,7 @@ class AuthViewModel @Inject constructor(
             _loginError.value = "error_pin_length"
             return
         }
-        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+        val currentYear = LocalDate.now().year
         if (birthYear < 1900 || birthYear > currentYear) {
             _loginError.value = "error_birth_year_invalid"
             return
@@ -93,7 +94,7 @@ class AuthViewModel @Inject constructor(
                 username = username,
                 role = role,
                 hashedPassword = hashed,
-                salt = Base64.encodeToString(salt, Base64.DEFAULT),
+                salt = Base64Encoder.encodeToString(salt),
                 teacherCode = inviteCode,
                 birthYear = birthYear
             )
@@ -121,14 +122,14 @@ class AuthViewModel @Inject constructor(
                 return@launch
             }
 
-            val saltBytes = Base64.decode(user.salt, Base64.DEFAULT)
+            val saltBytes = Base64Encoder.decode(user.salt)
             val passChars = pin.toCharArray()
             val computedHash = SecurityUtils.hashPasscode(passChars, saltBytes)
             Arrays.fill(passChars, '0')
 
             if (computedHash == user.hashedPassword) {
                 _currentUser.value = user
-                sessionManager.saveCurrentUser(user)
+                authManager.saveCurrentUser(user)
                 _loginError.value = null
             } else {
                 _loginError.value = "error_login_failed"
@@ -138,7 +139,7 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         _currentUser.value = null
-        sessionManager.clearSession()
+        authManager.clearSession()
         _loginError.value = null
         _signupSuccess.value = null
     }

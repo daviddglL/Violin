@@ -10,7 +10,10 @@ import com.violinmaster.app.audio.ViolinAudioEngine
 import com.violinmaster.app.data.PracticeDao
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.PracticeRepository
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.NavigationManager
 import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.UserPreferencesManager
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import org.junit.After
 import org.junit.Before
@@ -30,6 +33,8 @@ class HomeScreenTest {
     private lateinit var database: PracticeDatabase
     private lateinit var dao: PracticeDao
     private lateinit var repository: PracticeRepository
+    private lateinit var authManager: AuthManager
+    private lateinit var userPreferencesManager: UserPreferencesManager
     private lateinit var sessionManager: SessionManager
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var viewModel: PracticeViewModel
@@ -41,9 +46,11 @@ class HomeScreenTest {
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
         dao = database.practiceDao()
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
-        sessionManager = SessionManager(context)
+        authManager = AuthManager(context)
+        userPreferencesManager = UserPreferencesManager(context)
+        sessionManager = SessionManager(authManager, userPreferencesManager, NavigationManager())
         audioEngine = ViolinAudioEngine()
-        viewModel = PracticeViewModel(repository, sessionManager, audioEngine)
+        viewModel = PracticeViewModel(repository, authManager, userPreferencesManager, audioEngine)
     }
 
     @After

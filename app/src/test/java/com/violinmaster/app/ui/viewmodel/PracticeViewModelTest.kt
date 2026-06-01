@@ -10,7 +10,8 @@ import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.UserPreferencesManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceTimeBy
@@ -35,7 +36,8 @@ class PracticeViewModelTest {
     private lateinit var database: PracticeDatabase
     private lateinit var dao: PracticeDao
     private lateinit var repository: IPracticeRepository
-    private lateinit var sessionManager: SessionManager
+    private lateinit var authManager: AuthManager
+    private lateinit var userPreferencesManager: UserPreferencesManager
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var viewModel: PracticeViewModel
     private lateinit var context: Context
@@ -46,9 +48,10 @@ class PracticeViewModelTest {
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
         dao = database.practiceDao()
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
-        sessionManager = SessionManager(context)
+        authManager = AuthManager(context)
+        userPreferencesManager = UserPreferencesManager(context)
         audioEngine = ViolinAudioEngine()
-        viewModel = PracticeViewModel(repository, sessionManager, audioEngine)
+        viewModel = PracticeViewModel(repository, authManager, userPreferencesManager, audioEngine)
     }
 
     @After
@@ -163,7 +166,7 @@ class PracticeViewModelTest {
         )
         repository.insertUser(user)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(user)
+        authManager.restoreCurrentUser(user)
         viewModel.loadDailyTasksCompleted()
 
         viewModel.completeDailyTask("task_scale_practice", 1)
@@ -189,7 +192,7 @@ class PracticeViewModelTest {
         )
         repository.insertUser(user)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(user)
+        authManager.restoreCurrentUser(user)
         viewModel.loadDailyTasksCompleted()
 
         // 4 attempts = 25 points
@@ -212,7 +215,7 @@ class PracticeViewModelTest {
         )
         repository.insertUser(user)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(user)
+        authManager.restoreCurrentUser(user)
         viewModel.loadDailyTasksCompleted()
 
         // First completion = 100 points
@@ -239,7 +242,7 @@ class PracticeViewModelTest {
         )
         repository.insertUser(user)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(user)
+        authManager.restoreCurrentUser(user)
 
         viewModel.earnPoints(150)
         advanceUntilIdle()
@@ -276,7 +279,7 @@ class PracticeViewModelTest {
         )
         repository.insertUser(user)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(user)
+        authManager.restoreCurrentUser(user)
 
         viewModel.toggleLessonStatus("test_lesson_1", true)
         advanceUntilIdle()
@@ -308,7 +311,7 @@ class PracticeViewModelTest {
         )
         repository.insertUser(user)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(user)
+        authManager.restoreCurrentUser(user)
 
         viewModel.toggleLessonStatus("test_lesson_2", true)
         advanceUntilIdle()
@@ -382,7 +385,7 @@ class PracticeViewModelTest {
         )
         repository.insertUser(user)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(user)
+        authManager.restoreCurrentUser(user)
 
         viewModel.updateSkillLevel("Advanced")
         advanceUntilIdle()

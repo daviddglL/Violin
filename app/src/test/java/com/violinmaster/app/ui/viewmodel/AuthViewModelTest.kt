@@ -8,7 +8,7 @@ import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.security.SecurityUtils
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -33,7 +33,7 @@ class AuthViewModelTest {
     private lateinit var database: PracticeDatabase
     private lateinit var dao: PracticeDao
     private lateinit var repository: IPracticeRepository
-    private lateinit var sessionManager: SessionManager
+    private lateinit var authManager: AuthManager
     private lateinit var securityUtils: SecurityUtils
     private lateinit var viewModel: AuthViewModel
 
@@ -43,9 +43,9 @@ class AuthViewModelTest {
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
         dao = database.practiceDao()
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
-        sessionManager = SessionManager(context)
+        authManager = AuthManager(context)
         securityUtils = SecurityUtils(context)
-        viewModel = AuthViewModel(repository, sessionManager, securityUtils)
+        viewModel = AuthViewModel(repository, authManager, securityUtils)
     }
 
     @After
@@ -287,32 +287,32 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `sessionManager isGoogleSignedIn defaults to false`() {
-        // SessionManager.isGoogleSignedIn should default to false
+    fun `authManager isGoogleSignedIn defaults to false`() {
+        // AuthManager.isGoogleSignedIn should default to false
         // (no Google sign-in state persisted in SharedPreferences)
-        assertEquals(false, sessionManager.isGoogleSignedIn.value)
+        assertEquals(false, authManager.isGoogleSignedIn.value)
         // Companion key for SharedPreferences should NOT be null (access check)
-        assertNotNull(sessionManager.getSavedUserId())
+        assertNotNull(authManager.getSavedUserId())
     }
 
     @Test
-    fun `sessionManager setGoogleSignedIn updates state`() = runTest {
+    fun `authManager setGoogleSignedIn updates state`() = runTest {
         // Initially false
-        assertEquals(false, sessionManager.isGoogleSignedIn.value)
+        assertEquals(false, authManager.isGoogleSignedIn.value)
 
         // Act: set Google signed in
-        sessionManager.setGoogleSignedIn(true)
+        authManager.setGoogleSignedIn(true)
         advanceUntilIdle()
 
         // Assert: state updated
-        assertEquals(true, sessionManager.isGoogleSignedIn.value)
+        assertEquals(true, authManager.isGoogleSignedIn.value)
 
         // Act: set Google signed out
-        sessionManager.setGoogleSignedIn(false)
+        authManager.setGoogleSignedIn(false)
         advanceUntilIdle()
 
         // Assert: state reverted
-        assertEquals(false, sessionManager.isGoogleSignedIn.value)
+        assertEquals(false, authManager.isGoogleSignedIn.value)
     }
 
     @Test

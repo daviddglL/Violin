@@ -180,11 +180,8 @@ class VideoUploadViewModel @Inject constructor(
                         _transitionHistory.add(_uploadState.value)
                     }
                 } else {
-                    // Non-minor: log skip per REQ-BLR-006
-                    android.util.Log.d(
-                        "VideoUploadViewModel",
-                        "Face blur skipped — user is not a minor"
-                    )
+                    // Non-minor: skip blur per REQ-BLR-006
+                    // (no android.util.Log — use println for trace only if needed)
                 }
 
                 // ── Compression phase ──────────────────────────────────

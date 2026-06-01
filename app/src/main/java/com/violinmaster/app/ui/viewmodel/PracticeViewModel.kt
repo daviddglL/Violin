@@ -6,7 +6,9 @@ import com.violinmaster.app.audio.ViolinAudioEngine
 import com.violinmaster.app.data.LessonProgress
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeSession
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.domain.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -17,18 +19,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 import kotlin.random.Random
 
 @HiltViewModel
 class PracticeViewModel @Inject constructor(
     private val repository: IPracticeRepository,
-    private val sessionManager: SessionManager,
+    private val authManager: AuthManager,
+    private val userPreferencesManager: UserPreferencesManager,
     private val audioEngine: ViolinAudioEngine
 ) : ViewModel() {
 
@@ -198,15 +197,12 @@ class PracticeViewModel @Inject constructor(
         viewModelScope.launch {
             repository.clearSessions()
 
-            val calendar = Calendar.getInstance()
-            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
+            val today = LocalDate.now()
             val categories = listOf("Smart Tuner Tuning", "Advanced Bowing: Détaché & Martelé", "Open Strings Tuning & Bowing", "Metronome Scale Practice")
 
             for (dayOffset in -6..0) {
-                calendar.time = Date()
-                calendar.add(Calendar.DAY_OF_YEAR, dayOffset)
-                val dayString = sdf.format(calendar.time)
+                val dayDate = today.plusDays(dayOffset.toLong())
+                val dayString = dayDate.toString()
 
                 val logsForDayCount = Random.nextInt(1, 3)
                 for (i in 0 until logsForDayCount) {
@@ -217,7 +213,7 @@ class PracticeViewModel @Inject constructor(
                             dateString = dayString,
                             durationSeconds = practiceMin * 60,
                             category = randCategory,
-                            timestamp = calendar.timeInMillis + (i * 3600 * 1000)
+                            timestamp = dayDate.atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC) * 1000 + (i * 3600 * 1000)
                         )
                     )
                 }
@@ -259,7 +255,7 @@ class PracticeViewModel @Inject constructor(
 
     fun loadDailyTasksCompleted() {
         val today = LocalDate.now().toString()
-        val completedSet = sessionManager.getDailyTasksCompleted(today)
+        val completedSet = userPreferencesManager.getDailyTasksCompleted(today)
         _dailyTasksCompleted.value = completedSet
     }
 
@@ -268,7 +264,7 @@ class PracticeViewModel @Inject constructor(
         val currentCompleted = _dailyTasksCompleted.value.toMutableSet()
         if (currentCompleted.add(taskId)) {
             _dailyTasksCompleted.value = currentCompleted
-            sessionManager.saveDailyTaskCompleted(today, currentCompleted)
+            userPreferencesManager.saveDailyTaskCompleted(today, currentCompleted)
 
             val pointsEarned = when (attempts) {
                 1 -> 100
@@ -281,20 +277,20 @@ class PracticeViewModel @Inject constructor(
     }
 
     fun earnPoints(additionalPoints: Int) {
-        val userVal = sessionManager.currentUser.value ?: return
+        val userVal = authManager.currentUser.value ?: return
         viewModelScope.launch {
             val updatedUser = userVal.copy(points = userVal.points + additionalPoints)
             repository.insertUser(updatedUser)
-            sessionManager.restoreCurrentUser(updatedUser)
+            authManager.restoreCurrentUser(updatedUser)
         }
     }
 
     fun updateSkillLevel(level: String) {
-        val userVal = sessionManager.currentUser.value ?: return
+        val userVal = authManager.currentUser.value ?: return
         viewModelScope.launch {
             val updatedUser = userVal.copy(skillLevel = level)
             repository.insertUser(updatedUser)
-            sessionManager.restoreCurrentUser(updatedUser)
+            authManager.restoreCurrentUser(updatedUser)
         }
     }
 }

@@ -47,6 +47,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.violinmaster.app.data.firebase.Message
+import com.violinmaster.app.ui.component.EmptyChatState
+import com.violinmaster.app.ui.component.ErrorBanner
+import com.violinmaster.app.ui.component.ErrorState
+import com.violinmaster.app.ui.component.LoadingShimmer
 import com.violinmaster.app.ui.components.MessageBubble
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
@@ -236,115 +240,3 @@ fun ChatScreen(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Sub-composables
-// ═══════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun EmptyChatState(lang: AppLanguage, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "💬",
-                fontSize = 48.sp
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = Localization.get("chat_empty", lang),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 32.dp),
-                lineHeight = 22.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun LoadingShimmer(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(40.dp)
-        )
-    }
-}
-
-@Composable
-private fun ErrorState(
-    errorMessage: String,
-    lang: AppLanguage,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "⚠️",
-                fontSize = 40.sp
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = errorMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 32.dp),
-                lineHeight = 20.sp
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onRetry,
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Text("Retry")
-            }
-        }
-    }
-}
-
-@Composable
-private fun ErrorBanner(
-    message: String,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    androidx.compose.material3.Card(
-        modifier = modifier,
-        colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        ),
-        shape = RoundedCornerShape(10.dp),
-        onClick = onDismiss
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.weight(1f),
-                lineHeight = 16.sp
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "✕",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.padding(start = 4.dp)
-            )
-        }
-    }
-}

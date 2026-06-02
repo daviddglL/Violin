@@ -36,7 +36,11 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.violinmaster.app.data.auth.GoogleAuthRepository
 import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.ui.component.AuthShieldHeader
+import com.violinmaster.app.ui.component.BirthYearSelector
+import com.violinmaster.app.ui.component.GoogleSignInSection
 import com.violinmaster.app.ui.component.LoginKeypadGrid
+import com.violinmaster.app.ui.component.PinBulletIndicator
 import com.violinmaster.app.ui.component.RoleSelector
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
@@ -117,35 +121,9 @@ fun AuthenticationScreen(
                 .widthIn(max = 440.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header Shield Icon
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Shield Security Logo",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-
-            Text(
-                text = Localization.get("login_required", lang).uppercase(),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = Localization.get(if (isRegisterMode) "register_desc" else "login_info_desc", lang),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp
+            AuthShieldHeader(
+                isRegisterMode = isRegisterMode,
+                lang = lang
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -169,36 +147,10 @@ fun AuthenticationScreen(
             )
 
             // PIN Bullet display representation
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = Localization.get("password_label", lang) + " (" + Localization.get("pin_hint", lang) + ")",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    for (i in 0 until 4) {
-                        val filled = i < pin.length
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (filled) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
-                        )
-                    }
-                }
-            }
+            PinBulletIndicator(
+                pin = pin,
+                lang = lang
+            )
 
             // Role selection panel
             RoleSelector(
@@ -209,54 +161,11 @@ fun AuthenticationScreen(
 
             // Birth year selector (required for registration)
             if (isRegisterMode) {
-                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-                val years = (currentYear downTo 1930).toList()
-                var expanded by remember { mutableStateOf(false) }
-
-                Text(
-                    text = Localization.get("birth_year_label", lang) + " *",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 4.dp)
+                BirthYearSelector(
+                    birthYear = birthYear,
+                    onYearSelected = { birthYear = it },
+                    lang = lang
                 )
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it }
-                ) {
-                    OutlinedTextField(
-                        value = birthYear,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(Localization.get("birth_year_hint", lang), fontSize = 11.sp) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.12f)
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        years.forEach { year ->
-                            DropdownMenuItem(
-                                text = { Text(year.toString()) },
-                                onClick = {
-                                    birthYear = year.toString()
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
-                }
             }
 
             // Student target teacher code injection if register
@@ -341,64 +250,14 @@ fun AuthenticationScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Divider before Google section
-            HorizontalDivider(
-                color = Color.White.copy(alpha = 0.12f),
-                modifier = Modifier.fillMaxWidth(0.6f)
-            )
-
             // Google Sign-In section
-            if (isGoogleSignedIn) {
-                // Task 10: Feature gating — show AI features enabled badge
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .background(
-                            Color(0xFF1B5E20).copy(alpha = 0.3f),
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                        .testTag("ai_features_enabled")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "AI enabled",
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "AI features enabled",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFA5D6A7),
-                        fontWeight = FontWeight.Medium
-                    )
+            GoogleSignInSection(
+                isGoogleSignedIn = isGoogleSignedIn,
+                onSignInClick = {
+                    val signInIntent = googleAuthRepository.getSignInIntent()
+                    googleSignInLauncher.launch(signInIntent)
                 }
-            } else {
-                // "Sign in with Google" button
-                Button(
-                    onClick = {
-                        val signInIntent = googleAuthRepository.getSignInIntent()
-                        googleSignInLauncher.launch(signInIntent)
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color(0xFF1A1A2E)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .height(48.dp)
-                        .testTag("google_sign_in_button")
-                ) {
-                    Text(
-                        text = "Sign in with Google for AI features",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1A1A2E)
-                    )
-                }
-            }
+            )
 
             // SnackbarHost for Google Sign-In errors
             SnackbarHost(

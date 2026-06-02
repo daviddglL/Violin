@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.violinmaster.app.data.LessonProgress
 import com.violinmaster.app.di.NavigationManager
-import com.violinmaster.app.ui.screens.LessonDetailsContent
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel

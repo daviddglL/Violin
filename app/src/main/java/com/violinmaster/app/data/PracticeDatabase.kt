@@ -35,12 +35,6 @@ abstract class PracticeDatabase : RoomDatabase() {
     abstract fun assignmentDao(): AssignmentDao
     abstract fun chatDao(): ChatDao
 
-    @Deprecated(
-        "Use individual DAOs (sessionDao, lessonDao, userDao, assignmentDao, chatDao) instead.",
-        replaceWith = ReplaceWith("sessionDao()")
-    )
-    abstract fun practiceDao(): PracticeDao
-
     companion object {
         /**
          * Migration from version 2 to version 3.

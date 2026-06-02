@@ -7,7 +7,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.ViolinAudioEngine
-import com.violinmaster.app.data.PracticeDao
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.di.AuthManager
@@ -31,7 +30,6 @@ class HomeScreenTest {
     val composeTestRule = createComposeRule()
 
     private lateinit var database: PracticeDatabase
-    private lateinit var dao: PracticeDao
     private lateinit var repository: PracticeRepository
     private lateinit var authManager: AuthManager
     private lateinit var userPreferencesManager: UserPreferencesManager
@@ -44,7 +42,6 @@ class HomeScreenTest {
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
-        dao = database.practiceDao()
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
         authManager = AuthManager(context)
         userPreferencesManager = UserPreferencesManager(context)

@@ -5,7 +5,6 @@ import androidx.room.Room
 import com.violinmaster.app.data.AssignmentDao
 import com.violinmaster.app.data.ChatDao
 import com.violinmaster.app.data.LessonDao
-import com.violinmaster.app.data.PracticeDao
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.SessionDao
 import com.violinmaster.app.data.UserDao
@@ -30,15 +29,6 @@ object DatabaseModule {
         )
             .addMigrations(PracticeDatabase.MIGRATION_2_3, PracticeDatabase.MIGRATION_3_4, PracticeDatabase.MIGRATION_4_5)
             .build()
-    }
-
-    @Provides
-    @Deprecated(
-        "Use individual provides (provideSessionDao, provideLessonDao, provideUserDao, provideAssignmentDao, provideChatDao) instead.",
-        replaceWith = ReplaceWith("provideSessionDao(database)")
-    )
-    fun providePracticeDao(database: PracticeDatabase): PracticeDao {
-        return database.practiceDao()
     }
 
     @Provides

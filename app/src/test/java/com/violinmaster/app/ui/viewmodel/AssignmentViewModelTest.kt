@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.data.Assignment
-import com.violinmaster.app.data.PracticeDao
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
@@ -30,7 +29,6 @@ import org.robolectric.annotation.Config
 class AssignmentViewModelTest {
 
     private lateinit var database: PracticeDatabase
-    private lateinit var dao: PracticeDao
     private lateinit var repository: IPracticeRepository
     private lateinit var authManager: AuthManager
     private lateinit var viewModel: AssignmentViewModel
@@ -39,7 +37,6 @@ class AssignmentViewModelTest {
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
-        dao = database.practiceDao()
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
         authManager = AuthManager(context)
         viewModel = AssignmentViewModel(repository, authManager)

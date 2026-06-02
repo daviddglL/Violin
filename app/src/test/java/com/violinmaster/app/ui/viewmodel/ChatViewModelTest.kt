@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.data.local.CachedMessage
 import com.violinmaster.app.data.IChatRepository
-import com.violinmaster.app.data.PracticeDao
+import com.violinmaster.app.data.ChatDao
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.data.firebase.Message
@@ -46,7 +46,7 @@ import org.robolectric.annotation.Config
 class ChatViewModelTest {
 
     private lateinit var database: PracticeDatabase
-    private lateinit var dao: PracticeDao
+    private lateinit var dao: ChatDao
     private lateinit var fakeRepo: FakeChatRepository
     private lateinit var authManager: AuthManager
     private lateinit var viewModel: ChatViewModel
@@ -55,7 +55,7 @@ class ChatViewModelTest {
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
-        dao = database.practiceDao()
+        dao = database.chatDao()
         fakeRepo = FakeChatRepository(dao)
         authManager = AuthManager(context)
         viewModel = ChatViewModel(fakeRepo, authManager)
@@ -379,7 +379,7 @@ class ChatViewModelTest {
     // FakeChatRepository — test double backed by in-memory Room
     // ═══════════════════════════════════════════════════════════════════════
 
-    class FakeChatRepository(private val dao: PracticeDao) : IChatRepository {
+    class FakeChatRepository(private val dao: ChatDao) : IChatRepository {
 
         var shouldFailOnSend: Boolean = false
         var lastSentAssignmentId: String? = null

@@ -1,6 +1,7 @@
 package com.violinmaster.app.di
 
 import com.violinmaster.app.BuildConfig
+import com.violinmaster.app.data.IGeminiRepository
 import com.violinmaster.app.data.remote.GeminiApiService
 import com.violinmaster.app.data.remote.GeminiAuthInterceptor
 import com.violinmaster.app.data.remote.GeminiRepository
@@ -71,7 +72,7 @@ object NetworkModule {
     @Singleton
     fun provideGeminiRepository(
         api: GeminiApiService
-    ): GeminiRepository {
+    ): IGeminiRepository {
         return GeminiRepository(api)
     }
 }

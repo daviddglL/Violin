@@ -71,7 +71,7 @@ import com.violinmaster.app.ui.viewmodel.TunerViewModel
 import com.violinmaster.app.ui.viewmodel.MetronomeViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
 import com.violinmaster.app.ui.viewmodel.ChatViewModel
-import com.violinmaster.app.data.auth.GoogleAuthRepository
+import com.violinmaster.app.data.auth.IGoogleAuthRepository
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.NavigationManager
 import com.violinmaster.app.di.UserPreferencesManager
@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
   @Inject lateinit var userPreferencesManager: UserPreferencesManager
   @Inject lateinit var authManager: AuthManager
   @Inject lateinit var navigationManager: NavigationManager
-  @Inject lateinit var googleAuthRepository: GoogleAuthRepository
+  @Inject lateinit var googleAuthRepository: IGoogleAuthRepository
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -102,7 +102,7 @@ fun MainLayout(
   userPreferencesManager: UserPreferencesManager,
   authManager: AuthManager,
   navigationManager: NavigationManager,
-  googleAuthRepository: GoogleAuthRepository
+  googleAuthRepository: IGoogleAuthRepository
 ) {
   val currentUser by authManager.currentUser.collectAsState()
   val lang by userPreferencesManager.appLanguage.collectAsState()

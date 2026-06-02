@@ -1,5 +1,6 @@
 package com.violinmaster.app.data.remote
 
+import com.violinmaster.app.data.IGeminiRepository
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,7 +18,7 @@ import retrofit2.HttpException
 @Singleton
 class GeminiRepository @Inject constructor(
     private val api: GeminiApiService
-) {
+) : IGeminiRepository {
 
     /**
      * Generates lesson feedback from a practice session prompt.
@@ -28,7 +29,7 @@ class GeminiRepository @Inject constructor(
      * @param prompt The user-facing prompt describing the practice context.
      * @return [Result] containing the generated text or an error message.
      */
-    suspend fun generateLessonFeedback(prompt: String): Result<String> {
+    override suspend fun generateLessonFeedback(prompt: String): Result<String> {
         return try{
             val request = GeminiRequest(
                 contents = listOf(

@@ -1,6 +1,6 @@
 package com.violinmaster.app.data.remote
 
-import com.violinmaster.app.data.auth.GoogleAuthRepository
+import com.violinmaster.app.data.auth.IGoogleAuthRepository
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
@@ -18,7 +18,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class GeminiAuthInterceptor @Inject constructor(
-    private val googleAuthRepository: GoogleAuthRepository
+    private val googleAuthRepository: IGoogleAuthRepository
 ) : Interceptor {
 
     companion object {

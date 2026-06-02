@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
-import com.violinmaster.app.data.auth.GoogleAuthRepository
+import com.violinmaster.app.data.auth.IGoogleAuthRepository
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.ui.component.AuthShieldHeader
 import com.violinmaster.app.ui.component.BirthYearSelector
@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AuthenticationScreen(
     authViewModel: AuthViewModel,
-    googleAuthRepository: GoogleAuthRepository,
+    googleAuthRepository: IGoogleAuthRepository,
     authManager: AuthManager,
     appLanguage: AppLanguage,
     modifier: Modifier = Modifier

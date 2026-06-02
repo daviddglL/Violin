@@ -31,12 +31,12 @@ import javax.inject.Singleton
 open class GoogleAuthRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val googleSignInClient: GoogleSignInClient
-) {
+) : IGoogleAuthRepository {
     // Lazily initialized to avoid Firebase instantiation in unit tests
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     private val _signedInFlow = MutableStateFlow(false)
-    open val signedInFlow: StateFlow<Boolean> = _signedInFlow.asStateFlow()
+    override open val signedInFlow: StateFlow<Boolean> = _signedInFlow.asStateFlow()
 
     /**
      * Exchanges a Google Sign-In ID token for Firebase Auth credentials
@@ -45,7 +45,7 @@ open class GoogleAuthRepository @Inject constructor(
      * @param idToken The ID token from a successful Google Sign-In.
      * @return [Result] containing [GoogleUser] on success or an exception on failure.
      */
-    open suspend fun signIn(idToken: String): Result<GoogleUser> {
+    override open suspend fun signIn(idToken: String): Result<GoogleUser> {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
             val authResult = auth.signInWithCredential(credential).await()
@@ -70,7 +70,7 @@ open class GoogleAuthRepository @Inject constructor(
     /**
      * Signs out from Firebase and Google.
      */
-    open suspend fun signOut() {
+    override open suspend fun signOut() {
         try {
             googleSignInClient.signOut().await()
         } catch (_: Exception) {
@@ -86,7 +86,7 @@ open class GoogleAuthRepository @Inject constructor(
      *
      * Callers (e.g., [GeminiAuthInterceptor]) should handle null gracefully.
      */
-    open fun getAccessToken(): String? {
+    override open fun getAccessToken(): String? {
         val currentUser = auth.currentUser ?: return null
         // getIdToken(false) returns cached token if still valid, refreshes if needed
         return try {
@@ -105,13 +105,13 @@ open class GoogleAuthRepository @Inject constructor(
     /**
      * Whether a Firebase user is currently signed in.
      */
-    open fun isSignedIn(): Boolean = auth.currentUser != null
+    override open fun isSignedIn(): Boolean = auth.currentUser != null
 
     /**
      * Returns the [Intent] to launch the Google Sign-In UI.
      * Call this from the Activity/Composable to start the sign-in flow.
      */
-    fun getSignInIntent(): Intent = googleSignInClient.signInIntent
+    override fun getSignInIntent(): Intent = googleSignInClient.signInIntent
 }
 
 /**

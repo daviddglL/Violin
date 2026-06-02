@@ -71,22 +71,26 @@ import com.violinmaster.app.ui.viewmodel.TunerViewModel
 import com.violinmaster.app.ui.viewmodel.MetronomeViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
 import com.violinmaster.app.ui.viewmodel.ChatViewModel
-import com.violinmaster.app.data.auth.GoogleAuthRepository
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.data.auth.IGoogleAuthRepository
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.NavigationManager
+import com.violinmaster.app.di.UserPreferencesManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-  @Inject lateinit var sessionManager: SessionManager
-  @Inject lateinit var googleAuthRepository: GoogleAuthRepository
+  @Inject lateinit var userPreferencesManager: UserPreferencesManager
+  @Inject lateinit var authManager: AuthManager
+  @Inject lateinit var navigationManager: NavigationManager
+  @Inject lateinit var googleAuthRepository: IGoogleAuthRepository
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
       MyApplicationTheme {
-        MainLayout(sessionManager, googleAuthRepository)
+        MainLayout(userPreferencesManager, authManager, navigationManager, googleAuthRepository)
       }
     }
   }
@@ -94,11 +98,16 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthRepository) {
-  val currentUser by sessionManager.currentUser.collectAsState()
-  val lang by sessionManager.appLanguage.collectAsState()
-  val currentTab by sessionManager.currentTab.collectAsState()
-  val activeOverlay by sessionManager.currentOverlay.collectAsState()
+fun MainLayout(
+  userPreferencesManager: UserPreferencesManager,
+  authManager: AuthManager,
+  navigationManager: NavigationManager,
+  googleAuthRepository: IGoogleAuthRepository
+) {
+  val currentUser by authManager.currentUser.collectAsState()
+  val lang by userPreferencesManager.appLanguage.collectAsState()
+  val currentTab by navigationManager.currentTab.collectAsState()
+  val activeOverlay by navigationManager.currentOverlay.collectAsState()
   val authViewModel: AuthViewModel = hiltViewModel()
   val practiceVM: PracticeViewModel = hiltViewModel()
   val tunerVM: TunerViewModel = hiltViewModel()
@@ -130,7 +139,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
       AuthenticationScreen(
         authViewModel = authViewModel,
         googleAuthRepository = googleAuthRepository,
-        sessionManager = sessionManager,
+        authManager = authManager,
         appLanguage = lang,
         modifier = Modifier.padding(innerPadding)
       )
@@ -146,7 +155,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
             ) {
               if (activeOverlay != null) {
                   IconButton(
-                    onClick = { sessionManager.showOverlay(null) },
+                    onClick = { navigationManager.showOverlay(null) },
                   modifier = Modifier.testTag("overlay_back_button")
                 ) {
                   Icon(
@@ -213,7 +222,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
            ) {
              NavigationBarItem(
                 selected = currentTab == 0,
-                onClick = { sessionManager.selectTab(0) },
+                onClick = { navigationManager.selectTab(0) },
                icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
                label = { Text(Localization.get("tab_home", lang), fontSize = 11.sp) },
                colors = NavigationBarItemColors(),
@@ -221,7 +230,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
              )
              NavigationBarItem(
                 selected = currentTab == 1,
-                onClick = { sessionManager.selectTab(1) },
+                onClick = { navigationManager.selectTab(1) },
                icon = { Text("🎻", fontSize = 20.sp) },
                label = { Text(Localization.get("tab_lessons", lang), fontSize = 11.sp) },
                colors = NavigationBarItemColors(),
@@ -229,7 +238,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
              )
              NavigationBarItem(
                 selected = currentTab == 2,
-                onClick = { sessionManager.selectTab(2) },
+                onClick = { navigationManager.selectTab(2) },
                icon = { Text("📈", fontSize = 20.sp) },
                label = { Text(Localization.get("tab_stats", lang), fontSize = 11.sp) },
                colors = NavigationBarItemColors(),
@@ -237,7 +246,7 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
              )
              NavigationBarItem(
                 selected = currentTab == 3,
-                onClick = { sessionManager.selectTab(3) },
+                onClick = { navigationManager.selectTab(3) },
                icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
                label = { Text(Localization.get("tab_settings", lang), fontSize = 11.sp) },
                colors = NavigationBarItemColors(),
@@ -262,7 +271,9 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
           when (currentTab) {
             0 -> HomeScreen(
               practiceVM = practiceVM,
-              sessionManager = sessionManager,
+              authManager = authManager,
+              userPreferencesManager = userPreferencesManager,
+              navigationManager = navigationManager,
               modifier = Modifier.clickable(enabled = false) {}
             )
             1 -> LessonsScreen(
@@ -270,19 +281,23 @@ fun MainLayout(sessionManager: SessionManager, googleAuthRepository: GoogleAuthR
               tunerVM = tunerVM,
               authVM = authViewModel,
               assignmentVM = assignmentVM,
-              sessionManager = sessionManager,
+              userPreferencesManager = userPreferencesManager,
+              authManager = authManager,
+              navigationManager = navigationManager,
               chatViewModel = chatViewModel
             )
             2 -> StatsScreen(
               practiceVM = practiceVM,
               assignmentVM = assignmentVM,
-              sessionManager = sessionManager
+              userPreferencesManager = userPreferencesManager,
+              authManager = authManager
             )
             3 -> SettingsScreen(
               practiceVM = practiceVM,
               authVM = authViewModel,
               tunerVM = tunerVM,
-              sessionManager = sessionManager
+              userPreferencesManager = userPreferencesManager,
+              authManager = authManager
             )
           }
         }

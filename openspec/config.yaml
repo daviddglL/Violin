@@ -1,0 +1,45 @@
+# Violin Master — SDD Config
+# Initialized: 2026-06-01
+
+context:
+  project: "Violin Master"
+  description: "Dark violin learning companion app with smart tuner, metronome, teacher-student assignments, chat, video sharing, and Gemini API integration."
+  stack: "Android (Kotlin 2.2.10, Jetpack Compose BOM 2024.09, Room 2.7, Hilt 2.59, Firebase BOM 34.12, Retrofit 2.12 + Moshi)"
+  build: "Gradle 9.4.1 wrapper, AGP 9.2.1, KSP 2.3.5"
+  architecture: "MVVM with HiltViewModel constructor injection, Room for local persistence, Firestore/Firebase for remote, Clean-ish package structure (audio/, data/, di/, service/, ui/, viewmodel/)"
+  conventions:
+    - "Conventional commits (feat:, fix:, refactor:, build:, chore:, test:, docs:)"
+    - "2-space indent, LF, trailing commas On, max_line_length=160 (via .editorconfig)"
+    - "ktlint 12.2.0 configured (via Gradle plugin)"
+    - "String localization via Localization.kt (en + es maps)"
+
+strict_tdd: true
+test_command: "./gradlew :app:test"
+instrumented_test_command: "./gradlew :app:connectedAndroidTest"
+
+testing:
+  runner:
+    command: "./gradlew :app:test"
+    framework: "JUnit 4.13.2 + Robolectric 4.16.1 + Roborazzi 1.59.0"
+  layers:
+    unit: { available: true, tool: "JUnit + Robolectric" }
+    integration: { available: true, tool: "Room MigrationTestHelper, Robolectric" }
+    compose_ui: { available: true, tool: "Compose UI Test JUnit4" }
+    screenshot: { available: true, tool: "Roborazzi 1.59.0" }
+    e2e: { available: true, tool: "Espresso 3.7.0 (androidTest)" }
+  coverage:
+    available: false
+    command: null
+  quality:
+    linter: { available: true, command: "./gradlew ktlintCheck" }
+    formatter: { available: true, command: "./gradlew ktlintFormat" }
+    type_checker: { available: false, command: null }
+
+phase_rules:
+  proposal: "Write proposal.md in openspec/changes/<change-id>/ with intent, scope, approach, risks, success criteria."
+  spec: "Write spec.md with numbered REQ-* scenarios using GIVEN/WHEN/THEN format. Reference openspec/specs/<capability>/spec.md for existing specs."
+  design: "Write design.md with architecture decisions table, data flow diagrams, file changes list, and risk mitigation."
+  tasks: "Write tasks.md breaking the change into testable work units. Each task references the REQ it implements."
+  apply: "Implement tasks sequentially. Run ./gradlew :app:test after each task. Commit per work unit with conventional commits."
+  verify: "Run ./gradlew :app:test && ./gradlew ktlintCheck. Prove each REQ scenario passes. Run ./gradlew :app:assembleDebug to confirm build."
+  archive: "Move change directory to openspec/changes/archive/<date>-<change-id>/. Create archive-report.md with completion summary."

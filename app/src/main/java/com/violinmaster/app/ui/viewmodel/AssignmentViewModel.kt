@@ -3,10 +3,13 @@ package com.violinmaster.app.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.data.Assignment
-import com.violinmaster.app.data.PracticeRepository
+import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
-import com.violinmaster.app.di.SessionManager
-import com.violinmaster.app.security.VideoSecurityService
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.domain.usecase.CompleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.DeleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.GetAssignmentsUseCase
+import com.violinmaster.app.domain.usecase.PublishAssignmentUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,8 +22,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AssignmentViewModel @Inject constructor(
-    private val repository: PracticeRepository,
-    private val sessionManager: SessionManager
+    private val repository: IPracticeRepository,
+    private val authManager: AuthManager,
+    private val getAssignmentsUseCase: GetAssignmentsUseCase,
+    private val completeAssignmentUseCase: CompleteAssignmentUseCase,
+    private val publishAssignmentUseCase: PublishAssignmentUseCase,
+    private val deleteAssignmentUseCase: DeleteAssignmentUseCase
 ) : ViewModel() {
 
     // --- Student / Teacher Assignments flows ---
@@ -41,21 +48,15 @@ class AssignmentViewModel @Inject constructor(
 
         var assignmentsJob: Job? = null
         viewModelScope.launch {
-            sessionManager.currentUser.collect { user ->
+            authManager.currentUser.collect { user ->
                 assignmentsJob?.cancel()
                 if (user != null) {
                     assignmentsJob = viewModelScope.launch {
-                        if (user.role == "TEACHER") {
-                            repository.getAssignmentsByTeacher(user.teacherCode).collect { list ->
+                        getAssignmentsUseCase(user.username, user.role, user.teacherCode).collect { list ->
+                            if (user.role == "TEACHER") {
                                 _teacherAssignments.value = list
-                            }
-                        } else if (user.role == "STUDENT") {
-                            val code = user.teacherCode
-                            repository.allAssignments.collect { list ->
-                                _studentAssignments.value = list.filter {
-                                    it.studentUsername.equals(user.username, ignoreCase = true) ||
-                                            (it.studentUsername == "ALL" && it.teacherUsername == code)
-                                }
+                            } else if (user.role == "STUDENT") {
+                                _studentAssignments.value = list
                             }
                         }
                     }
@@ -68,45 +69,23 @@ class AssignmentViewModel @Inject constructor(
     }
 
     fun publishAssignment(title: String, description: String, targetStudent: String, videoTitle: String, durationSeconds: Int) {
-        val userVal = sessionManager.currentUser.value ?: return
+        val userVal = authManager.currentUser.value ?: return
         if (userVal.role != "TEACHER") return
 
         viewModelScope.launch {
-            val secureVideoUrl = if (videoTitle.isNotEmpty()) {
-                VideoSecurityService.obtainSecureSignedUrl("vid_dynamic_tutor_" + System.currentTimeMillis() % 1000, "session_token_master")
-            } else ""
-
-            val assignment = Assignment(
-                title = title,
-                description = description,
-                teacherUsername = userVal.teacherCode,
-                studentUsername = targetStudent,
-                videoTitle = videoTitle,
-                videoDurationSeconds = durationSeconds,
-                videoResourceUrl = secureVideoUrl
-            )
-            repository.insertAssignment(assignment)
+            publishAssignmentUseCase(title, description, targetStudent, videoTitle, durationSeconds)
         }
     }
 
     fun markAssignmentComplete(assignmentId: Int, completed: Boolean) {
         viewModelScope.launch {
-            repository.updateAssignmentCompletion(assignmentId, completed)
-            if (completed) {
-                // Award 200 points via repository
-                val userVal = sessionManager.currentUser.value
-                if (userVal != null) {
-                    val updatedUser = userVal.copy(points = userVal.points + 200)
-                    repository.insertUser(updatedUser)
-                    sessionManager.restoreCurrentUser(updatedUser)
-                }
-            }
+            completeAssignmentUseCase(assignmentId, completed)
         }
     }
 
     fun deleteAssignment(assignmentId: Int) {
         viewModelScope.launch {
-            repository.deleteAssignmentById(assignmentId)
+            deleteAssignmentUseCase(assignmentId)
         }
     }
 }

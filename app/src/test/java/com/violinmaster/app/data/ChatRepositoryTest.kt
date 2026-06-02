@@ -3,6 +3,7 @@ package com.violinmaster.app.data
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.violinmaster.app.data.local.CachedMessage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -23,13 +24,10 @@ import org.robolectric.annotation.Config
  * REQ-CHAT-004: Room Cache for Offline Access.
  * Since FirebaseFirestore cannot run in Robolectric tests (final class, requires
  * Google Play Services), these tests verify the Room cache operations directly
- * through the DAO — insert, query ordered by timestamp, and delete by assignmentId.
+ * through ChatDao — insert, query ordered by timestamp, and delete by assignmentId.
  *
- * The ChatRepository delegates Room caching to these DAO methods, so proving
- * DAO correctness proves ChatRepository cache correctness.
- *
- * TDD: RED phase — ChatRepository.kt does not exist yet. These tests describe
- * the expected behavior of the Room cache layer the repository will use.
+ * The ChatRepository delegates Room caching to ChatDao methods, so proving
+ * ChatDao correctness proves ChatRepository cache correctness.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -37,14 +35,14 @@ import org.robolectric.annotation.Config
 class ChatRepositoryTest {
 
     private lateinit var database: PracticeDatabase
-    private lateinit var dao: PracticeDao
+    private lateinit var dao: ChatDao
 
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java)
             .build()
-        dao = database.practiceDao()
+        dao = database.chatDao()
     }
 
     @After

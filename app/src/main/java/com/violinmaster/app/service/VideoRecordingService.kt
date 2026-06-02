@@ -36,7 +36,7 @@ import javax.inject.Singleton
  * @param context Application context for CameraX initialization and file access.
  */
 @Singleton
-class VideoRecordingService @Inject constructor(
+open class VideoRecordingService @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) {
     private var videoCapture: VideoCapture<Recorder>? = null
@@ -111,7 +111,7 @@ class VideoRecordingService @Inject constructor(
      * @param outputFile The file where the recording will be saved.
      * @param onError Callback invoked if recording setup fails.
      */
-    fun startRecording(outputFile: File, onError: (String) -> Unit) {
+    open fun startRecording(outputFile: File, onError: (String) -> Unit) {
         if (!hasCameraPermission()) {
             onError("CAMERA permission not granted")
             return
@@ -157,7 +157,7 @@ class VideoRecordingService @Inject constructor(
      * @return The recorded video file.
      * @throws IllegalStateException if no recording is in progress.
      */
-    fun stopRecording(): File {
+    open fun stopRecording(): File {
         if (!isRecordingFlag) {
             throw IllegalStateException("No recording in progress")
         }
@@ -171,7 +171,7 @@ class VideoRecordingService @Inject constructor(
     /**
      * Returns whether a recording is currently in progress.
      */
-    fun isRecording(): Boolean = isRecordingFlag
+    open fun isRecording(): Boolean = isRecordingFlag
 
     /**
      * Releases CameraX resources. Call when the lifecycle ends.

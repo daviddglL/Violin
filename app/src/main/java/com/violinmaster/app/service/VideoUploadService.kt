@@ -27,7 +27,7 @@ import kotlin.coroutines.resumeWithException
  * @param storage Firebase Storage instance (injected from FirebaseModule).
  */
 @Singleton
-class VideoUploadService @Inject constructor(
+open class VideoUploadService @Inject constructor(
     private val storage: FirebaseStorage
 ) {
 
@@ -50,7 +50,7 @@ class VideoUploadService @Inject constructor(
      * @throws SecurityException On authentication failure.
      * @throws StorageException On quota exceeded or other Storage errors.
      */
-    suspend fun uploadVideo(
+    open suspend fun uploadVideo(
         videoFile: File,
         teacherUsername: String,
         assignmentId: String,

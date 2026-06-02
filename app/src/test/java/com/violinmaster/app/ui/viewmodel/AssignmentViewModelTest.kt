@@ -4,11 +4,15 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.data.Assignment
-import com.violinmaster.app.data.PracticeDao
 import com.violinmaster.app.data.PracticeDatabase
+import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.domain.usecase.CompleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.DeleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.GetAssignmentsUseCase
+import com.violinmaster.app.domain.usecase.PublishAssignmentUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -29,19 +33,28 @@ import org.robolectric.annotation.Config
 class AssignmentViewModelTest {
 
     private lateinit var database: PracticeDatabase
-    private lateinit var dao: PracticeDao
-    private lateinit var repository: PracticeRepository
-    private lateinit var sessionManager: SessionManager
+    private lateinit var repository: IPracticeRepository
+    private lateinit var authManager: AuthManager
+    private lateinit var getAssignmentsUseCase: GetAssignmentsUseCase
+    private lateinit var completeAssignmentUseCase: CompleteAssignmentUseCase
+    private lateinit var publishAssignmentUseCase: PublishAssignmentUseCase
+    private lateinit var deleteAssignmentUseCase: DeleteAssignmentUseCase
     private lateinit var viewModel: AssignmentViewModel
 
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
-        dao = database.practiceDao()
-        repository = PracticeRepository(dao)
-        sessionManager = SessionManager(context)
-        viewModel = AssignmentViewModel(repository, sessionManager)
+        repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
+        authManager = AuthManager(context)
+        getAssignmentsUseCase = GetAssignmentsUseCase(repository)
+        completeAssignmentUseCase = CompleteAssignmentUseCase(repository, authManager)
+        publishAssignmentUseCase = PublishAssignmentUseCase(repository, authManager)
+        deleteAssignmentUseCase = DeleteAssignmentUseCase(repository)
+        viewModel = AssignmentViewModel(
+            repository, authManager, getAssignmentsUseCase, completeAssignmentUseCase,
+            publishAssignmentUseCase, deleteAssignmentUseCase
+        )
     }
 
     @After
@@ -61,7 +74,7 @@ class AssignmentViewModelTest {
         )
         repository.insertUser(teacher)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(teacher)
+        authManager.restoreCurrentUser(teacher)
 
         // Act
         viewModel.publishAssignment(
@@ -116,7 +129,7 @@ class AssignmentViewModelTest {
         val createdAssignment = repository.allAssignments.first()[0]
 
         // Login as student to earn points
-        sessionManager.restoreCurrentUser(student)
+        authManager.restoreCurrentUser(student)
 
         // Act
         viewModel.markAssignmentComplete(createdAssignment.id, true)
@@ -144,7 +157,7 @@ class AssignmentViewModelTest {
         )
         repository.insertUser(teacher)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(teacher)
+        authManager.restoreCurrentUser(teacher)
 
         val assignment = Assignment(
             title = "Delete Me",
@@ -185,7 +198,7 @@ class AssignmentViewModelTest {
         repository.insertUser(teacher)
         repository.insertUser(student)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(student)
+        authManager.restoreCurrentUser(student)
 
         // Create assignments: one for alice, one for ALL students, one for bob
         repository.insertAssignment(
@@ -222,7 +235,7 @@ class AssignmentViewModelTest {
         )
         repository.insertUser(teacher)
         advanceUntilIdle()
-        sessionManager.restoreCurrentUser(teacher)
+        authManager.restoreCurrentUser(teacher)
 
         // Act: create some assignments for this teacher
         viewModel.publishAssignment("Task 1", "Desc 1", "ALL", "", 0)

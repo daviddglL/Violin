@@ -1,11 +1,12 @@
 package com.violinmaster.app.ui.viewmodel
 
-import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.violinmaster.app.data.PracticeRepository
+import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.domain.usecase.LoginUseCase
+import com.violinmaster.app.domain.usecase.RegisterUseCase
 import com.violinmaster.app.security.SecurityUtils
 import com.violinmaster.app.security.VideoSecurityService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,14 +14,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.Arrays
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: PracticeRepository,
-    private val sessionManager: SessionManager,
-    private val securityUtils: SecurityUtils
+    private val repository: IPracticeRepository,
+    private val authManager: AuthManager,
+    private val securityUtils: SecurityUtils,
+    private val loginUseCase: LoginUseCase,
+    private val registerUseCase: RegisterUseCase
 ) : ViewModel() {
 
     // --- User Roles Authentication State ---
@@ -45,7 +48,7 @@ class AuthViewModel @Inject constructor(
 
     init {
         // Restore user session from SharedPreferences
-        val savedUserId = sessionManager.getSavedUserId()
+        val savedUserId = authManager.getSavedUserId()
         if (savedUserId != null) {
             viewModelScope.launch {
                 val dbUser = repository.getUserByUsername(savedUserId)
@@ -65,7 +68,7 @@ class AuthViewModel @Inject constructor(
             _loginError.value = "error_pin_length"
             return
         }
-        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+        val currentYear = LocalDate.now().year
         if (birthYear < 1900 || birthYear > currentYear) {
             _loginError.value = "error_birth_year_invalid"
             return
@@ -74,32 +77,17 @@ class AuthViewModel @Inject constructor(
         _signupSuccess.value = null
 
         viewModelScope.launch {
-            val existing = repository.getUserByUsername(username)
-            if (existing != null) {
+            val result = registerUseCase(username, pin, role, birthYear)
+            if (result != null) {
+                // Wire teacherCode for non-teacher roles (use case defaults to "")
+                if (teacherCodeInput.isNotBlank() && role != "TEACHER") {
+                    val updated = result.copy(teacherCode = teacherCodeInput)
+                    repository.insertUser(updated)
+                }
+                _signupSuccess.value = "success_register"
+            } else {
                 _loginError.value = "error_user_exists"
-                return@launch
             }
-
-            // Generate salt and hash passcode securely using SecurityUtils
-            val salt = SecurityUtils.generateSalt()
-            val passChars = pin.toCharArray()
-            val hashed = SecurityUtils.hashPasscode(passChars, salt)
-            Arrays.fill(passChars, '0')
-
-            // If teacher, invent a new Invite Code
-            val inviteCode = if (role == "TEACHER") "TEACH-${(1000..9999).random()}" else teacherCodeInput
-
-            val newAccount = UserAccount(
-                username = username,
-                role = role,
-                hashedPassword = hashed,
-                salt = Base64.encodeToString(salt, Base64.DEFAULT),
-                teacherCode = inviteCode,
-                birthYear = birthYear
-            )
-
-            repository.insertUser(newAccount)
-            _signupSuccess.value = "success_register"
         }
     }
 
@@ -115,20 +103,9 @@ class AuthViewModel @Inject constructor(
         _loginError.value = null
 
         viewModelScope.launch {
-            val user = repository.getUserByUsername(username)
-            if (user == null) {
-                _loginError.value = "error_login_failed"
-                return@launch
-            }
-
-            val saltBytes = Base64.decode(user.salt, Base64.DEFAULT)
-            val passChars = pin.toCharArray()
-            val computedHash = SecurityUtils.hashPasscode(passChars, saltBytes)
-            Arrays.fill(passChars, '0')
-
-            if (computedHash == user.hashedPassword) {
+            val user = loginUseCase(username, pin)
+            if (user != null) {
                 _currentUser.value = user
-                sessionManager.saveCurrentUser(user)
                 _loginError.value = null
             } else {
                 _loginError.value = "error_login_failed"
@@ -138,7 +115,7 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         _currentUser.value = null
-        sessionManager.clearSession()
+        authManager.clearSession()
         _loginError.value = null
         _signupSuccess.value = null
     }

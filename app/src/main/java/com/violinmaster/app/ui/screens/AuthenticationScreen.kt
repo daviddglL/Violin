@@ -34,8 +34,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
-import com.violinmaster.app.data.auth.GoogleAuthRepository
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.data.auth.IGoogleAuthRepository
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.ui.component.AuthShieldHeader
+import com.violinmaster.app.ui.component.BirthYearSelector
+import com.violinmaster.app.ui.component.GoogleSignInSection
+import com.violinmaster.app.ui.component.LoginKeypadGrid
+import com.violinmaster.app.ui.component.PinBulletIndicator
+import com.violinmaster.app.ui.component.RoleSelector
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
@@ -45,15 +51,15 @@ import kotlinx.coroutines.launch
 @Composable
 fun AuthenticationScreen(
     authViewModel: AuthViewModel,
-    googleAuthRepository: GoogleAuthRepository,
-    sessionManager: SessionManager,
+    googleAuthRepository: IGoogleAuthRepository,
+    authManager: AuthManager,
     appLanguage: AppLanguage,
     modifier: Modifier = Modifier
 ) {
     val lang = appLanguage
     val errKey by authViewModel.loginError.collectAsState()
     val successKey by authViewModel.signupSuccess.collectAsState()
-    val isGoogleSignedIn by sessionManager.isGoogleSignedIn.collectAsState()
+    val isGoogleSignedIn by authManager.isGoogleSignedIn.collectAsState()
 
     var isRegisterMode by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
@@ -79,7 +85,7 @@ fun AuthenticationScreen(
                     if (idToken != null) {
                         val signInResult = googleAuthRepository.signIn(idToken)
                         signInResult.onSuccess {
-                            sessionManager.setGoogleSignedIn(true)
+                            authManager.setGoogleSignedIn(true)
                         }.onFailure { error ->
                             snackbarHostState.showSnackbar(
                                 "Google Sign-In failed: ${error.message ?: "Unknown error"}"
@@ -115,35 +121,9 @@ fun AuthenticationScreen(
                 .widthIn(max = 440.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header Shield Icon
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Shield Security Logo",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-
-            Text(
-                text = Localization.get("login_required", lang).uppercase(),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = Localization.get(if (isRegisterMode) "register_desc" else "login_info_desc", lang),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp
+            AuthShieldHeader(
+                isRegisterMode = isRegisterMode,
+                lang = lang
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -167,141 +147,25 @@ fun AuthenticationScreen(
             )
 
             // PIN Bullet display representation
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = Localization.get("password_label", lang) + " (" + Localization.get("pin_hint", lang) + ")",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    for (i in 0 until 4) {
-                        val filled = i < pin.length
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (filled) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
-                        )
-                    }
-                }
-            }
+            PinBulletIndicator(
+                pin = pin,
+                lang = lang
+            )
 
             // Role selection panel
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = Localization.get("role_label", lang),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val roles = listOf(
-                        "STUDENT" to "role_student",
-                        "TEACHER" to "role_teacher",
-                        "FREELANCER" to "role_freelancer"
-                    )
-
-                    roles.forEach { (roleKey, transKey) ->
-                        val isSelected = selectedRole == roleKey
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                )
-                                .border(
-                                    1.dp,
-                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .clickable { selectedRole = roleKey }
-                                .padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = Localization.get(transKey, lang),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                fontSize = 10.sp
-                            )
-                        }
-                    }
-                }
-            }
+            RoleSelector(
+                selectedRole = selectedRole,
+                onRoleSelected = { selectedRole = it },
+                lang = lang
+            )
 
             // Birth year selector (required for registration)
             if (isRegisterMode) {
-                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-                val years = (currentYear downTo 1930).toList()
-                var expanded by remember { mutableStateOf(false) }
-
-                Text(
-                    text = Localization.get("birth_year_label", lang) + " *",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 4.dp)
+                BirthYearSelector(
+                    birthYear = birthYear,
+                    onYearSelected = { birthYear = it },
+                    lang = lang
                 )
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it }
-                ) {
-                    OutlinedTextField(
-                        value = birthYear,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(Localization.get("birth_year_hint", lang), fontSize = 11.sp) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.12f)
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        years.forEach { year ->
-                            DropdownMenuItem(
-                                text = { Text(year.toString()) },
-                                onClick = {
-                                    birthYear = year.toString()
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
-                }
             }
 
             // Student target teacher code injection if register
@@ -386,64 +250,14 @@ fun AuthenticationScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Divider before Google section
-            HorizontalDivider(
-                color = Color.White.copy(alpha = 0.12f),
-                modifier = Modifier.fillMaxWidth(0.6f)
-            )
-
             // Google Sign-In section
-            if (isGoogleSignedIn) {
-                // Task 10: Feature gating — show AI features enabled badge
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .background(
-                            Color(0xFF1B5E20).copy(alpha = 0.3f),
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                        .testTag("ai_features_enabled")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "AI enabled",
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "AI features enabled",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFA5D6A7),
-                        fontWeight = FontWeight.Medium
-                    )
+            GoogleSignInSection(
+                isGoogleSignedIn = isGoogleSignedIn,
+                onSignInClick = {
+                    val signInIntent = googleAuthRepository.getSignInIntent()
+                    googleSignInLauncher.launch(signInIntent)
                 }
-            } else {
-                // "Sign in with Google" button
-                Button(
-                    onClick = {
-                        val signInIntent = googleAuthRepository.getSignInIntent()
-                        googleSignInLauncher.launch(signInIntent)
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color(0xFF1A1A2E)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .height(48.dp)
-                        .testTag("google_sign_in_button")
-                ) {
-                    Text(
-                        text = "Sign in with Google for AI features",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1A1A2E)
-                    )
-                }
-            }
+            )
 
             // SnackbarHost for Google Sign-In errors
             SnackbarHost(
@@ -454,74 +268,3 @@ fun AuthenticationScreen(
     }
 }
 
-@Composable
-fun LoginKeypadGrid(
-    currentValue: String,
-    onValueChange: (String) -> Unit,
-    onValidate: () -> Unit,
-    lang: AppLanguage,
-    isCorrectLength: Boolean
-) {
-    val keys = listOf(
-        "1", "2", "3",
-        "4", "5", "6",
-        "7", "8", "9",
-        "CLR", "0", "OK"
-    )
-
-    Column(
-        modifier = Modifier.width(320.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        val rows = keys.chunked(3)
-        rows.forEach { rowKeys ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                rowKeys.forEach { key ->
-                    val isAction = key == "CLR" || key == "OK"
-                    val isOkActive = key == "OK" && isCorrectLength
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                when {
-                                    isOkActive -> MaterialTheme.colorScheme.primary
-                                    isAction -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                                    else -> MaterialTheme.colorScheme.surface
-                                }
-                            )
-                            .clickable {
-                                when (key) {
-                                    "CLR" -> onValueChange("")
-                                    "OK" -> onValidate()
-                                    else -> {
-                                        if (currentValue.length < 4) {
-                                            onValueChange(currentValue + key)
-                                        }
-                                    }
-                                }
-                            }
-                            .testTag("login_keypad_$key"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = key,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                isOkActive -> MaterialTheme.colorScheme.onPrimary
-                                key == "CLR" -> MaterialTheme.colorScheme.onSurfaceVariant
-                                else -> Color.White
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}

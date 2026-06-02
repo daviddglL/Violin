@@ -23,23 +23,28 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.violinmaster.app.ui.component.AccountSection
+import com.violinmaster.app.ui.component.LanguageSelector
+import com.violinmaster.app.ui.component.SecuritySection
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
 import com.violinmaster.app.ui.viewmodel.TunerViewModel
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.UserPreferencesManager
 
 @Composable
 fun SettingsScreen(
     practiceVM: PracticeViewModel,
     authVM: AuthViewModel,
     tunerVM: TunerViewModel,
-    sessionManager: SessionManager,
+    userPreferencesManager: UserPreferencesManager,
+    authManager: AuthManager,
     modifier: Modifier = Modifier
 ) {
-    val lang by sessionManager.appLanguage.collectAsState()
-    val currentUser by sessionManager.currentUser.collectAsState()
+    val lang by userPreferencesManager.appLanguage.collectAsState()
+    val currentUser by authManager.currentUser.collectAsState()
     val dailyGoalMinutes by practiceVM.dailyGoalMinutes.collectAsState()
     val referencePitchA by tunerVM.referencePitchA.collectAsState()
 
@@ -73,154 +78,17 @@ fun SettingsScreen(
         HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
 
         // --- LANGUAGE SWITCH SECTION ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.04f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = Localization.get("language_select", lang),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val languages = listOf(
-                        AppLanguage.ENGLISH to "lang_en",
-                        AppLanguage.SPANISH to "lang_es"
-                    )
-
-                    languages.forEach { (langKey, labelKey) ->
-                        val isSelected = lang == langKey
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                )
-                                .border(
-                                    1.dp,
-                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .clickable { sessionManager.setAppLanguage(langKey) }
-                                .padding(vertical = 12.dp)
-                                .testTag("lang_toggle_${langKey.name}"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = Localization.get(labelKey, lang),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        LanguageSelector(
+            lang = lang,
+            onLanguageSelected = { userPreferencesManager.setAppLanguage(it) }
+        )
 
         // --- SECURE USER PROFILE ACCESS CARD ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.04f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = Localization.get("auth_role_label", lang),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = Localization.get("active_session_label", lang),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = currentUser?.username ?: "",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = when (currentUser?.role) {
-                                "TEACHER" -> Localization.get("role_teacher", lang)
-                                "STUDENT" -> Localization.get("role_student", lang)
-                                else -> Localization.get("role_freelancer", lang)
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Button(
-                        onClick = { authVM.logout() },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.height(34.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onErrorContainer)
-                            Text(Localization.get("change_role_btn", lang), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
-                        }
-                    }
-                }
-
-                if (currentUser?.role == "STUDENT" && currentUser?.teacherCode?.isNotEmpty() == true) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${Localization.get("linked_to_teacher", lang)}: ${currentUser?.teacherCode}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-            }
-        }
+        AccountSection(
+            currentUser = currentUser,
+            lang = lang,
+            onLogout = { authVM.logout() }
+        )
 
         // --- PRACTICE GOAL MINUTES CARD ---
         Card(
@@ -264,59 +132,11 @@ fun SettingsScreen(
         }
 
         // --- REFERENCE PITCH CARD ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.04f))
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    text = Localization.get("ref_pitch_label", lang),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "${referencePitchA} Hz",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(432, 440, 441, 442).forEach { pitch ->
-                            val isSelected = referencePitchA == pitch
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
-                                    .clickable { tunerVM.updateReferencePitch(pitch) }
-                                    .testTag("pitch_selector_$pitch"),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "$pitch",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.White
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        SecuritySection(
+            referencePitchA = referencePitchA,
+            lang = lang,
+            onPitchChange = { tunerVM.updateReferencePitch(it) }
+        )
 
         // --- SEED DEMO LOGS PANEL ---
         Card(

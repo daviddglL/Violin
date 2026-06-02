@@ -1,57 +1,28 @@
 package com.violinmaster.app.ui.screens
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.violinmaster.app.data.PracticeSession
+import com.violinmaster.app.ui.component.ChartSection
+import com.violinmaster.app.ui.component.StatsSummary
+import com.violinmaster.app.ui.component.practiceHistorySection
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
-import com.violinmaster.app.di.SessionManager
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.UserPreferencesManager
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.theme.AppLanguage
 import java.text.SimpleDateFormat
@@ -63,22 +34,22 @@ import java.util.Locale
 fun StatsScreen(
     practiceVM: PracticeViewModel,
     assignmentVM: AssignmentViewModel,
-    sessionManager: SessionManager,
+    userPreferencesManager: UserPreferencesManager,
+    authManager: AuthManager,
     modifier: Modifier = Modifier
 ) {
     val sessions by practiceVM.allSessions.collectAsState()
-    val appLanguage by sessionManager.appLanguage.collectAsState()
+    val appLanguage by userPreferencesManager.appLanguage.collectAsState()
     val allUsers by assignmentVM.allUsers.collectAsState()
-    val userAccount by sessionManager.currentUser.collectAsState()
+    val userAccount by authManager.currentUser.collectAsState()
 
-    var activeSubTab by remember { mutableStateOf("analytics") } // "analytics" or "leaderboard"
-
+    var activeSubTab by remember { mutableStateOf("analytics") }
     // Process past 7 days of practice minutes
     val calendar = Calendar.getInstance()
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val dayFormat = SimpleDateFormat("EEE", Locale.getDefault())
 
-    val chartData = mutableListOf<Pair<String, Float>>() // Pair (Abbreviated Day, Practice Minutes)
+    val chartData = mutableListOf<Pair<String, Float>>()
 
     for (i in -6..0) {
         calendar.time = Date()
@@ -86,7 +57,6 @@ fun StatsScreen(
         val targetDateStr = sdf.format(calendar.time)
         val dayLabel = dayFormat.format(calendar.time)
 
-        // Find and sum daily seconds
         val dailySeconds = sessions.filter { it.dateString == targetDateStr }.sumOf { it.durationSeconds }
         val dailyMinutes = dailySeconds / 60f
         chartData.add(Pair(dayLabel, dailyMinutes))
@@ -110,14 +80,12 @@ fun StatsScreen(
             streakCounter++
             checkCalendar.add(Calendar.DAY_OF_YEAR, -1)
         } else {
-            // If checking "today" and missed, carry on checking yesterday before breaking streak
             val nowStr = sdf.format(Date())
             if (checkDateStr == nowStr) {
                 checkCalendar.add(Calendar.DAY_OF_YEAR, -1)
                 val yesterdayStr = sdf.format(checkCalendar.time)
                 if (sessions.any { it.dateString == yesterdayStr }) {
-                    // Start streak count from yesterday
-                    streakCounter = 0 // resetting in case it counted today (impossible)
+                    streakCounter = 0
                 } else {
                     checking = false
                 }
@@ -153,7 +121,7 @@ fun StatsScreen(
                     letterSpacing = 2.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Tab switcher selection
                 Row(
                     modifier = Modifier
@@ -189,263 +157,25 @@ fun StatsScreen(
             }
 
             if (activeSubTab == "analytics") {
-                // --- Aggregated Stats Summary Row ---
+                // Aggregated Stats Summary Row
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // S1: Streak Card
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStrokeHelper()
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "🔥",
-                                    fontSize = 24.sp,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = String.format(Localization.get("streak_days_format", appLanguage), streakCounter),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = Localization.get("practice_streak", appLanguage),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontSize = 8.sp,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                        }
-
-                        // S2: Average Card
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStrokeHelper()
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "📈",
-                                    fontSize = 24.sp,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = String.format(Localization.get("average_format", appLanguage), averageMins),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = Localization.get("daily_average", appLanguage),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontSize = 8.sp,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // --- Custom Weekly Curve Chart ---
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp)
-                            .testTag("weekly_practice_chart_card"),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(24.dp),
-                        border = BorderStrokeHelper()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                text = Localization.get("practice_drill_trend", appLanguage),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.5.sp
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                            ) {
-                                val primaryColor = MaterialTheme.colorScheme.primary
-                                val secondaryColor = MaterialTheme.colorScheme.primaryContainer
-
-                                Canvas(modifier = Modifier.fillMaxSize()) {
-                                    val width = size.width
-                                    val height = size.height
-
-                                    val leftPadding = 24.dp.toPx()
-                                    val rightPadding = 12.dp.toPx()
-                                    val topPadding = 12.dp.toPx()
-                                    val bottomPadding = 20.dp.toPx()
-
-                                    val graphWidth = width - leftPadding - rightPadding
-                                    val graphHeight = height - topPadding - bottomPadding
-
-                                    val maxMinutes = (chartData.map { it.second }.maxOrNull() ?: 15f).coerceAtLeast(30f)
-
-                                    // Draw Y-axis guideline grids
-                                    repeat(3) { step ->
-                                        val gridY = topPadding + graphHeight * (step / 2f)
-                                        drawLine(
-                                            color = Color(0xFF49454F).copy(alpha = 0.3f),
-                                            start = Offset(leftPadding, gridY),
-                                            end = Offset(width - rightPadding, gridY),
-                                            strokeWidth = 1.dp.toPx()
-                                        )
-                                    }
-
-                                    // Calculate X and Y coordinate mapping
-                                    val points = chartData.mapIndexed { index, data ->
-                                        val x = leftPadding + (index.toFloat() / 6f) * graphWidth
-                                        val ratio = (data.second / maxMinutes).coerceIn(0f, 1f)
-                                        val y = topPadding + (1f - ratio) * graphHeight
-                                        Offset(x, y)
-                                    }
-
-                                    // Draw Gradient under-line fill path
-                                    if (points.isNotEmpty()) {
-                                        val fillPath = Path().apply {
-                                            moveTo(points.first().x, topPadding + graphHeight)
-                                            points.forEach { point ->
-                                                lineTo(point.x, point.y)
-                                            }
-                                            lineTo(points.last().x, topPadding + graphHeight)
-                                            close()
-                                        }
-
-                                        drawPath(
-                                            path = fillPath,
-                                            brush = Brush.verticalGradient(
-                                                colors = listOf(
-                                                    primaryColor.copy(alpha = 0.25f),
-                                                    Color.Transparent
-                                                )
-                                            )
-                                        )
-
-                                        // Draw sleek continuous Bezier curve
-                                        val strokePath = Path().apply {
-                                            var pPrev = points.first()
-                                            moveTo(pPrev.x, pPrev.y)
-                                            for (i in 1 until points.size) {
-                                                val pCur = points[i]
-                                                val cX = (pPrev.x + pCur.x) / 2f
-                                                quadraticTo(pPrev.x, pPrev.y, cX, (pPrev.y + pCur.y) / 2f)
-                                                pPrev = pCur
-                                            }
-                                            lineTo(pPrev.x, pPrev.y)
-                                        }
-
-                                        drawPath(
-                                            path = strokePath,
-                                            color = primaryColor,
-                                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-                                        )
-
-                                        // Draw concentric indicator points with a white center
-                                        points.forEachIndexed { i, pt ->
-                                            drawCircle(
-                                                color = primaryColor,
-                                                radius = 5.dp.toPx(),
-                                                center = pt
-                                            )
-                                            drawCircle(
-                                                color = Color.White,
-                                                radius = 2.dp.toPx(),
-                                                center = pt
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // Dynamic labels below chart overlay
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .align(Alignment.BottomEnd)
-                                        .padding(start = 24.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    chartData.forEach { data ->
-                                        Text(
-                                            text = data.first,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontWeight = FontWeight.Medium,
-                                            modifier = Modifier.width(36.dp),
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // --- History Logs Label ---
-                item {
-                    Text(
-                        text = Localization.get("completed_practice_journal", appLanguage),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                        letterSpacing = 1.5.sp
+                    StatsSummary(
+                        streakCounter = streakCounter,
+                        averageMins = averageMins,
+                        appLanguage = appLanguage
                     )
                 }
 
-                if (sessions.isEmpty()) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text(
-                                text = Localization.get("empty_log_book", appLanguage),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp)
-                            )
-                        }
-                    }
-                }
-
-                items(sessions) { log ->
-                    HistoryLogItem(
-                        log = log,
-                        appLanguage = appLanguage,
-                        onDelete = { practiceVM.deleteSession(log.id) }
+                // Custom Weekly Curve Chart
+                item {
+                    ChartSection(
+                        chartData = chartData,
+                        appLanguage = appLanguage
                     )
                 }
+
+                // History Logs section
+                practiceHistorySection(sessions, appLanguage, { practiceVM.deleteSession(it) })
             }
 
             if (activeSubTab == "leaderboard") {
@@ -582,68 +312,6 @@ fun StatsScreen(
 
             item {
                 Spacer(modifier = Modifier.height(32.dp))
-            }
-        }
-    }
-}
-
-@Composable
-fun HistoryLogItem(log: PracticeSession, appLanguage: AppLanguage, onDelete: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("history_log_item_${log.id}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStrokeHelper()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "🎻", fontSize = 16.sp)
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = log.category,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "${log.dateString} • ${String.format(Localization.get("practice_log_format", appLanguage), log.durationSeconds / 60)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.testTag("delete_log_${log.id}")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = Localization.get("delete_log_cd", appLanguage),
-                    tint = Color(0xFFF2B8B5).copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
-                )
             }
         }
     }

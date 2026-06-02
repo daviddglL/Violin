@@ -2,8 +2,12 @@ package com.violinmaster.app.di
 
 import android.content.Context
 import androidx.room.Room
-import com.violinmaster.app.data.PracticeDao
+import com.violinmaster.app.data.AssignmentDao
+import com.violinmaster.app.data.ChatDao
+import com.violinmaster.app.data.LessonDao
 import com.violinmaster.app.data.PracticeDatabase
+import com.violinmaster.app.data.SessionDao
+import com.violinmaster.app.data.UserDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,7 +32,27 @@ object DatabaseModule {
     }
 
     @Provides
-    fun providePracticeDao(database: PracticeDatabase): PracticeDao {
-        return database.practiceDao()
+    fun provideSessionDao(database: PracticeDatabase): SessionDao {
+        return database.sessionDao()
+    }
+
+    @Provides
+    fun provideLessonDao(database: PracticeDatabase): LessonDao {
+        return database.lessonDao()
+    }
+
+    @Provides
+    fun provideUserDao(database: PracticeDatabase): UserDao {
+        return database.userDao()
+    }
+
+    @Provides
+    fun provideAssignmentDao(database: PracticeDatabase): AssignmentDao {
+        return database.assignmentDao()
+    }
+
+    @Provides
+    fun provideChatDao(database: PracticeDatabase): ChatDao {
+        return database.chatDao()
     }
 }

@@ -1,6 +1,8 @@
 package com.violinmaster.app.data.remote
 
-import com.violinmaster.app.data.auth.GoogleAuthRepository
+import android.content.Intent
+import com.violinmaster.app.data.auth.GoogleUser
+import com.violinmaster.app.data.auth.IGoogleAuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -135,16 +137,20 @@ class GeminiAuthInterceptorTest {
     // ---- Fake implementations ----
 
     /**
-     * A fake [GoogleAuthRepository] that returns fixed values for testing.
+     * A fake [IGoogleAuthRepository] that returns fixed values for testing.
      * Does not depend on Firebase/Auth singletons.
      */
     private class FakeGoogleAuthRepository(
         private val isSignedIn: Boolean,
         private val token: String?
-    ) : GoogleAuthRepository(null, null) {
+    ) : IGoogleAuthRepository {
+        override val signedInFlow = MutableStateFlow(isSignedIn)
+        override suspend fun signIn(idToken: String): Result<GoogleUser> =
+            Result.success(GoogleUser("fake", "fake@test.com", "Fake", null))
+        override suspend fun signOut() {}
         override fun getAccessToken(): String? = token
         override fun isSignedIn(): Boolean = isSignedIn
-        override val signedInFlow = MutableStateFlow(isSignedIn)
+        override fun getSignInIntent(): Intent = Intent()
     }
 
     /**

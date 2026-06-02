@@ -52,6 +52,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.violinmaster.app.ui.component.BeatIndicator
+import com.violinmaster.app.ui.component.BpmDial
+import com.violinmaster.app.ui.component.TimeSignatureSelector
 import com.violinmaster.app.ui.viewmodel.MetronomeViewModel
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
@@ -137,159 +140,22 @@ fun MetronomeScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // --- Large Tactile Visual Pulse Node ---
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .testTag("metronome_pulse_card"),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            shape = RoundedCornerShape(28.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            border = BorderStrokeHelper()
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                // Animated pulse box
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .scale(scaleFactor)
-                        .clip(CircleShape)
-                        .background(
-                            if (activeBeatPulse == 0 && accent) {
-                                Color(0xFFE53935) // Red downbeat flash accent
-                            } else if (activeBeatPulse != -1) {
-                                MaterialTheme.colorScheme.primary // Purple accent
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (activeBeatPulse != -1) "${activeBeatPulse + 1}" else "⏱",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = if (activeBeatPulse != -1) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Track nodes row
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    for (i in 0 until beats) {
-                        val isActive = activeBeatPulse == i
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isActive) {
-                                        if (i == 0 && accent) Color(0xFFE53935) else MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceVariant
-                                    }
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isActive) Color.White else Color.Transparent,
-                                    shape = CircleShape
-                                )
-                        )
-                    }
-                }
-            }
-        }
+        BeatIndicator(
+            scaleFactor = scaleFactor,
+            activeBeatPulse = activeBeatPulse,
+            beats = beats,
+            accent = accent,
+            appLanguage = appLanguage
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
         // --- Tactile BPM Slider & Dragging ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(20.dp),
-            border = BorderStrokeHelper()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = { viewModel.updateMetronomeBpm(bpm - 5) },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .testTag("bpm_decrement_5")
-                    ) {
-                        Text(
-                            text = "—",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "$bpm",
-                            style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            fontFamily = FontFamily.Serif
-                        )
-                    Text(
-                        text = Localization.get("bpm_tempo_label", appLanguage),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { viewModel.updateMetronomeBpm(bpm + 5) },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .testTag("bpm_increment_5")
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Increment BPM", tint = Color.White)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Slider(
-                    value = bpm.toFloat(),
-                    onValueChange = { viewModel.updateMetronomeBpm(it.toInt()) },
-                    valueRange = 40f..240f,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("bpm_slider")
-                )
-            }
-        }
+        BpmDial(
+            bpm = bpm,
+            appLanguage = appLanguage,
+            onBpmChange = { viewModel.updateMetronomeBpm(it) }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -357,55 +223,12 @@ fun MetronomeScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Beat Division selection card
-            Card(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(110.dp)
-                    .testTag("beat_selector_card"),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStrokeHelper()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = Localization.get("time_signature_label", appLanguage),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        listOf(2, 3, 4, 6).forEach { signBeats ->
-                            val isSelected = beats == signBeats
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
-                                    .clickable { viewModel.updateMetronomeBeats(signBeats) }
-                                    .testTag("time_sign_button_$signBeats"),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "$signBeats",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.White
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            TimeSignatureSelector(
+                modifier = Modifier.weight(1f),
+                beats = beats,
+                appLanguage = appLanguage,
+                onBeatsChange = { viewModel.updateMetronomeBeats(it) }
+            )
 
             // Downbeat Accent card
             Card(

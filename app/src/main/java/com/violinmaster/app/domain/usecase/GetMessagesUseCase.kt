@@ -3,14 +3,13 @@ package com.violinmaster.app.domain.usecase
 import com.violinmaster.app.data.IChatRepository
 import com.violinmaster.app.data.firebase.Message
 import kotlinx.coroutines.flow.Flow
-import javax.inject.Inject
 
 /**
  * Retrieves chat messages for an assignment.
  *
  * No Android imports — delegating to [IChatRepository].
  */
-class GetMessagesUseCase @Inject constructor(
+class GetMessagesUseCase constructor(
   private val chatRepository: IChatRepository
 ) {
   /**

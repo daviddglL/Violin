@@ -9,6 +9,8 @@ import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.domain.usecase.CompleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.GetAssignmentsUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -31,6 +33,8 @@ class AssignmentViewModelTest {
     private lateinit var database: PracticeDatabase
     private lateinit var repository: IPracticeRepository
     private lateinit var authManager: AuthManager
+    private lateinit var getAssignmentsUseCase: GetAssignmentsUseCase
+    private lateinit var completeAssignmentUseCase: CompleteAssignmentUseCase
     private lateinit var viewModel: AssignmentViewModel
 
     @Before
@@ -39,7 +43,9 @@ class AssignmentViewModelTest {
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
         authManager = AuthManager(context)
-        viewModel = AssignmentViewModel(repository, authManager)
+        getAssignmentsUseCase = GetAssignmentsUseCase(repository)
+        completeAssignmentUseCase = CompleteAssignmentUseCase(repository, authManager)
+        viewModel = AssignmentViewModel(repository, authManager, getAssignmentsUseCase, completeAssignmentUseCase)
     }
 
     @After

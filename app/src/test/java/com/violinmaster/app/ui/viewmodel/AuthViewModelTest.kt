@@ -8,6 +8,8 @@ import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.domain.usecase.LoginUseCase
+import com.violinmaster.app.domain.usecase.RegisterUseCase
 import com.violinmaster.app.security.SecurityUtils
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -33,6 +35,8 @@ class AuthViewModelTest {
     private lateinit var repository: IPracticeRepository
     private lateinit var authManager: AuthManager
     private lateinit var securityUtils: SecurityUtils
+    private lateinit var loginUseCase: LoginUseCase
+    private lateinit var registerUseCase: RegisterUseCase
     private lateinit var viewModel: AuthViewModel
 
     @Before
@@ -42,7 +46,9 @@ class AuthViewModelTest {
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
         authManager = AuthManager(context)
         securityUtils = SecurityUtils(context)
-        viewModel = AuthViewModel(repository, authManager, securityUtils)
+        loginUseCase = LoginUseCase(repository, authManager)
+        registerUseCase = RegisterUseCase(repository)
+        viewModel = AuthViewModel(repository, authManager, securityUtils, loginUseCase, registerUseCase)
     }
 
     @After

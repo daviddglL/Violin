@@ -12,6 +12,8 @@ import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.NavigationManager
 import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.domain.usecase.GetPracticeSessionsUseCase
+import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import org.junit.After
 import org.junit.Before
@@ -34,6 +36,8 @@ class HomeScreenTest {
     private lateinit var userPreferencesManager: UserPreferencesManager
     private lateinit var navigationManager: NavigationManager
     private lateinit var audioEngine: ViolinAudioEngine
+    private lateinit var savePracticeSessionUseCase: SavePracticeSessionUseCase
+    private lateinit var getPracticeSessionsUseCase: GetPracticeSessionsUseCase
     private lateinit var viewModel: PracticeViewModel
     private lateinit var context: Context
 
@@ -46,7 +50,9 @@ class HomeScreenTest {
         userPreferencesManager = UserPreferencesManager(context)
         navigationManager = NavigationManager()
         audioEngine = ViolinAudioEngine()
-        viewModel = PracticeViewModel(repository, authManager, userPreferencesManager, audioEngine)
+        savePracticeSessionUseCase = SavePracticeSessionUseCase(repository)
+        getPracticeSessionsUseCase = GetPracticeSessionsUseCase(repository)
+        viewModel = PracticeViewModel(repository, authManager, userPreferencesManager, audioEngine, savePracticeSessionUseCase, getPracticeSessionsUseCase)
     }
 
     @After

@@ -2,14 +2,13 @@ package com.violinmaster.app.domain.usecase
 
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.di.AuthManager
-import javax.inject.Inject
 
 /**
  * Marks an assignment as complete and awards points to the student.
  *
  * No Android imports — delegating to [IPracticeRepository] and [AuthManager].
  */
-class CompleteAssignmentUseCase @Inject constructor(
+class CompleteAssignmentUseCase constructor(
   private val repository: IPracticeRepository,
   private val authManager: AuthManager
 ) {

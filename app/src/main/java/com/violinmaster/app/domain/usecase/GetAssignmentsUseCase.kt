@@ -5,14 +5,13 @@ import com.violinmaster.app.data.IPracticeRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 /**
  * Retrieves assignments filtered by user role and identity.
  *
  * No Android imports — delegating to [IPracticeRepository].
  */
-class GetAssignmentsUseCase @Inject constructor(
+class GetAssignmentsUseCase constructor(
   private val repository: IPracticeRepository
 ) {
   /**

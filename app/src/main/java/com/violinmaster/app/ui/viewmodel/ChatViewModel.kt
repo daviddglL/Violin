@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.data.IChatRepository
 import com.violinmaster.app.data.firebase.Message
 import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.domain.usecase.GetMessagesUseCase
+import com.violinmaster.app.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +27,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: IChatRepository,
-    internal val authManager: AuthManager
+    internal val authManager: AuthManager,
+    private val sendMessageUseCase: SendMessageUseCase,
+    private val getMessagesUseCase: GetMessagesUseCase
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
@@ -59,7 +63,7 @@ class ChatViewModel @Inject constructor(
 
         messagesJob = viewModelScope.launch {
             try {
-                chatRepository.loadMessages(assignmentId).collect { messageList ->
+                getMessagesUseCase(assignmentId).collect { messageList ->
                     _messages.value = messageList
                     _isLoading.value = false
                 }
@@ -94,16 +98,9 @@ class ChatViewModel @Inject constructor(
             return
         }
 
-        val message = Message(
-            senderUsername = currentUser.username,
-            senderRole = currentUser.role,
-            text = text.trim(),
-            timestamp = System.currentTimeMillis()
-        )
-
         viewModelScope.launch {
             try {
-                chatRepository.sendMessage(assignmentId, message)
+                sendMessageUseCase(assignmentId, text)
                 // The loadMessages Flow will automatically emit the updated list
                 // including the newly sent message after Room cache update.
             } catch (e: Exception) {

@@ -3,7 +3,6 @@ package com.violinmaster.app.domain.usecase
 import com.violinmaster.app.data.IChatRepository
 import com.violinmaster.app.data.firebase.Message
 import com.violinmaster.app.di.AuthManager
-import javax.inject.Inject
 
 /**
  * Sends a chat message for an assignment.
@@ -13,7 +12,7 @@ import javax.inject.Inject
  *
  * REQ-ARCH-001-S3: Pure-Kotlin use case testable with mocks.
  */
-class SendMessageUseCase @Inject constructor(
+class SendMessageUseCase constructor(
   private val chatRepository: IChatRepository,
   private val authManager: AuthManager
 ) {

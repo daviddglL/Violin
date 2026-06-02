@@ -4,14 +4,13 @@ import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 /**
  * Retrieves practice sessions filtered by date range.
  *
  * No Android imports — delegating to [IPracticeRepository].
  */
-class GetPracticeSessionsUseCase @Inject constructor(
+class GetPracticeSessionsUseCase constructor(
   private val repository: IPracticeRepository
 ) {
   /**

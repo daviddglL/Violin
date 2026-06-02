@@ -6,7 +6,6 @@ import com.violinmaster.app.domain.util.Base64Encoder
 import com.violinmaster.app.security.SecurityUtils
 import java.time.LocalDate
 import java.util.Arrays
-import javax.inject.Inject
 
 /**
  * Registers a new user account.
@@ -16,7 +15,7 @@ import javax.inject.Inject
  *
  * REQ-ARCH-001: Pure-Kotlin use case with no Android SDK dependencies.
  */
-class RegisterUseCase @Inject constructor(
+class RegisterUseCase constructor(
   private val repository: IPracticeRepository
 ) {
   /**

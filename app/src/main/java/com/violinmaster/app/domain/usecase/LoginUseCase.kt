@@ -5,7 +5,6 @@ import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.util.Base64Encoder
 import com.violinmaster.app.security.SecurityUtils
-import javax.inject.Inject
 
 /**
  * Authenticates a user with username and pin.
@@ -14,7 +13,7 @@ import javax.inject.Inject
  *
  * REQ-ARCH-001-S1: Pure-Kotlin use case testable with JUnit + Mockito.
  */
-class LoginUseCase @Inject constructor(
+class LoginUseCase constructor(
   private val repository: IPracticeRepository,
   private val authManager: AuthManager
 ) {

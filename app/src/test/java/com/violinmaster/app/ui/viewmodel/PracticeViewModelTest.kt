@@ -11,6 +11,8 @@ import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.domain.usecase.GetPracticeSessionsUseCase
+import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceTimeBy
@@ -37,6 +39,8 @@ class PracticeViewModelTest {
     private lateinit var authManager: AuthManager
     private lateinit var userPreferencesManager: UserPreferencesManager
     private lateinit var audioEngine: ViolinAudioEngine
+    private lateinit var savePracticeSessionUseCase: SavePracticeSessionUseCase
+    private lateinit var getPracticeSessionsUseCase: GetPracticeSessionsUseCase
     private lateinit var viewModel: PracticeViewModel
     private lateinit var context: Context
 
@@ -48,7 +52,9 @@ class PracticeViewModelTest {
         authManager = AuthManager(context)
         userPreferencesManager = UserPreferencesManager(context)
         audioEngine = ViolinAudioEngine()
-        viewModel = PracticeViewModel(repository, authManager, userPreferencesManager, audioEngine)
+        savePracticeSessionUseCase = SavePracticeSessionUseCase(repository)
+        getPracticeSessionsUseCase = GetPracticeSessionsUseCase(repository)
+        viewModel = PracticeViewModel(repository, authManager, userPreferencesManager, audioEngine, savePracticeSessionUseCase, getPracticeSessionsUseCase)
     }
 
     @After

@@ -6,6 +6,8 @@ import com.violinmaster.app.data.Assignment
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.domain.usecase.CompleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.GetAssignmentsUseCase
 import com.violinmaster.app.security.VideoSecurityService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -20,7 +22,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AssignmentViewModel @Inject constructor(
     private val repository: IPracticeRepository,
-    private val authManager: AuthManager
+    private val authManager: AuthManager,
+    private val getAssignmentsUseCase: GetAssignmentsUseCase,
+    private val completeAssignmentUseCase: CompleteAssignmentUseCase
 ) : ViewModel() {
 
     // --- Student / Teacher Assignments flows ---
@@ -45,17 +49,11 @@ class AssignmentViewModel @Inject constructor(
                 assignmentsJob?.cancel()
                 if (user != null) {
                     assignmentsJob = viewModelScope.launch {
-                        if (user.role == "TEACHER") {
-                            repository.getAssignmentsByTeacher(user.teacherCode).collect { list ->
+                        getAssignmentsUseCase(user.username, user.role, user.teacherCode).collect { list ->
+                            if (user.role == "TEACHER") {
                                 _teacherAssignments.value = list
-                            }
-                        } else if (user.role == "STUDENT") {
-                            val code = user.teacherCode
-                            repository.allAssignments.collect { list ->
-                                _studentAssignments.value = list.filter {
-                                    it.studentUsername.equals(user.username, ignoreCase = true) ||
-                                            (it.studentUsername == "ALL" && it.teacherUsername == code)
-                                }
+                            } else if (user.role == "STUDENT") {
+                                _studentAssignments.value = list
                             }
                         }
                     }
@@ -91,15 +89,10 @@ class AssignmentViewModel @Inject constructor(
 
     fun markAssignmentComplete(assignmentId: Int, completed: Boolean) {
         viewModelScope.launch {
-            repository.updateAssignmentCompletion(assignmentId, completed)
             if (completed) {
-                // Award 200 points via repository
-                val userVal = authManager.currentUser.value
-                if (userVal != null) {
-                    val updatedUser = userVal.copy(points = userVal.points + 200)
-                    repository.insertUser(updatedUser)
-                    authManager.restoreCurrentUser(updatedUser)
-                }
+                completeAssignmentUseCase(assignmentId)
+            } else {
+                repository.updateAssignmentCompletion(assignmentId, false)
             }
         }
     }

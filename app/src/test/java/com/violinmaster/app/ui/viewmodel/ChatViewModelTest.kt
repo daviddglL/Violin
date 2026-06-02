@@ -12,6 +12,8 @@ import com.violinmaster.app.data.firebase.Message
 import com.violinmaster.app.data.local.toCachedMessage
 import com.violinmaster.app.data.local.toMessage
 import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.domain.usecase.GetMessagesUseCase
+import com.violinmaster.app.domain.usecase.SendMessageUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -49,6 +51,8 @@ class ChatViewModelTest {
     private lateinit var dao: ChatDao
     private lateinit var fakeRepo: FakeChatRepository
     private lateinit var authManager: AuthManager
+    private lateinit var sendMessageUseCase: SendMessageUseCase
+    private lateinit var getMessagesUseCase: GetMessagesUseCase
     private lateinit var viewModel: ChatViewModel
 
     @Before
@@ -58,7 +62,9 @@ class ChatViewModelTest {
         dao = database.chatDao()
         fakeRepo = FakeChatRepository(dao)
         authManager = AuthManager(context)
-        viewModel = ChatViewModel(fakeRepo, authManager)
+        sendMessageUseCase = SendMessageUseCase(fakeRepo, authManager)
+        getMessagesUseCase = GetMessagesUseCase(fakeRepo)
+        viewModel = ChatViewModel(fakeRepo, authManager, sendMessageUseCase, getMessagesUseCase)
     }
 
     @After

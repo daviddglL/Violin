@@ -8,6 +8,8 @@ import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeSession
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.GetPracticeSessionsUseCase
 import com.violinmaster.app.domain.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -28,7 +30,9 @@ class PracticeViewModel @Inject constructor(
     private val repository: IPracticeRepository,
     private val authManager: AuthManager,
     private val userPreferencesManager: UserPreferencesManager,
-    private val audioEngine: ViolinAudioEngine
+    private val audioEngine: ViolinAudioEngine,
+    private val savePracticeSessionUseCase: SavePracticeSessionUseCase,
+    private val getPracticeSessionsUseCase: GetPracticeSessionsUseCase
 ) : ViewModel() {
 
     // --- Configuration State ---
@@ -158,7 +162,7 @@ class PracticeViewModel @Inject constructor(
                     durationSeconds = seconds,
                     category = category
                 )
-                repository.insertSession(newSession)
+                savePracticeSessionUseCase.invoke(newSession)
 
                 val lessonsList = allLevelProgress.value
                 val matchingLesson = lessonsList.firstOrNull { it.lessonTitle == category }

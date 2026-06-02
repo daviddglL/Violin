@@ -4,14 +4,13 @@ import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 /**
  * Returns users sorted by points descending (leaderboard).
  *
  * No Android imports — delegating to [IPracticeRepository].
  */
-class GetLeaderboardUseCase @Inject constructor(
+class GetLeaderboardUseCase constructor(
   private val repository: IPracticeRepository
 ) {
   /**

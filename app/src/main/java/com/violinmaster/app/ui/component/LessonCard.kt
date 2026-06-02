@@ -40,7 +40,7 @@ fun LessonCard(
   onToggleExpand: () -> Unit,
   practiceVM: PracticeViewModel,
   appLanguage: AppLanguage,
-  sessionManager: com.violinmaster.app.di.SessionManager,
+  navigationManager: com.violinmaster.app.di.NavigationManager,
   isPracticing: Boolean,
   practiceCategory: String
 ) {
@@ -110,7 +110,7 @@ fun LessonCard(
           lesson = lesson,
           practiceVM = practiceVM,
           appLanguage = appLanguage,
-          sessionManager = sessionManager,
+          navigationManager = navigationManager,
           isPracticing = isPracticing,
           practiceCategory = practiceCategory
         )

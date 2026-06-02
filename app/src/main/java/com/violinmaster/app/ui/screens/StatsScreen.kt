@@ -48,7 +48,8 @@ import androidx.compose.ui.unit.sp
 import com.violinmaster.app.data.PracticeSession
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.UserPreferencesManager
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -63,13 +64,14 @@ import java.util.Locale
 fun StatsScreen(
     practiceVM: PracticeViewModel,
     assignmentVM: AssignmentViewModel,
-    sessionManager: SessionManager,
+    userPreferencesManager: UserPreferencesManager,
+    authManager: AuthManager,
     modifier: Modifier = Modifier
 ) {
     val sessions by practiceVM.allSessions.collectAsState()
-    val appLanguage by sessionManager.appLanguage.collectAsState()
+    val appLanguage by userPreferencesManager.appLanguage.collectAsState()
     val allUsers by assignmentVM.allUsers.collectAsState()
-    val userAccount by sessionManager.currentUser.collectAsState()
+    val userAccount by authManager.currentUser.collectAsState()
 
     var activeSubTab by remember { mutableStateOf("analytics") } // "analytics" or "leaderboard"
 

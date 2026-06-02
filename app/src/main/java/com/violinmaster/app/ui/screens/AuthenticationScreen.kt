@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.violinmaster.app.data.auth.GoogleAuthRepository
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.ui.component.LoginKeypadGrid
 import com.violinmaster.app.ui.component.RoleSelector
 import com.violinmaster.app.ui.theme.AppLanguage
@@ -48,14 +48,14 @@ import kotlinx.coroutines.launch
 fun AuthenticationScreen(
     authViewModel: AuthViewModel,
     googleAuthRepository: GoogleAuthRepository,
-    sessionManager: SessionManager,
+    authManager: AuthManager,
     appLanguage: AppLanguage,
     modifier: Modifier = Modifier
 ) {
     val lang = appLanguage
     val errKey by authViewModel.loginError.collectAsState()
     val successKey by authViewModel.signupSuccess.collectAsState()
-    val isGoogleSignedIn by sessionManager.isGoogleSignedIn.collectAsState()
+    val isGoogleSignedIn by authManager.isGoogleSignedIn.collectAsState()
 
     var isRegisterMode by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
@@ -81,7 +81,7 @@ fun AuthenticationScreen(
                     if (idToken != null) {
                         val signInResult = googleAuthRepository.signIn(idToken)
                         signInResult.onSuccess {
-                            sessionManager.setGoogleSignedIn(true)
+                            authManager.setGoogleSignedIn(true)
                         }.onFailure { error ->
                             snackbarHostState.showSnackbar(
                                 "Google Sign-In failed: ${error.message ?: "Unknown error"}"

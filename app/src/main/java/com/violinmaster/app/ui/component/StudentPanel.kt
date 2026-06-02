@@ -53,7 +53,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.UserPreferencesManager
 import com.violinmaster.app.ui.screens.ChatScreen
 import com.violinmaster.app.ui.screens.VideoRecordScreen
 import com.violinmaster.app.ui.theme.Localization
@@ -66,14 +67,15 @@ import com.violinmaster.app.ui.viewmodel.VideoUploadViewModel
 fun StudentAssignmentsTab(
   assignmentVM: AssignmentViewModel,
   authVM: AuthViewModel,
-  sessionManager: SessionManager,
+  userPreferencesManager: UserPreferencesManager,
+  authManager: AuthManager,
   chatViewModel: ChatViewModel,
   videoViewModel: VideoUploadViewModel? = null,
   onPlayTutorialVideo: (String, String) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val lang by sessionManager.appLanguage.collectAsState()
-  val student by sessionManager.currentUser.collectAsState()
+  val lang by userPreferencesManager.appLanguage.collectAsState()
+  val student by authManager.currentUser.collectAsState()
   val assignments by assignmentVM.studentAssignments.collectAsState()
 
   var inputTeacherCode by remember { mutableStateOf("") }

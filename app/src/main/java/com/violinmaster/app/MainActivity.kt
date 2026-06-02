@@ -72,15 +72,15 @@ import com.violinmaster.app.ui.viewmodel.MetronomeViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
 import com.violinmaster.app.ui.viewmodel.ChatViewModel
 import com.violinmaster.app.data.auth.GoogleAuthRepository
-import com.violinmaster.app.di.SessionManager
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.NavigationManager
+import com.violinmaster.app.di.UserPreferencesManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-  @Inject lateinit var sessionManager: SessionManager
+  @Inject lateinit var userPreferencesManager: UserPreferencesManager
   @Inject lateinit var authManager: AuthManager
   @Inject lateinit var navigationManager: NavigationManager
   @Inject lateinit var googleAuthRepository: GoogleAuthRepository
@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
     enableEdgeToEdge()
     setContent {
       MyApplicationTheme {
-        MainLayout(sessionManager, authManager, navigationManager, googleAuthRepository)
+        MainLayout(userPreferencesManager, authManager, navigationManager, googleAuthRepository)
       }
     }
   }
@@ -99,13 +99,13 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainLayout(
-  sessionManager: SessionManager,
+  userPreferencesManager: UserPreferencesManager,
   authManager: AuthManager,
   navigationManager: NavigationManager,
   googleAuthRepository: GoogleAuthRepository
 ) {
   val currentUser by authManager.currentUser.collectAsState()
-  val lang by sessionManager.appLanguage.collectAsState()
+  val lang by userPreferencesManager.appLanguage.collectAsState()
   val currentTab by navigationManager.currentTab.collectAsState()
   val activeOverlay by navigationManager.currentOverlay.collectAsState()
   val authViewModel: AuthViewModel = hiltViewModel()
@@ -139,7 +139,7 @@ fun MainLayout(
       AuthenticationScreen(
         authViewModel = authViewModel,
         googleAuthRepository = googleAuthRepository,
-        sessionManager = sessionManager,
+        authManager = authManager,
         appLanguage = lang,
         modifier = Modifier.padding(innerPadding)
       )
@@ -271,7 +271,9 @@ fun MainLayout(
           when (currentTab) {
             0 -> HomeScreen(
               practiceVM = practiceVM,
-              sessionManager = sessionManager,
+              authManager = authManager,
+              userPreferencesManager = userPreferencesManager,
+              navigationManager = navigationManager,
               modifier = Modifier.clickable(enabled = false) {}
             )
             1 -> LessonsScreen(
@@ -279,19 +281,23 @@ fun MainLayout(
               tunerVM = tunerVM,
               authVM = authViewModel,
               assignmentVM = assignmentVM,
-              sessionManager = sessionManager,
+              userPreferencesManager = userPreferencesManager,
+              authManager = authManager,
+              navigationManager = navigationManager,
               chatViewModel = chatViewModel
             )
             2 -> StatsScreen(
               practiceVM = practiceVM,
               assignmentVM = assignmentVM,
-              sessionManager = sessionManager
+              userPreferencesManager = userPreferencesManager,
+              authManager = authManager
             )
             3 -> SettingsScreen(
               practiceVM = practiceVM,
               authVM = authViewModel,
               tunerVM = tunerVM,
-              sessionManager = sessionManager
+              userPreferencesManager = userPreferencesManager,
+              authManager = authManager
             )
           }
         }

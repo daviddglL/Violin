@@ -28,18 +28,20 @@ import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
 import com.violinmaster.app.ui.viewmodel.TunerViewModel
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.UserPreferencesManager
 
 @Composable
 fun SettingsScreen(
     practiceVM: PracticeViewModel,
     authVM: AuthViewModel,
     tunerVM: TunerViewModel,
-    sessionManager: SessionManager,
+    userPreferencesManager: UserPreferencesManager,
+    authManager: AuthManager,
     modifier: Modifier = Modifier
 ) {
-    val lang by sessionManager.appLanguage.collectAsState()
-    val currentUser by sessionManager.currentUser.collectAsState()
+    val lang by userPreferencesManager.appLanguage.collectAsState()
+    val currentUser by authManager.currentUser.collectAsState()
     val dailyGoalMinutes by practiceVM.dailyGoalMinutes.collectAsState()
     val referencePitchA by tunerVM.referencePitchA.collectAsState()
 
@@ -115,7 +117,7 @@ fun SettingsScreen(
                                     if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                                     RoundedCornerShape(10.dp)
                                 )
-                                .clickable { sessionManager.setAppLanguage(langKey) }
+                                .clickable { userPreferencesManager.setAppLanguage(langKey) }
                                 .padding(vertical = 12.dp)
                                 .testTag("lang_toggle_${langKey.name}"),
                             contentAlignment = Alignment.Center

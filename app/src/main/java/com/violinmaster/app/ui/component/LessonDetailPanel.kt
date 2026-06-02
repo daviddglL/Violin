@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.violinmaster.app.data.LessonProgress
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.NavigationManager
 import com.violinmaster.app.ui.screens.LessonDetailsContent
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
@@ -39,7 +39,7 @@ fun LessonDetailPanel(
   lesson: LessonProgress,
   practiceVM: PracticeViewModel,
   appLanguage: AppLanguage,
-  sessionManager: SessionManager,
+  navigationManager: NavigationManager,
   isPracticing: Boolean,
   practiceCategory: String
 ) {
@@ -137,7 +137,7 @@ fun LessonDetailPanel(
       Button(
         onClick = {
           practiceVM.startPracticeTimer(lesson.lessonTitle)
-          sessionManager.selectTab(0)
+          navigationManager.selectTab(0)
         },
         shape = RoundedCornerShape(10.dp),
         colors = ButtonDefaults.buttonColors(

@@ -51,13 +51,17 @@ import java.util.Locale
 import com.violinmaster.app.ui.component.DailyTasksSection
 import com.violinmaster.app.ui.component.PracticeTimerControls
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.NavigationManager
+import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.ui.theme.Localization
 
 @Composable
 fun HomeScreen(
     practiceVM: PracticeViewModel,
-    sessionManager: SessionManager,
+    authManager: AuthManager,
+    userPreferencesManager: UserPreferencesManager,
+    navigationManager: NavigationManager,
     modifier: Modifier = Modifier
 ) {
     val todayFinishedSeconds by practiceVM.todayFinishedSeconds.collectAsState()
@@ -67,8 +71,8 @@ fun HomeScreen(
     val practiceCategory by practiceVM.practiceCategoryName.collectAsState()
     val practiceElapsed by practiceVM.practiceElapsedSeconds.collectAsState()
 
-    val userAccount by sessionManager.currentUser.collectAsState()
-    val appLanguage by sessionManager.appLanguage.collectAsState()
+    val userAccount by authManager.currentUser.collectAsState()
+    val appLanguage by userPreferencesManager.appLanguage.collectAsState()
     val dailyTasksCompleted by practiceVM.dailyTasksCompleted.collectAsState()
 
     val todayFinishedMinutes = todayFinishedSeconds / 60
@@ -318,7 +322,7 @@ fun HomeScreen(
                     .weight(1f)
                     .height(96.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .clickable { sessionManager.showOverlay("tuner") }
+                    .clickable { navigationManager.showOverlay("tuner") }
                     .testTag("tuner_tool_button"),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 border = ButtonDefaults.outlinedButtonBorder(enabled = true),
@@ -353,7 +357,7 @@ fun HomeScreen(
                     .weight(1f)
                     .height(96.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .clickable { sessionManager.showOverlay("metronome") }
+                    .clickable { navigationManager.showOverlay("metronome") }
                     .testTag("metronome_tool_button"),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 border = ButtonDefaults.outlinedButtonBorder(enabled = true),
@@ -498,7 +502,6 @@ fun HomeScreen(
         // --- Daily Tasks Section based on active Skill Level ---
         DailyTasksSection(
             practiceVM = practiceVM,
-            sessionManager = sessionManager,
             appLanguage = appLanguage,
             skillLevel = userAccount?.skillLevel ?: "Beginner",
             dailyTasksCompleted = dailyTasksCompleted

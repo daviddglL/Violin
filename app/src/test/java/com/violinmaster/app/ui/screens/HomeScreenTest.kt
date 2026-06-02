@@ -11,7 +11,6 @@ import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.NavigationManager
-import com.violinmaster.app.di.SessionManager
 import com.violinmaster.app.di.UserPreferencesManager
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import org.junit.After
@@ -33,7 +32,7 @@ class HomeScreenTest {
     private lateinit var repository: PracticeRepository
     private lateinit var authManager: AuthManager
     private lateinit var userPreferencesManager: UserPreferencesManager
-    private lateinit var sessionManager: SessionManager
+    private lateinit var navigationManager: NavigationManager
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var viewModel: PracticeViewModel
     private lateinit var context: Context
@@ -45,7 +44,7 @@ class HomeScreenTest {
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
         authManager = AuthManager(context)
         userPreferencesManager = UserPreferencesManager(context)
-        sessionManager = SessionManager(authManager, userPreferencesManager, NavigationManager())
+        navigationManager = NavigationManager()
         audioEngine = ViolinAudioEngine()
         viewModel = PracticeViewModel(repository, authManager, userPreferencesManager, audioEngine)
     }
@@ -61,7 +60,9 @@ class HomeScreenTest {
         composeTestRule.setContent {
             HomeScreen(
                 practiceVM = viewModel,
-                sessionManager = sessionManager
+                authManager = authManager,
+                userPreferencesManager = userPreferencesManager,
+                navigationManager = navigationManager
             )
         }
 
@@ -73,7 +74,9 @@ class HomeScreenTest {
         composeTestRule.setContent {
             HomeScreen(
                 practiceVM = viewModel,
-                sessionManager = sessionManager
+                authManager = authManager,
+                userPreferencesManager = userPreferencesManager,
+                navigationManager = navigationManager
             )
         }
 
@@ -85,7 +88,9 @@ class HomeScreenTest {
         composeTestRule.setContent {
             HomeScreen(
                 practiceVM = viewModel,
-                sessionManager = sessionManager
+                authManager = authManager,
+                userPreferencesManager = userPreferencesManager,
+                navigationManager = navigationManager
             )
         }
 
@@ -97,7 +102,9 @@ class HomeScreenTest {
         composeTestRule.setContent {
             HomeScreen(
                 practiceVM = viewModel,
-                sessionManager = sessionManager
+                authManager = authManager,
+                userPreferencesManager = userPreferencesManager,
+                navigationManager = navigationManager
             )
         }
 
@@ -110,7 +117,9 @@ class HomeScreenTest {
         composeTestRule.setContent {
             HomeScreen(
                 practiceVM = viewModel,
-                sessionManager = sessionManager
+                authManager = authManager,
+                userPreferencesManager = userPreferencesManager,
+                navigationManager = navigationManager
             )
         }
 

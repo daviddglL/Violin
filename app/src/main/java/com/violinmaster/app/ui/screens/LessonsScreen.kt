@@ -37,7 +37,9 @@ import com.violinmaster.app.ui.viewmodel.TunerViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
 import com.violinmaster.app.ui.viewmodel.ChatViewModel
-import com.violinmaster.app.di.SessionManager
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.di.NavigationManager
 import com.violinmaster.app.ui.component.LessonVideoPlayer
 import com.violinmaster.app.ui.component.StudentAssignmentsTab
 import com.violinmaster.app.ui.component.TeacherDashboardTab
@@ -298,12 +300,14 @@ fun LessonsScreen(
     tunerVM: TunerViewModel,
     authVM: AuthViewModel,
     assignmentVM: AssignmentViewModel,
-    sessionManager: SessionManager,
+    userPreferencesManager: UserPreferencesManager,
+    authManager: AuthManager,
+    navigationManager: NavigationManager,
     chatViewModel: ChatViewModel,
     modifier: Modifier = Modifier
 ) {
-    val lang by sessionManager.appLanguage.collectAsState()
-    val user by sessionManager.currentUser.collectAsState()
+    val lang by userPreferencesManager.appLanguage.collectAsState()
+    val user by authManager.currentUser.collectAsState()
     val levelProgressList by practiceVM.allLevelProgress.collectAsState()
     val isPracticing by practiceVM.isPracticing.collectAsState()
     val practiceCategory by practiceVM.practiceCategoryName.collectAsState()
@@ -421,11 +425,12 @@ fun LessonsScreen(
                 when (activeTabSubIndex) {
                     0 -> {
                         when (user?.role) {
-                            "TEACHER" -> TeacherDashboardTab(assignmentVM = assignmentVM, sessionManager = sessionManager, chatViewModel = chatViewModel)
+                            "TEACHER" -> TeacherDashboardTab(assignmentVM = assignmentVM, userPreferencesManager = userPreferencesManager, authManager = authManager, chatViewModel = chatViewModel)
                             "STUDENT" -> StudentAssignmentsTab(
                                 assignmentVM = assignmentVM,
                                 authVM = authVM,
-                                sessionManager = sessionManager,
+                                userPreferencesManager = userPreferencesManager,
+                                authManager = authManager,
                                 chatViewModel = chatViewModel,
                                 onPlayTutorialVideo = { url, title ->
                                     activeTutorVideoUrl = url
@@ -438,12 +443,12 @@ fun LessonsScreen(
                                 practiceCategory = practiceCategory,
                                 appLanguage = lang,
                                 practiceVM = practiceVM,
-                                sessionManager = sessionManager
+                                navigationManager = navigationManager
                             )
                         }
                     }
                     1 -> VirtualFingerboard(tunerVM = tunerVM, appLanguage = lang)
-                    2 -> TheoryQuizTab(practiceVM = practiceVM, sessionManager = sessionManager)
+                    2 -> TheoryQuizTab(practiceVM = practiceVM, userPreferencesManager = userPreferencesManager)
                     3 -> MasterclassTab(authViewModel = authVM)
                 }
             }
@@ -462,7 +467,7 @@ fun CurriculumTab(
     practiceCategory: String,
     appLanguage: AppLanguage = AppLanguage.ENGLISH,
     practiceVM: PracticeViewModel,
-    sessionManager: SessionManager
+    navigationManager: NavigationManager
 ) {
     val groupedLessons = levelProgressList.groupBy { it.difficulty }
     val difficultyOrder = listOf("Beginner", "Intermediate", "Advanced")
@@ -750,7 +755,7 @@ fun CurriculumTab(
                                         Button(
                                             onClick = {
                                                 practiceVM.startPracticeTimer(lesson.lessonTitle)
-                                                sessionManager.selectTab(0) // redirect home to see timer sweeping
+                                                navigationManager.selectTab(0) // redirect home to see timer sweeping
                                             },
                                             shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(
@@ -784,9 +789,9 @@ fun CurriculumTab(
 @Composable
 fun TheoryQuizTab(
     practiceVM: PracticeViewModel,
-    sessionManager: SessionManager
+    userPreferencesManager: UserPreferencesManager
 ) {
-    val lang by sessionManager.appLanguage.collectAsState()
+    val lang by userPreferencesManager.appLanguage.collectAsState()
     val isEs = lang == com.violinmaster.app.ui.theme.AppLanguage.SPANISH
 
     var questionPointerIndex by rememberSaveable { mutableStateOf(0) }

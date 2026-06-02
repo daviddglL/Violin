@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.violinmaster.app.di.SessionManager
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
@@ -68,7 +67,6 @@ val advancedDailyTasks = listOf(
 @Composable
 fun DailyTasksSection(
   practiceVM: PracticeViewModel,
-  sessionManager: SessionManager,
   appLanguage: AppLanguage,
   skillLevel: String,
   dailyTasksCompleted: Set<String>,

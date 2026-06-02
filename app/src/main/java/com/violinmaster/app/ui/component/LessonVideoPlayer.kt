@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.violinmaster.app.ui.screens.SecureMediaPlaybackConsole
 import com.violinmaster.app.ui.theme.AppLanguage
 
 @Composable

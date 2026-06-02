@@ -10,7 +10,9 @@ import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.CompleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.DeleteAssignmentUseCase
 import com.violinmaster.app.domain.usecase.GetAssignmentsUseCase
+import com.violinmaster.app.domain.usecase.PublishAssignmentUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -35,6 +37,8 @@ class AssignmentViewModelTest {
     private lateinit var authManager: AuthManager
     private lateinit var getAssignmentsUseCase: GetAssignmentsUseCase
     private lateinit var completeAssignmentUseCase: CompleteAssignmentUseCase
+    private lateinit var publishAssignmentUseCase: PublishAssignmentUseCase
+    private lateinit var deleteAssignmentUseCase: DeleteAssignmentUseCase
     private lateinit var viewModel: AssignmentViewModel
 
     @Before
@@ -45,7 +49,12 @@ class AssignmentViewModelTest {
         authManager = AuthManager(context)
         getAssignmentsUseCase = GetAssignmentsUseCase(repository)
         completeAssignmentUseCase = CompleteAssignmentUseCase(repository, authManager)
-        viewModel = AssignmentViewModel(repository, authManager, getAssignmentsUseCase, completeAssignmentUseCase)
+        publishAssignmentUseCase = PublishAssignmentUseCase(repository, authManager)
+        deleteAssignmentUseCase = DeleteAssignmentUseCase(repository)
+        viewModel = AssignmentViewModel(
+            repository, authManager, getAssignmentsUseCase, completeAssignmentUseCase,
+            publishAssignmentUseCase, deleteAssignmentUseCase
+        )
     }
 
     @After

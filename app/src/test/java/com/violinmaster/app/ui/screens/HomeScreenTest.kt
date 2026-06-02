@@ -12,8 +12,15 @@ import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.NavigationManager
 import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.domain.usecase.DeletePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.EarnPointsUseCase
+import com.violinmaster.app.domain.usecase.GenerateDemoHistoryUseCase
 import com.violinmaster.app.domain.usecase.GetPracticeSessionsUseCase
 import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.SeedDefaultLessonsUseCase
+import com.violinmaster.app.domain.usecase.ToggleLessonStatusUseCase
+import com.violinmaster.app.domain.usecase.UpdateLessonProgressUseCase
+import com.violinmaster.app.domain.usecase.UpdateSkillLevelUseCase
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import org.junit.After
 import org.junit.Before
@@ -52,7 +59,20 @@ class HomeScreenTest {
         audioEngine = ViolinAudioEngine()
         savePracticeSessionUseCase = SavePracticeSessionUseCase(repository)
         getPracticeSessionsUseCase = GetPracticeSessionsUseCase(repository)
-        viewModel = PracticeViewModel(repository, authManager, userPreferencesManager, audioEngine, savePracticeSessionUseCase, getPracticeSessionsUseCase)
+        val updateLessonProgressUseCase = UpdateLessonProgressUseCase(repository)
+        val generateDemoHistoryUseCase = GenerateDemoHistoryUseCase(repository)
+        val toggleLessonStatusUseCase = ToggleLessonStatusUseCase(repository, authManager)
+        val deletePracticeSessionUseCase = DeletePracticeSessionUseCase(repository)
+        val seedDefaultLessonsUseCase = SeedDefaultLessonsUseCase(repository)
+        val earnPointsUseCase = EarnPointsUseCase(repository, authManager)
+        val updateSkillLevelUseCase = UpdateSkillLevelUseCase(repository, authManager)
+        viewModel = PracticeViewModel(
+            repository, authManager, userPreferencesManager, audioEngine,
+            savePracticeSessionUseCase, getPracticeSessionsUseCase,
+            updateLessonProgressUseCase, generateDemoHistoryUseCase,
+            toggleLessonStatusUseCase, deletePracticeSessionUseCase,
+            seedDefaultLessonsUseCase, earnPointsUseCase, updateSkillLevelUseCase
+        )
     }
 
     @After

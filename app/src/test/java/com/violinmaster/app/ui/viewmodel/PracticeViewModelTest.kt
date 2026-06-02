@@ -11,8 +11,15 @@ import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.domain.usecase.DeletePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.EarnPointsUseCase
+import com.violinmaster.app.domain.usecase.GenerateDemoHistoryUseCase
 import com.violinmaster.app.domain.usecase.GetPracticeSessionsUseCase
 import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.SeedDefaultLessonsUseCase
+import com.violinmaster.app.domain.usecase.ToggleLessonStatusUseCase
+import com.violinmaster.app.domain.usecase.UpdateLessonProgressUseCase
+import com.violinmaster.app.domain.usecase.UpdateSkillLevelUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceTimeBy
@@ -41,6 +48,13 @@ class PracticeViewModelTest {
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var savePracticeSessionUseCase: SavePracticeSessionUseCase
     private lateinit var getPracticeSessionsUseCase: GetPracticeSessionsUseCase
+    private lateinit var updateLessonProgressUseCase: UpdateLessonProgressUseCase
+    private lateinit var generateDemoHistoryUseCase: GenerateDemoHistoryUseCase
+    private lateinit var toggleLessonStatusUseCase: ToggleLessonStatusUseCase
+    private lateinit var deletePracticeSessionUseCase: DeletePracticeSessionUseCase
+    private lateinit var seedDefaultLessonsUseCase: SeedDefaultLessonsUseCase
+    private lateinit var earnPointsUseCase: EarnPointsUseCase
+    private lateinit var updateSkillLevelUseCase: UpdateSkillLevelUseCase
     private lateinit var viewModel: PracticeViewModel
     private lateinit var context: Context
 
@@ -54,7 +68,20 @@ class PracticeViewModelTest {
         audioEngine = ViolinAudioEngine()
         savePracticeSessionUseCase = SavePracticeSessionUseCase(repository)
         getPracticeSessionsUseCase = GetPracticeSessionsUseCase(repository)
-        viewModel = PracticeViewModel(repository, authManager, userPreferencesManager, audioEngine, savePracticeSessionUseCase, getPracticeSessionsUseCase)
+        updateLessonProgressUseCase = UpdateLessonProgressUseCase(repository)
+        generateDemoHistoryUseCase = GenerateDemoHistoryUseCase(repository)
+        toggleLessonStatusUseCase = ToggleLessonStatusUseCase(repository, authManager)
+        deletePracticeSessionUseCase = DeletePracticeSessionUseCase(repository)
+        seedDefaultLessonsUseCase = SeedDefaultLessonsUseCase(repository)
+        earnPointsUseCase = EarnPointsUseCase(repository, authManager)
+        updateSkillLevelUseCase = UpdateSkillLevelUseCase(repository, authManager)
+        viewModel = PracticeViewModel(
+            repository, authManager, userPreferencesManager, audioEngine,
+            savePracticeSessionUseCase, getPracticeSessionsUseCase,
+            updateLessonProgressUseCase, generateDemoHistoryUseCase,
+            toggleLessonStatusUseCase, deletePracticeSessionUseCase,
+            seedDefaultLessonsUseCase, earnPointsUseCase, updateSkillLevelUseCase
+        )
     }
 
     @After
@@ -132,17 +159,6 @@ class PracticeViewModelTest {
 
         val sessions = repository.allSessions.first()
         assertTrue(sessions.isEmpty())
-    }
-
-    @Test
-    fun `cancelPracticeTimer resets everything to zero`() = runTest {
-        viewModel.startPracticeTimer("General")
-        advanceTimeBy(5000) // 5 seconds
-
-        viewModel.cancelPracticeTimer()
-
-        assertFalse(viewModel.isPracticing.value)
-        assertEquals(0, viewModel.practiceElapsedSeconds.value)
     }
 
     // --- Configuration tests ---

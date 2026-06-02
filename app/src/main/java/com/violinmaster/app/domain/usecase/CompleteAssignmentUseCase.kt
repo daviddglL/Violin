@@ -13,18 +13,22 @@ class CompleteAssignmentUseCase constructor(
   private val authManager: AuthManager
 ) {
   /**
-   * Marks the assignment complete and awards 200 points.
+   * Marks the assignment complete or incomplete.
    *
+   * When [completed] is true, awards 200 points to the current user.
    * Points are only awarded if a current user is logged in.
    *
-   * @param assignmentId The assignment ID to mark complete.
+   * @param assignmentId The assignment ID to update.
+   * @param completed Whether to mark complete (true) or incomplete (false).
    */
-  suspend operator fun invoke(assignmentId: Int) {
-    repository.updateAssignmentCompletion(assignmentId, true)
+  suspend operator fun invoke(assignmentId: Int, completed: Boolean = true) {
+    repository.updateAssignmentCompletion(assignmentId, completed)
 
-    val user = authManager.currentUser.value ?: return
-    val updated = user.copy(points = user.points + 200)
-    repository.insertUser(updated)
-    authManager.restoreCurrentUser(updated)
+    if (completed) {
+      val user = authManager.currentUser.value ?: return
+      val updated = user.copy(points = user.points + 200)
+      repository.insertUser(updated)
+      authManager.restoreCurrentUser(updated)
+    }
   }
 }

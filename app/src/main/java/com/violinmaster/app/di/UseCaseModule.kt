@@ -3,14 +3,23 @@ package com.violinmaster.app.di
 import com.violinmaster.app.data.IChatRepository
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.domain.usecase.CompleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.DeleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.DeletePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.EarnPointsUseCase
+import com.violinmaster.app.domain.usecase.GenerateDemoHistoryUseCase
 import com.violinmaster.app.domain.usecase.GetAssignmentsUseCase
 import com.violinmaster.app.domain.usecase.GetLeaderboardUseCase
 import com.violinmaster.app.domain.usecase.GetMessagesUseCase
 import com.violinmaster.app.domain.usecase.GetPracticeSessionsUseCase
 import com.violinmaster.app.domain.usecase.LoginUseCase
+import com.violinmaster.app.domain.usecase.PublishAssignmentUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
 import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.SeedDefaultLessonsUseCase
 import com.violinmaster.app.domain.usecase.SendMessageUseCase
+import com.violinmaster.app.domain.usecase.ToggleLessonStatusUseCase
+import com.violinmaster.app.domain.usecase.UpdateLessonProgressUseCase
+import com.violinmaster.app.domain.usecase.UpdateSkillLevelUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,7 +29,7 @@ import javax.inject.Singleton
 /**
  * Hilt module providing domain use cases as singletons.
  *
- * All 9 use cases are provided via @Provides @Singleton methods,
+ * All 18 use cases are provided via @Provides @Singleton methods,
  * injecting their repository and manager dependencies.
  *
  * REQ-ARCH-008-S2: All use cases provided via Hilt.
@@ -85,4 +94,62 @@ object UseCaseModule {
     fun provideGetLeaderboardUseCase(
         repository: IPracticeRepository
     ): GetLeaderboardUseCase = GetLeaderboardUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun providePublishAssignmentUseCase(
+        repository: IPracticeRepository,
+        authManager: AuthManager
+    ): PublishAssignmentUseCase = PublishAssignmentUseCase(repository, authManager)
+
+    @Provides
+    @Singleton
+    fun provideDeleteAssignmentUseCase(
+        repository: IPracticeRepository
+    ): DeleteAssignmentUseCase = DeleteAssignmentUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun provideUpdateLessonProgressUseCase(
+        repository: IPracticeRepository
+    ): UpdateLessonProgressUseCase = UpdateLessonProgressUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun provideDeletePracticeSessionUseCase(
+        repository: IPracticeRepository
+    ): DeletePracticeSessionUseCase = DeletePracticeSessionUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun provideSeedDefaultLessonsUseCase(
+        repository: IPracticeRepository
+    ): SeedDefaultLessonsUseCase = SeedDefaultLessonsUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun provideGenerateDemoHistoryUseCase(
+        repository: IPracticeRepository
+    ): GenerateDemoHistoryUseCase = GenerateDemoHistoryUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun provideEarnPointsUseCase(
+        repository: IPracticeRepository,
+        authManager: AuthManager
+    ): EarnPointsUseCase = EarnPointsUseCase(repository, authManager)
+
+    @Provides
+    @Singleton
+    fun provideUpdateSkillLevelUseCase(
+        repository: IPracticeRepository,
+        authManager: AuthManager
+    ): UpdateSkillLevelUseCase = UpdateSkillLevelUseCase(repository, authManager)
+
+    @Provides
+    @Singleton
+    fun provideToggleLessonStatusUseCase(
+        repository: IPracticeRepository,
+        authManager: AuthManager
+    ): ToggleLessonStatusUseCase = ToggleLessonStatusUseCase(repository, authManager)
 }

@@ -8,9 +8,16 @@ import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeSession
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.UserPreferencesManager
-import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.DeletePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.EarnPointsUseCase
+import com.violinmaster.app.domain.usecase.GenerateDemoHistoryUseCase
 import com.violinmaster.app.domain.usecase.GetPracticeSessionsUseCase
-import com.violinmaster.app.domain.util.DateUtils
+import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
+import com.violinmaster.app.domain.usecase.SeedDefaultLessonsUseCase
+import com.violinmaster.app.domain.usecase.ToggleLessonStatusUseCase
+import com.violinmaster.app.domain.usecase.UpdateLessonProgressUseCase
+import com.violinmaster.app.domain.usecase.UpdateSkillLevelUseCase
+import com.violinmaster.app.domain.util.ScoringPolicy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -23,7 +30,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
-import kotlin.random.Random
 
 @HiltViewModel
 class PracticeViewModel @Inject constructor(
@@ -32,7 +38,14 @@ class PracticeViewModel @Inject constructor(
     private val userPreferencesManager: UserPreferencesManager,
     private val audioEngine: ViolinAudioEngine,
     private val savePracticeSessionUseCase: SavePracticeSessionUseCase,
-    private val getPracticeSessionsUseCase: GetPracticeSessionsUseCase
+    private val getPracticeSessionsUseCase: GetPracticeSessionsUseCase,
+    private val updateLessonProgressUseCase: UpdateLessonProgressUseCase,
+    private val generateDemoHistoryUseCase: GenerateDemoHistoryUseCase,
+    private val toggleLessonStatusUseCase: ToggleLessonStatusUseCase,
+    private val deletePracticeSessionUseCase: DeletePracticeSessionUseCase,
+    private val seedDefaultLessonsUseCase: SeedDefaultLessonsUseCase,
+    private val earnPointsUseCase: EarnPointsUseCase,
+    private val updateSkillLevelUseCase: UpdateSkillLevelUseCase
 ) : ViewModel() {
 
     // --- Configuration State ---
@@ -88,29 +101,12 @@ class PracticeViewModel @Inject constructor(
         viewModelScope.launch {
             repository.allLevelProgress.collect { list ->
                 if (list.isEmpty()) {
-                    seedDefaultLessons()
+                    seedDefaultLessonsUseCase()
                 }
             }
         }
 
         loadDailyTasksCompleted()
-    }
-
-    private suspend fun seedDefaultLessons() {
-        val defaults = listOf(
-            LessonProgress("beg_1", "Posture & Open Strings Bowing", "Beginner", false, 0),
-            LessonProgress("beg_2", "First Finger Patterns (D Major)", "Beginner", false, 0),
-            LessonProgress("beg_3", "First Position Rhythms & Songs", "Beginner", false, 0),
-            LessonProgress("int_1", "Relaxing Left Hand & Vibrato", "Intermediate", false, 0),
-            LessonProgress("int_2", "Shifting to Third Position (III)", "Intermediate", false, 0),
-            LessonProgress("int_3", "Double Stop Balance & Harmony", "Intermediate", false, 0),
-            LessonProgress("adv_1", "Bowing Styles: Martelé, Spiccato", "Advanced", false, 0),
-            LessonProgress("adv_2", "Paganini Practice Theme (A minor)", "Advanced", false, 0),
-            LessonProgress("adv_3", "High Position Shifts (5th & 7th)", "Advanced", false, 0)
-        )
-        for (lesson in defaults) {
-            repository.insertLessonProgress(lesson)
-        }
     }
 
     // --- Timer Methods ---
@@ -167,18 +163,12 @@ class PracticeViewModel @Inject constructor(
                 val lessonsList = allLevelProgress.value
                 val matchingLesson = lessonsList.firstOrNull { it.lessonTitle == category }
                 if (matchingLesson != null) {
-                    val finalSecs = matchingLesson.totalPracticedSeconds + seconds
-                    val markedDone = finalSecs >= 300
-                    val wasCompletedAlready = matchingLesson.completed
-                    repository.insertLessonProgress(
-                        matchingLesson.copy(
-                            totalPracticedSeconds = finalSecs,
-                            completed = markedDone || matchingLesson.completed,
-                            lastPracticedTimestamp = System.currentTimeMillis()
-                        )
+                    val newlyCompleted = updateLessonProgressUseCase(
+                        matchingLesson.lessonId,
+                        seconds
                     )
-                    if (markedDone && !wasCompletedAlready) {
-                        earnPoints(150)
+                    if (newlyCompleted) {
+                        earnPointsUseCase(ScoringPolicy.LESSON_COMPLETION_POINTS)
                     }
                 }
             }
@@ -199,59 +189,19 @@ class PracticeViewModel @Inject constructor(
 
     fun generateDemoHistory() {
         viewModelScope.launch {
-            repository.clearSessions()
-
-            val today = LocalDate.now()
-            val categories = listOf("Smart Tuner Tuning", "Advanced Bowing: Détaché & Martelé", "Open Strings Tuning & Bowing", "Metronome Scale Practice")
-
-            for (dayOffset in -6..0) {
-                val dayDate = today.plusDays(dayOffset.toLong())
-                val dayString = dayDate.toString()
-
-                val logsForDayCount = Random.nextInt(1, 3)
-                for (i in 0 until logsForDayCount) {
-                    val practiceMin = Random.nextInt(10, 40)
-                    val randCategory = categories.shuffled().first()
-                    repository.insertSession(
-                        PracticeSession(
-                            dateString = dayString,
-                            durationSeconds = practiceMin * 60,
-                            category = randCategory,
-                            timestamp = dayDate.atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC) * 1000 + (i * 3600 * 1000)
-                        )
-                    )
-                }
-            }
-
-            val beg1 = repository.getLessonProgressById("beg_1")
-            val adv1 = repository.getLessonProgressById("adv_1")
-
-            if (beg1 != null) {
-                repository.insertLessonProgress(
-                    beg1.copy(totalPracticedSeconds = 900, completed = true, lastPracticedTimestamp = System.currentTimeMillis())
-                )
-            }
-            if (adv1 != null) {
-                repository.insertLessonProgress(
-                    adv1.copy(totalPracticedSeconds = 480, completed = true, lastPracticedTimestamp = System.currentTimeMillis() - 86400000)
-                )
-            }
+            generateDemoHistoryUseCase()
         }
     }
 
     fun toggleLessonStatus(lessonId: String, completed: Boolean) {
         viewModelScope.launch {
-            val current = repository.getLessonProgressById(lessonId)
-            repository.updateLessonCompletion(lessonId, completed)
-            if (completed && current?.completed == false) {
-                earnPoints(150)
-            }
+            toggleLessonStatusUseCase(lessonId, completed)
         }
     }
 
     fun deleteSession(sessionId: Int) {
         viewModelScope.launch {
-            repository.deleteSession(sessionId)
+            deletePracticeSessionUseCase(sessionId)
         }
     }
 
@@ -270,31 +220,22 @@ class PracticeViewModel @Inject constructor(
             _dailyTasksCompleted.value = currentCompleted
             userPreferencesManager.saveDailyTaskCompleted(today, currentCompleted)
 
-            val pointsEarned = when (attempts) {
-                1 -> 100
-                2 -> 75
-                3 -> 50
-                else -> 25
+            val pointsEarned = ScoringPolicy.pointsForTaskCompletion(attempts)
+            viewModelScope.launch {
+                earnPointsUseCase(pointsEarned)
             }
-            earnPoints(pointsEarned)
         }
     }
 
     fun earnPoints(additionalPoints: Int) {
-        val userVal = authManager.currentUser.value ?: return
         viewModelScope.launch {
-            val updatedUser = userVal.copy(points = userVal.points + additionalPoints)
-            repository.insertUser(updatedUser)
-            authManager.restoreCurrentUser(updatedUser)
+            earnPointsUseCase(additionalPoints)
         }
     }
 
     fun updateSkillLevel(level: String) {
-        val userVal = authManager.currentUser.value ?: return
         viewModelScope.launch {
-            val updatedUser = userVal.copy(skillLevel = level)
-            repository.insertUser(updatedUser)
-            authManager.restoreCurrentUser(updatedUser)
+            updateSkillLevelUseCase(level)
         }
     }
 }

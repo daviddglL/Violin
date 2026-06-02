@@ -7,8 +7,9 @@ import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.CompleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.DeleteAssignmentUseCase
 import com.violinmaster.app.domain.usecase.GetAssignmentsUseCase
-import com.violinmaster.app.security.VideoSecurityService
+import com.violinmaster.app.domain.usecase.PublishAssignmentUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,9 @@ class AssignmentViewModel @Inject constructor(
     private val repository: IPracticeRepository,
     private val authManager: AuthManager,
     private val getAssignmentsUseCase: GetAssignmentsUseCase,
-    private val completeAssignmentUseCase: CompleteAssignmentUseCase
+    private val completeAssignmentUseCase: CompleteAssignmentUseCase,
+    private val publishAssignmentUseCase: PublishAssignmentUseCase,
+    private val deleteAssignmentUseCase: DeleteAssignmentUseCase
 ) : ViewModel() {
 
     // --- Student / Teacher Assignments flows ---
@@ -70,36 +73,19 @@ class AssignmentViewModel @Inject constructor(
         if (userVal.role != "TEACHER") return
 
         viewModelScope.launch {
-            val secureVideoUrl = if (videoTitle.isNotEmpty()) {
-                VideoSecurityService.obtainSecureSignedUrl("vid_dynamic_tutor_" + System.currentTimeMillis() % 1000, "session_token_master")
-            } else ""
-
-            val assignment = Assignment(
-                title = title,
-                description = description,
-                teacherUsername = userVal.teacherCode,
-                studentUsername = targetStudent,
-                videoTitle = videoTitle,
-                videoDurationSeconds = durationSeconds,
-                videoResourceUrl = secureVideoUrl
-            )
-            repository.insertAssignment(assignment)
+            publishAssignmentUseCase(title, description, targetStudent, videoTitle, durationSeconds)
         }
     }
 
     fun markAssignmentComplete(assignmentId: Int, completed: Boolean) {
         viewModelScope.launch {
-            if (completed) {
-                completeAssignmentUseCase(assignmentId)
-            } else {
-                repository.updateAssignmentCompletion(assignmentId, false)
-            }
+            completeAssignmentUseCase(assignmentId, completed)
         }
     }
 
     fun deleteAssignment(assignmentId: Int) {
         viewModelScope.launch {
-            repository.deleteAssignmentById(assignmentId)
+            deleteAssignmentUseCase(assignmentId)
         }
     }
 }

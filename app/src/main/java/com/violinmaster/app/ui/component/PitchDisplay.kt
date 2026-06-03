@@ -31,6 +31,7 @@ fun PitchDisplay(
     isListening: Boolean,
     appLanguage: AppLanguage,
     needleAngleOffset: Float,
+    maxCents: Int = 50,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -62,7 +63,8 @@ fun PitchDisplay(
                 TuningWheel(
                     needleAngleOffset = needleAngleOffset,
                     pitchOffsetCents = pitchOffsetCents,
-                    isListening = isListening
+                    isListening = isListening,
+                    maxCents = maxCents
                 )
 
                 // Floating Big Selected Note Label
@@ -74,10 +76,13 @@ fun PitchDisplay(
                         text = selectedNote ?: "--",
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (Math.abs(pitchOffsetCents) < 2.5f && isListening) Color(0xFF81C784) else Color.White,
+                        color = if (Math.abs(pitchOffsetCents) < 2.5f && isListening) Color(0xFF81C784)
+                               else if (Math.abs(pitchOffsetCents) > maxCents.toFloat()) Color(0xFFFFB74D)
+                               else Color.White,
                         fontFamily = FontFamily.Serif
                     )
                     val isPerfect = Math.abs(pitchOffsetCents) < 2.5f && isListening
+                    val isOverflow = Math.abs(pitchOffsetCents) > maxCents.toFloat()
                     Text(
                         text = if (!isListening && selectedNote == null) {
                             Localization.get("select_string_prompt", appLanguage)
@@ -85,6 +90,16 @@ fun PitchDisplay(
                             Localization.get("reference_playback", appLanguage)
                         } else if (isPerfect) {
                             Localization.get("perfectly_in_tune", appLanguage)
+                        } else if (isOverflow) {
+                            String.format(
+                                "%s%.1f %s",
+                                if (pitchOffsetCents > 0) ">" else "<",
+                                Math.abs(pitchOffsetCents),
+                                Localization.get(
+                                    if (pitchOffsetCents < 0) "cents_flat" else "cents_sharp",
+                                    appLanguage
+                                )
+                            )
                         } else {
                             String.format(
                                 "%.1f cents %s",
@@ -96,7 +111,9 @@ fun PitchDisplay(
                             )
                         },
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isPerfect) Color(0xFF81C784) else MaterialTheme.colorScheme.secondary,
+                        color = if (isPerfect) Color(0xFF81C784)
+                               else if (isOverflow) Color(0xFFFFB74D)
+                               else MaterialTheme.colorScheme.secondary,
                         fontWeight = FontWeight.Bold
                     )
                 }

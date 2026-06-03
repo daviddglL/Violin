@@ -87,7 +87,6 @@ fun TunerScreen(
     val context = LocalContext.current
     var showPermissionError by remember { mutableStateOf(false) }
     var showConfigSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val scope = rememberCoroutineScope()
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -168,7 +167,7 @@ fun TunerScreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- Simulated Pitch Gauge Canvas ---
+        // --- Pitch Gauge ---
         PitchDisplay(
             selectedNote = selectedNote,
             pitchOffsetCents = pitchOffsetCents,
@@ -180,7 +179,7 @@ fun TunerScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- Toggle Modes (Auto Detect & Microphone Listen) ---
+        // --- Auto Detect Toggle ---
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -243,7 +242,6 @@ fun TunerScreen(
             )
         }
 
-        // Show permission error when microphone access is denied
         if (showPermissionError) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -258,7 +256,7 @@ fun TunerScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- Manual Tones Box ---
+        // --- Manual Tones ---
         Text(
             text = "${Localization.get("play_reference_tone", appLanguage)} (A=$referencePitchA Hz)",
             style = MaterialTheme.typography.labelSmall,
@@ -281,6 +279,7 @@ fun TunerScreen(
 
     // ── Configuration Bottom Sheet ──
     if (showConfigSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
         ModalBottomSheet(
             onDismissRequest = { showConfigSheet = false },
             sheetState = sheetState,
@@ -307,7 +306,6 @@ fun TunerScreen(
     }
 }
 
-// ── Available max-cents options ──
 private val MAX_CENTS_OPTIONS = listOf(25, 50, 75, 100, 150, 200)
 
 @Composable
@@ -383,7 +381,7 @@ private fun ConfigSheetContent(
 
         // ── Max Cents Selector ──
         Text(
-            text = "${Localization.get("config_max_cents", appLanguage)}: ±$maxCents",
+            text = "${Localization.get("config_max_cents", appLanguage)}: \u00B1$maxCents",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.secondary,
             fontWeight = FontWeight.Bold
@@ -511,7 +509,6 @@ private fun ConfigSheetContent(
             }
         }
 
-        // ── Close Button ──
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = onClose,

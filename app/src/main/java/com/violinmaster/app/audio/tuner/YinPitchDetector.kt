@@ -113,11 +113,14 @@ internal object YinPitchDetector {
      *
      * @param frequency Detected frequency in Hz
      * @param referencePitchA Reference pitch for A4 in Hz (default 440)
-     * @return [PitchResult] with note name, cents offset, and mapping confidence
+     * @param maxCents Maximum cents range for confidence normalization (default 50).
+     *                 Confidence = 1 - |cents| / maxCents, clamped to [0, 1].
+     * @return [PitchResult] with note name, cents offset, mapping confidence, and maxCents
      */
     fun frequencyToNoteAndCents(
         frequency: Float,
-        referencePitchA: Int = 440
+        referencePitchA: Int = 440,
+        maxCents: Int = 50
     ): PitchResult {
         val ratio = referencePitchA.toFloat() / 440.0f
 
@@ -143,14 +146,16 @@ internal object YinPitchDetector {
             0f
         }
 
-        // Confidence based on distance from note (0 cents = 1.0, ±50 cents = 0.0)
-        val confidence = (1.0f - (abs(cents) / 50f)).coerceIn(0f, 1f)
+        // Confidence based on distance from note:
+        // 0 cents offset = 1.0 confidence, at maxCents offset = 0.0 confidence
+        val confidence = (1.0f - (abs(cents) / maxCents.toFloat())).coerceIn(0f, 1f)
 
         return PitchResult(
             frequency = frequency,
             cents = cents,
             note = bestNote,
-            confidence = confidence
+            confidence = confidence,
+            maxCents = maxCents
         )
     }
 

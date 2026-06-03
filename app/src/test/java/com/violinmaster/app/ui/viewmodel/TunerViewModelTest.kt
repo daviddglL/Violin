@@ -1,14 +1,20 @@
 package com.violinmaster.app.ui.viewmodel
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.data.UserAccount
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.TuningPreferencesManager
+import com.violinmaster.app.domain.model.TuningConfiguration
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -21,22 +27,46 @@ import org.robolectric.annotation.Config
 @Config(sdk = [36])
 class TunerViewModelTest {
 
+    private lateinit var context: Context
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var tunerEngine: TunerEngine
+    private lateinit var authManager: AuthManager
+    private lateinit var tuningPreferencesManager: TuningPreferencesManager
     private lateinit var viewModel: TunerViewModel
 
     @Before
     fun setup() {
+        context = ApplicationProvider.getApplicationContext<Context>()
+        // Clean SharedPreferences before each test
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            .edit().clear().commit()
+
         audioEngine = ViolinAudioEngine()
         tunerEngine = TunerEngine()
-        viewModel = TunerViewModel(audioEngine, tunerEngine)
+        authManager = AuthManager(context)
+        authManager.saveCurrentUser(
+            UserAccount(
+                username = "test_user",
+                role = "STUDENT",
+                hashedPassword = "hash",
+                salt = "salt"
+            )
+        )
+        tuningPreferencesManager = TuningPreferencesManager(context, authManager)
+        viewModel = TunerViewModel(audioEngine, tunerEngine, tuningPreferencesManager)
     }
 
     @After
     fun tearDown() {
         audioEngine.releaseAll()
         tunerEngine.release()
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            .edit().clear().commit()
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Existing tests (unchanged behavior)
+    // ═══════════════════════════════════════════════════════════════════
 
     @Test
     fun `selectTunerNote A sets selectedNote and triggers tone playback`() = runTest {
@@ -61,7 +91,6 @@ class TunerViewModelTest {
 
         assertTrue(viewModel.isListeningTuner.value)
         assertEquals(null, viewModel.tunerSelectedNote.value)
-        // TunerEngine isListening should be true
         assertTrue(tunerEngine.isListening)
     }
 
@@ -100,7 +129,6 @@ class TunerViewModelTest {
         viewModel.selectTunerNote("A")
         viewModel.stopAudioEngineTone()
 
-        // State should be unchanged but tone should be stopped
         assertEquals("A", viewModel.tunerSelectedNote.value)
     }
 
@@ -117,18 +145,159 @@ class TunerViewModelTest {
         viewModel.updateReferencePitch(432)
 
         assertEquals(432, viewModel.referencePitchA.value)
-        // Note should still be selected after pitch update
         assertEquals("A", viewModel.tunerSelectedNote.value)
     }
 
     @Test
     fun `toggleListeningTuner starts and stops engine`() = runTest {
-        // Start listening
         viewModel.toggleListeningTuner()
         assertTrue("Engine should be listening after toggle", tunerEngine.isListening)
 
-        // Stop listening
         viewModel.toggleListeningTuner()
-        // Engine should stop (AudioRecord cleanup is async, but flag should flip)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NEW: maxCents state
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `maxCents defaults to 50`() = runTest {
+        assertEquals(50, viewModel.maxCents.value)
+    }
+
+    @Test
+    fun `updateMaxCents changes maxCents state`() = runTest {
+        viewModel.updateMaxCents(100)
+        assertEquals(100, viewModel.maxCents.value)
+    }
+
+    @Test
+    fun `updateMaxCents clamps to valid range 25-200`() = runTest {
+        viewModel.updateMaxCents(10)
+        assertEquals(25, viewModel.maxCents.value)
+
+        viewModel.updateMaxCents(300)
+        assertEquals(200, viewModel.maxCents.value)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NEW: presets and CRUD
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `presets StateFlow starts empty`() = runTest {
+        val presets = viewModel.presets.first()
+        assertTrue("Presets should start empty", presets.isEmpty())
+    }
+
+    @Test
+    fun `saveCurrentAsPreset persists current configuration`() = runTest {
+        // Set up current values
+        viewModel.updateReferencePitch(432)
+        viewModel.updateMaxCents(100)
+
+        viewModel.saveCurrentAsPreset("Custom 432")
+
+        val presets = viewModel.presets.first()
+        assertEquals("Should have 1 preset", 1, presets.size)
+        assertEquals("Custom 432", presets[0].label)
+        assertEquals(432, presets[0].referencePitch)
+        assertEquals(100, presets[0].maxCents)
+    }
+
+    @Test
+    fun `saveCurrentAsPreset with duplicate label overwrites`() = runTest {
+        viewModel.updateReferencePitch(440)
+        viewModel.updateMaxCents(50)
+        viewModel.saveCurrentAsPreset("My Preset")
+
+        viewModel.updateReferencePitch(415)
+        viewModel.updateMaxCents(25)
+        viewModel.saveCurrentAsPreset("My Preset")
+
+        val presets = viewModel.presets.first()
+        assertEquals("Should have 1 preset (overwritten)", 1, presets.size)
+        assertEquals(415, presets[0].referencePitch)
+        assertEquals(25, presets[0].maxCents)
+    }
+
+    @Test
+    fun `loadPreset applies preset values to current state`() = runTest {
+        // Save a preset
+        viewModel.updateReferencePitch(440)
+        viewModel.updateMaxCents(50)
+        viewModel.saveCurrentAsPreset("Baroque 415")
+
+        // Create second preset and save
+        viewModel.updateReferencePitch(415)
+        viewModel.updateMaxCents(25)
+        viewModel.saveCurrentAsPreset("Baroque 415") // overwrites
+
+        // Change current state
+        viewModel.updateReferencePitch(440)
+        viewModel.updateMaxCents(100)
+
+        // Load the preset
+        viewModel.loadPreset("Baroque 415")
+
+        assertEquals(415, viewModel.referencePitchA.value)
+        assertEquals(25, viewModel.maxCents.value)
+    }
+
+    @Test
+    fun `loadPreset with non-existent label does nothing`() = runTest {
+        viewModel.updateReferencePitch(440)
+        viewModel.updateMaxCents(50)
+
+        viewModel.loadPreset("DoesNotExist")
+
+        assertEquals(440, viewModel.referencePitchA.value)
+        assertEquals(50, viewModel.maxCents.value)
+    }
+
+    @Test
+    fun `deletePreset removes preset by label`() = runTest {
+        viewModel.updateReferencePitch(440)
+        viewModel.updateMaxCents(50)
+        viewModel.saveCurrentAsPreset("Preset A")
+
+        viewModel.updateReferencePitch(415)
+        viewModel.saveCurrentAsPreset("Preset B")
+
+        viewModel.deletePreset("Preset A")
+
+        val presets = viewModel.presets.first()
+        assertEquals("Should have 1 preset after delete", 1, presets.size)
+        assertEquals("Preset B", presets[0].label)
+    }
+
+    @Test
+    fun `deletePreset with non-existent label does nothing`() = runTest {
+        viewModel.saveCurrentAsPreset("Only Preset")
+        viewModel.deletePreset("Ghost")
+
+        val presets = viewModel.presets.first()
+        assertEquals("Should still have 1 preset", 1, presets.size)
+    }
+
+    @Test
+    fun `saveCurrentAsPreset preserves multiple distinct presets`() = runTest {
+        viewModel.updateReferencePitch(440)
+        viewModel.updateMaxCents(50)
+        viewModel.saveCurrentAsPreset("Default")
+
+        viewModel.updateReferencePitch(415)
+        viewModel.updateMaxCents(25)
+        viewModel.saveCurrentAsPreset("Baroque")
+
+        viewModel.updateReferencePitch(442)
+        viewModel.updateMaxCents(75)
+        viewModel.saveCurrentAsPreset("Orchestra")
+
+        val presets = viewModel.presets.first()
+        assertEquals("Should have 3 presets", 3, presets.size)
+        assertEquals("Default", presets[0].label)
+        assertEquals("Baroque", presets[1].label)
+        assertEquals("Orchestra", presets[2].label)
     }
 }

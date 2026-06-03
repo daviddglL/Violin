@@ -1,10 +1,15 @@
 package com.violinmaster.app.ui.screens
 
+import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.data.UserAccount
+import com.violinmaster.app.di.AuthManager
+import com.violinmaster.app.di.TuningPreferencesManager
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.viewmodel.TunerViewModel
 import org.junit.After
@@ -25,12 +30,28 @@ class TunerScreenTest {
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var tunerEngine: TunerEngine
     private lateinit var viewModel: TunerViewModel
+    private lateinit var context: Context
 
     @Before
     fun setup() {
+        context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            .edit().clear().commit()
+
+        val authManager = AuthManager(context)
+        authManager.saveCurrentUser(
+            UserAccount(
+                username = "test_user",
+                role = "STUDENT",
+                hashedPassword = "hash",
+                salt = "salt"
+            )
+        )
+        val tuningPreferencesManager = TuningPreferencesManager(context, authManager)
+
         audioEngine = ViolinAudioEngine()
         tunerEngine = TunerEngine()
-        viewModel = TunerViewModel(audioEngine, tunerEngine)
+        viewModel = TunerViewModel(audioEngine, tunerEngine, tuningPreferencesManager)
     }
 
     @After

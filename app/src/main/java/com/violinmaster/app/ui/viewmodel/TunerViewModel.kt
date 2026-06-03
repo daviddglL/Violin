@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.di.TuningPreferencesManager
+import com.violinmaster.app.domain.model.TuningConfiguration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class TunerViewModel @Inject constructor(
     private val audioEngine: ViolinAudioEngine,
-    private val tunerEngine: TunerEngine
+    private val tunerEngine: TunerEngine,
+    private val tuningPreferencesManager: TuningPreferencesManager
 ) : ViewModel() {
 
     // --- Reference Pitch A ---
@@ -29,6 +32,18 @@ class TunerViewModel @Inject constructor(
                 audioEngine.playStringTone(note, pitch)
             }
         }
+    }
+
+    // --- Max Cents Range ---
+    private val _maxCents = MutableStateFlow(50)
+    val maxCents: StateFlow<Int> = _maxCents.asStateFlow()
+
+    /**
+     * Update the maximum cents range for the tuning gauge.
+     * Valid values are clamped to 25–200 (discrete step: 25).
+     */
+    fun updateMaxCents(cents: Int) {
+        _maxCents.value = cents.coerceIn(25, 200)
     }
 
     // --- Tuner Control State ---
@@ -46,6 +61,41 @@ class TunerViewModel @Inject constructor(
 
     // TunerEngine pitch flow collection job
     private var pitchCollectionJob: Job? = null
+
+    // --- Presets (delegated to TuningPreferencesManager) ---
+    val presets: StateFlow<List<TuningConfiguration>> = tuningPreferencesManager.presets
+
+    /**
+     * Save the current referencePitch and maxCents as a named preset.
+     * Overwrites any existing preset with the same [label].
+     */
+    fun saveCurrentAsPreset(label: String) {
+        val config = TuningConfiguration(
+            label = label,
+            referencePitch = _referencePitchA.value,
+            maxCents = _maxCents.value
+        )
+        tuningPreferencesManager.saveConfig(config)
+    }
+
+    /**
+     * Load a preset by [label] and apply its referencePitch and maxCents
+     * to the current tuning state.
+     */
+    fun loadPreset(label: String) {
+        val config = tuningPreferencesManager.loadConfig(label) ?: return
+        _referencePitchA.value = config.referencePitch
+        _maxCents.value = config.maxCents
+    }
+
+    /**
+     * Delete the preset with the given [label].
+     */
+    fun deletePreset(label: String) {
+        tuningPreferencesManager.deleteConfig(label)
+    }
+
+    // --- Tuner note selection ---
 
     fun selectTunerNote(note: String?) {
         _tunerSelectedNote.value = note
@@ -93,7 +143,8 @@ class TunerViewModel @Inject constructor(
         pitchCollectionJob = viewModelScope.launch {
             tunerEngine.pitchFlow.collect { result ->
                 if (result != null) {
-                    _tunerPitchOffsetCents.value = result.cents.coerceIn(-50f, 50f)
+                    // Pitch offset is NOT clamped — actual cents value from detection
+                    _tunerPitchOffsetCents.value = result.cents
 
                     // Auto-detect: update selected note when close to a violin string
                     if (_tunerAutoDetect.value && result.note != null && result.confidence > 0.3f) {

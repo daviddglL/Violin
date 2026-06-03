@@ -26,10 +26,10 @@ class TunerViewModel @Inject constructor(
     val referencePitchA: StateFlow<Int> = _referencePitchA.asStateFlow()
 
     fun updateReferencePitch(pitch: Int) {
-        _referencePitchA.value = pitch
+        _referencePitchA.value = pitch.coerceIn(350, 500)
         if (audioEngine.isTonePlaying()) {
             _tunerSelectedNote.value?.let { note ->
-                audioEngine.playStringTone(note, pitch)
+                audioEngine.playStringTone(note, _referencePitchA.value)
             }
         }
     }
@@ -38,12 +38,20 @@ class TunerViewModel @Inject constructor(
     private val _maxCents = MutableStateFlow(50)
     val maxCents: StateFlow<Int> = _maxCents.asStateFlow()
 
+    companion object {
+        /** Allowed max-cents values for the tuning gauge. */
+        val ALLOWED_MAX_CENTS = listOf(25, 50, 75, 100, 150, 200)
+    }
+
     /**
      * Update the maximum cents range for the tuning gauge.
-     * Valid values are clamped to 25–200 (discrete step: 25).
+     * The value is snapped to the nearest allowed step in [ALLOWED_MAX_CENTS]
+     * and safe-clamped to 25–200 as a final guard.
      */
     fun updateMaxCents(cents: Int) {
-        _maxCents.value = cents.coerceIn(25, 200)
+        _maxCents.value = ALLOWED_MAX_CENTS.minByOrNull { Math.abs(it - cents) }
+            ?.coerceIn(25, 200)
+            ?: cents.coerceIn(25, 200)
     }
 
     // --- Tuner Control State ---

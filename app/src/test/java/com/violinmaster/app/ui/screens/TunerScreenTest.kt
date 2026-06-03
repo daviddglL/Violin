@@ -2,8 +2,10 @@ package com.violinmaster.app.ui.screens
 
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
@@ -122,5 +124,131 @@ class TunerScreenTest {
 
         composeTestRule.onNodeWithTag("string_note_button_A").assertIsDisplayed()
         composeTestRule.onNodeWithTag("tuner_gauge_container").assertIsDisplayed()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Config Sheet UI tests
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `config button is displayed`() {
+        composeTestRule.setContent {
+            TunerScreen(
+                viewModel = viewModel,
+                appLanguage = AppLanguage.ENGLISH
+            )
+        }
+        composeTestRule.onNodeWithTag("config_button").assertIsDisplayed()
+    }
+
+    @Test
+    fun `config button opens bottom sheet with reference pitch slider`() {
+        composeTestRule.setContent {
+            TunerScreen(
+                viewModel = viewModel,
+                appLanguage = AppLanguage.ENGLISH
+            )
+        }
+
+        // Open config sheet
+        composeTestRule.onNodeWithTag("config_button").performClick()
+
+        // Sheet content should be visible
+        composeTestRule.onNodeWithTag("reference_pitch_slider").assertIsDisplayed()
+    }
+
+    @Test
+    fun `config sheet shows max cents options`() {
+        composeTestRule.setContent {
+            TunerScreen(
+                viewModel = viewModel,
+                appLanguage = AppLanguage.ENGLISH
+            )
+        }
+
+        composeTestRule.onNodeWithTag("config_button").performClick()
+
+        // Verify all max-cents options are rendered
+        composeTestRule.onNodeWithTag("max_cents_option_25").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("max_cents_option_50").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("max_cents_option_75").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("max_cents_option_100").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("max_cents_option_150").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("max_cents_option_200").assertIsDisplayed()
+    }
+
+    @Test
+    fun `config sheet shows preset name input and save button`() {
+        composeTestRule.setContent {
+            TunerScreen(
+                viewModel = viewModel,
+                appLanguage = AppLanguage.ENGLISH
+            )
+        }
+
+        composeTestRule.onNodeWithTag("config_button").performClick()
+
+        composeTestRule.onNodeWithTag("preset_name_input").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("save_preset_button").assertIsDisplayed()
+    }
+
+    @Test
+    fun `config sheet shows no presets message when list is empty`() {
+        composeTestRule.setContent {
+            TunerScreen(
+                viewModel = viewModel,
+                appLanguage = AppLanguage.ENGLISH
+            )
+        }
+
+        composeTestRule.onNodeWithTag("config_button").performClick()
+
+        // Presets list should NOT be displayed when empty
+        composeTestRule.onNodeWithTag("presets_list").assertIsNotDisplayed()
+    }
+
+    @Test
+    fun `config sheet close button closes the sheet`() {
+        composeTestRule.setContent {
+            TunerScreen(
+                viewModel = viewModel,
+                appLanguage = AppLanguage.ENGLISH
+            )
+        }
+
+        // Open
+        composeTestRule.onNodeWithTag("config_button").performClick()
+        composeTestRule.onNodeWithTag("reference_pitch_slider").assertIsDisplayed()
+
+        // Close
+        composeTestRule.onNodeWithTag("close_config_sheet").performClick()
+
+        // After close, sheet content should no longer be displayed
+        composeTestRule.onNodeWithTag("reference_pitch_slider").assertIsNotDisplayed()
+    }
+
+    @Test
+    fun `config sheet shows saved preset with load and delete buttons`() {
+        // Save a preset via ViewModel before rendering
+        viewModel.updateReferencePitch(432)
+        viewModel.updateMaxCents(75)
+        viewModel.saveCurrentAsPreset("Baroque 432")
+
+        composeTestRule.setContent {
+            TunerScreen(
+                viewModel = viewModel,
+                appLanguage = AppLanguage.ENGLISH
+            )
+        }
+
+        // Open config sheet
+        composeTestRule.onNodeWithTag("config_button").performClick()
+
+        // Presets list should now be visible
+        composeTestRule.onNodeWithTag("presets_list").assertIsDisplayed()
+
+        // Load and delete buttons for the saved preset
+        composeTestRule.onNodeWithTag("load_preset_Baroque 432").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("delete_preset_Baroque 432").assertIsDisplayed()
     }
 }

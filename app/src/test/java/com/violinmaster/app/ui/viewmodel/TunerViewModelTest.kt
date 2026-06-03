@@ -300,4 +300,78 @@ class TunerViewModelTest {
         assertEquals("Baroque", presets[1].label)
         assertEquals("Orchestra", presets[2].label)
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NEW: input validation guards
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `updateReferencePitch clamps below 350 to 350`() {
+        viewModel.updateReferencePitch(300)
+        assertEquals(350, viewModel.referencePitchA.value)
+    }
+
+    @Test
+    fun `updateReferencePitch clamps above 500 to 500`() {
+        viewModel.updateReferencePitch(600)
+        assertEquals(500, viewModel.referencePitchA.value)
+    }
+
+    @Test
+    fun `updateReferencePitch accepts values within 350-500 as-is`() {
+        viewModel.updateReferencePitch(350)
+        assertEquals(350, viewModel.referencePitchA.value)
+
+        viewModel.updateReferencePitch(440)
+        assertEquals(440, viewModel.referencePitchA.value)
+
+        viewModel.updateReferencePitch(500)
+        assertEquals(500, viewModel.referencePitchA.value)
+    }
+
+    @Test
+    fun `updateMaxCents snaps to nearest allowed value`() {
+        viewModel.updateMaxCents(1)
+        assertEquals(25, viewModel.maxCents.value)
+
+        viewModel.updateMaxCents(30)
+        assertEquals(25, viewModel.maxCents.value)
+
+        viewModel.updateMaxCents(60)
+        assertEquals(50, viewModel.maxCents.value)
+
+        viewModel.updateMaxCents(80)
+        assertEquals(75, viewModel.maxCents.value)
+
+        viewModel.updateMaxCents(110)
+        assertEquals(100, viewModel.maxCents.value)
+
+        viewModel.updateMaxCents(140)
+        assertEquals(150, viewModel.maxCents.value)
+
+        viewModel.updateMaxCents(185)
+        assertEquals(200, viewModel.maxCents.value)
+
+        viewModel.updateMaxCents(999)
+        assertEquals(200, viewModel.maxCents.value)
+    }
+
+    @Test
+    fun `updateMaxCents with values near boundary snaps correctly`() {
+        // 37 is closer to 25 than 50
+        viewModel.updateMaxCents(37)
+        assertEquals(25, viewModel.maxCents.value)
+
+        // 38 is closer to 50 than 25
+        viewModel.updateMaxCents(38)
+        assertEquals(50, viewModel.maxCents.value)
+
+        // 87 is closer to 100 than 75
+        viewModel.updateMaxCents(88)
+        assertEquals(100, viewModel.maxCents.value)
+
+        // 125 is halfway between 100 and 150 → minByOrNull returns first (100)
+        viewModel.updateMaxCents(125)
+        assertEquals(100, viewModel.maxCents.value)
+    }
 }

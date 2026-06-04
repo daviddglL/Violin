@@ -79,6 +79,10 @@ class PracticeViewModelTest {
         seedDefaultLessonsUseCase = SeedDefaultLessonsUseCase(repository)
         earnPointsUseCase = EarnPointsUseCase(repository, authManager)
         updateSkillLevelUseCase = UpdateSkillLevelUseCase(repository, authManager)
+        createViewModel()
+    }
+
+    private fun createViewModel() {
         viewModel = PracticeViewModel(
             repository, authManager, userPreferencesManager, audioEngine,
             savePracticeSessionUseCase, getPracticeSessionsUseCase,
@@ -97,6 +101,7 @@ class PracticeViewModelTest {
 
     @Test
     fun `startPracticeTimer sets isPracticing true and starts counting`() = runTest {
+        createViewModel()
         viewModel.startPracticeTimer("Smart Tuner")
 
         assertTrue(viewModel.isPracticing.value)
@@ -110,6 +115,7 @@ class PracticeViewModelTest {
 
     @Test
     fun `pausePracticeTimer stops counting but preserves elapsed`() = runTest {
+        createViewModel()
         viewModel.startPracticeTimer("Metronome")
         advanceTimeBy(2500) // 2 seconds elapsed
         assertEquals(2, viewModel.practiceElapsedSeconds.value)
@@ -123,6 +129,7 @@ class PracticeViewModelTest {
 
     @Test
     fun `resumePracticeTimer continues from paused elapsed`() = runTest {
+        createViewModel()
         viewModel.startPracticeTimer("Scales")
         advanceTimeBy(2000) // 2 seconds
         viewModel.pausePracticeTimer()
@@ -137,6 +144,7 @@ class PracticeViewModelTest {
 
     @Test
     fun `stopAndSavePracticeSession saves session when duration ge 3 seconds`() = runTest {
+        createViewModel()
         viewModel.startPracticeTimer("Smart Tuner")
         advanceTimeBy(3500) // 3 seconds elapsed
         assertEquals(3, viewModel.practiceElapsedSeconds.value)

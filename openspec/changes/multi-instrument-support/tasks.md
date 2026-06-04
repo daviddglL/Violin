@@ -40,15 +40,15 @@ Chain strategy: feature-branch-chain
 
 ## Phase 2: Audio Core (PR 2)
 
-- [ ] 2.1 **RED**: Add viola/cello tests to `YinPitchDetectorTest.kt` — VIOLA C3(130.8Hz)→"C", CELLO C2(65.4Hz)→"C", CELLO A3(220Hz)→"A", VIOLIN D4(293.7Hz)→"D" unchanged
+- [x] 2.1 **RED**: Add viola/cello tests to `YinPitchDetectorTest.kt` — VIOLA C3(130.8Hz)→"C", CELLO C2(65.4Hz)→"C", CELLO A3(220Hz)→"A", VIOLIN D4(293.7Hz)→"D" unchanged
   > Spec: app — Note Mapping to Active Instrument Strings
-- [ ] 2.2 **GREEN**: Add `instrument: Instrument = VIOLIN` param to `YinPitchDetector.frequencyToNoteAndCents()` — iterate `instrument.strings`, remove `VIOLIN_NOTE_RATIOS`, update KDoc
+- [x] 2.2 **GREEN**: Add `instrument: Instrument = VIOLIN` param to `YinPitchDetector.frequencyToNoteAndCents()` — iterate `instrument.strings`, remove `VIOLIN_NOTE_RATIOS`, update KDoc
   > Spec: app — Note Mapping to Active Instrument Strings
-- [ ] 2.3 In `audio/TunerEngine.kt` line 103, pass `minFrequency = 50f` to `detectPitch()` for cello C2 (65.4Hz)
+- [x] 2.3 In `audio/TunerEngine.kt` line 103, pass `minFrequency = 50f` to `detectPitch()` for cello C2 (65.4Hz)
   > Spec: app — Low-Frequency Detection for Cello
-- [ ] 2.4 Add `instrument: Instrument = VIOLIN` param to `ViolinAudioEngine.playStringTone()` — resolve frequency ratio from `instrument.strings` instead of hardcoded `when` block
+- [x] 2.4 Add `instrument: Instrument = VIOLIN` param to `ViolinAudioEngine.playStringTone()` — resolve frequency ratio from `instrument.strings` instead of hardcoded `when` block
   > Spec: app — Reference Tone Playback with Active Instrument
-- [ ] 2.5 Update `audio/PitchResult.kt` KDoc: "violin string note" → "instrument string note"
+- [x] 2.5 Update `audio/PitchResult.kt` KDoc: "violin string note" → "instrument string note"
   > Spec: app MODIFIED — Note Mapping
 
 ## Phase 3: Integration & UI (PR 3)

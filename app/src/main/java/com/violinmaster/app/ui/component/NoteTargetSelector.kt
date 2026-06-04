@@ -35,15 +35,16 @@ import kotlin.math.roundToInt
 /**
  * Derive a display label with octave suffix from an instrument string definition.
  *
- * Uses the MIDI note formula (A4 = 69) to determine the octave number,
- * producing labels like "G3", "D4", "A4", "E5", "C2", "C3" etc.
+ * Uses the MIDI note formula (A4 = 69) to determine the octave number via truncation
+ * (MIDI 0 = C-1, MIDI 12 = C0, ..., MIDI 60 = C4). Produces labels like
+ * "G3", "D4", "A4", "E5", "C2", "C3" etc.
  *
  * @param string The instrument string definition (name + frequency).
  * @return Display label with octave suffix, e.g. "G3".
  */
-private fun octaveLabel(string: InstrumentString): String {
-    val midiNote = 69.0 + 12.0 * log2(string.frequency / 440.0)
-    val octave = (midiNote / 12.0).roundToInt() - 1
+fun octaveLabel(string: InstrumentString): String {
+    val midiNote = (69.0 + 12.0 * log2(string.frequency / 440.0)).roundToInt()
+    val octave = (midiNote / 12) - 1
     return "${string.name}$octave"
 }
 

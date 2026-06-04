@@ -73,6 +73,7 @@ fun TunerScreen(
     val pitchOffsetCents by viewModel.tunerPitchOffsetCents.collectAsState()
     val autoDetect by viewModel.tunerAutoDetect.collectAsState()
     val referencePitchA by viewModel.referencePitchA.collectAsState()
+    val instrument by viewModel.selectedInstrument.collectAsState()
 
     val context = LocalContext.current
     var showPermissionError by remember { mutableStateOf(false) }
@@ -241,7 +242,8 @@ fun TunerScreen(
             selectedNote = selectedNote,
             isListening = isListening,
             appLanguage = appLanguage,
-            onNoteSelected = { viewModel.selectTunerNote(it) }
+            onNoteSelected = { viewModel.selectTunerNote(it) },
+            instrument = instrument
         )
 
         Spacer(modifier = Modifier.height(32.dp))

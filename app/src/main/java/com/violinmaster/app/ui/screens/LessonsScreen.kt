@@ -48,6 +48,7 @@ fun LessonsScreen(
 ) {
     val lang by userPreferencesManager.appLanguage.collectAsState()
     val user by authManager.currentUser.collectAsState()
+    val instrument by tunerVM.selectedInstrument.collectAsState()
     val levelProgressList by practiceVM.allLevelProgress.collectAsState()
     val isPracticing by practiceVM.isPracticing.collectAsState()
     val practiceCategory by practiceVM.practiceCategoryName.collectAsState()
@@ -187,7 +188,7 @@ fun LessonsScreen(
                             )
                         }
                     }
-                    1 -> VirtualFingerboard(tunerVM = tunerVM, appLanguage = lang)
+                    1 -> VirtualFingerboard(tunerVM = tunerVM, appLanguage = lang, instrument = instrument)
                     2 -> TheoryQuizTab(practiceVM = practiceVM, userPreferencesManager = userPreferencesManager)
                     3 -> MasterclassTab(authViewModel = authVM)
                 }

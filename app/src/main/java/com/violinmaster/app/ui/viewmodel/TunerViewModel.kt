@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.audio.tuner.YinPitchDetector
+import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.domain.model.Instrument
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,8 +18,12 @@ import javax.inject.Inject
 @HiltViewModel
 class TunerViewModel @Inject constructor(
     private val audioEngine: ViolinAudioEngine,
-    private val tunerEngine: TunerEngine
+    private val tunerEngine: TunerEngine,
+    private val userPreferencesManager: UserPreferencesManager
 ) : ViewModel() {
+
+    // --- Active Instrument ---
+    val selectedInstrument: StateFlow<Instrument> = userPreferencesManager.selectedInstrument
 
     // --- Reference Pitch A ---
     private val _referencePitchA = MutableStateFlow(440)
@@ -26,7 +33,7 @@ class TunerViewModel @Inject constructor(
         _referencePitchA.value = pitch
         if (audioEngine.isTonePlaying()) {
             _tunerSelectedNote.value?.let { note ->
-                audioEngine.playStringTone(note, pitch)
+                audioEngine.playStringTone(note, pitch, selectedInstrument.value)
             }
         }
     }
@@ -50,7 +57,7 @@ class TunerViewModel @Inject constructor(
     fun selectTunerNote(note: String?) {
         _tunerSelectedNote.value = note
         if (note != null) {
-            audioEngine.playStringTone(note, _referencePitchA.value)
+            audioEngine.playStringTone(note, _referencePitchA.value, selectedInstrument.value)
             _isListeningTuner.value = false
             stopPitchCollection()
             _tunerPitchOffsetCents.value = 0f
@@ -93,11 +100,18 @@ class TunerViewModel @Inject constructor(
         pitchCollectionJob = viewModelScope.launch {
             tunerEngine.pitchFlow.collect { result ->
                 if (result != null) {
-                    _tunerPitchOffsetCents.value = result.cents.coerceIn(-50f, 50f)
+                    // Map frequency to the active instrument's strings
+                    val instrument = selectedInstrument.value
+                    val mapped = YinPitchDetector.frequencyToNoteAndCents(
+                        frequency = result.frequency,
+                        referencePitchA = _referencePitchA.value,
+                        instrument = instrument
+                    )
+                    _tunerPitchOffsetCents.value = mapped.cents.coerceIn(-50f, 50f)
 
-                    // Auto-detect: update selected note when close to a violin string
-                    if (_tunerAutoDetect.value && result.note != null && result.confidence > 0.3f) {
-                        _tunerSelectedNote.value = result.note
+                    // Auto-detect: update selected note when close to an instrument string
+                    if (_tunerAutoDetect.value && mapped.note != null && mapped.confidence > 0.3f) {
+                        _tunerSelectedNote.value = mapped.note
                     }
                 }
             }

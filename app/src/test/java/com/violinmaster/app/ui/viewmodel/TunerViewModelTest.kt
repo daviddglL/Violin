@@ -1,7 +1,12 @@
 package com.violinmaster.app.ui.viewmodel
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.audio.tuner.YinPitchDetector
+import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.domain.model.Instrument
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceTimeBy
@@ -21,15 +26,21 @@ import org.robolectric.annotation.Config
 @Config(sdk = [36])
 class TunerViewModelTest {
 
+    private lateinit var context: Context
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var tunerEngine: TunerEngine
+    private lateinit var userPreferencesManager: UserPreferencesManager
     private lateinit var viewModel: TunerViewModel
 
     @Before
     fun setup() {
+        context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            .edit().clear().commit()
         audioEngine = ViolinAudioEngine()
         tunerEngine = TunerEngine()
-        viewModel = TunerViewModel(audioEngine, tunerEngine)
+        userPreferencesManager = UserPreferencesManager(context)
+        viewModel = TunerViewModel(audioEngine, tunerEngine, userPreferencesManager)
     }
 
     @After
@@ -130,5 +141,68 @@ class TunerViewModelTest {
         // Stop listening
         viewModel.toggleListeningTuner()
         // Engine should stop (AudioRecord cleanup is async, but flag should flip)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Instrument selection tests (PR 3)
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `default instrument is VIOLIN`() = runTest {
+        assertEquals(
+            "Default instrument on fresh launch should be VIOLIN",
+            Instrument.VIOLIN,
+            viewModel.selectedInstrument.value
+        )
+    }
+
+    @Test
+    fun `switch to viola updates selectedInstrument StateFlow`() = runTest {
+        userPreferencesManager.setSelectedInstrument(Instrument.VIOLA)
+
+        assertEquals(
+            "selectedInstrument should reflect viola after preference change",
+            Instrument.VIOLA,
+            viewModel.selectedInstrument.value
+        )
+    }
+
+    @Test
+    fun `switch to cello updates selectedInstrument StateFlow`() = runTest {
+        userPreferencesManager.setSelectedInstrument(Instrument.CELLO)
+
+        assertEquals(
+            "selectedInstrument should reflect cello after preference change",
+            Instrument.CELLO,
+            viewModel.selectedInstrument.value
+        )
+    }
+
+    @Test
+    fun `selectTunerNote works with viola C string`() = runTest {
+        userPreferencesManager.setSelectedInstrument(Instrument.VIOLA)
+
+        viewModel.selectTunerNote("C")
+
+        assertEquals("C", viewModel.tunerSelectedNote.value)
+        assertFalse(viewModel.isListeningTuner.value)
+        assertEquals(0f, viewModel.tunerPitchOffsetCents.value)
+    }
+
+    @Test
+    fun `cello A3 220Hz auto-detect maps to note A`() = runTest {
+        userPreferencesManager.setSelectedInstrument(Instrument.CELLO)
+
+        val result = YinPitchDetector.frequencyToNoteAndCents(
+            frequency = 220f,
+            referencePitchA = 440,
+            instrument = viewModel.selectedInstrument.value
+        )
+
+        assertEquals(
+            "220 Hz should map to A for cello (A3 = 220 Hz)",
+            "A",
+            result.note
+        )
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.violinmaster.app.ui.component.AccountSection
 import com.violinmaster.app.ui.component.LanguageSelector
 import com.violinmaster.app.ui.component.SecuritySection
+import com.violinmaster.app.domain.model.Instrument
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
@@ -47,6 +48,7 @@ fun SettingsScreen(
     val currentUser by authManager.currentUser.collectAsState()
     val dailyGoalMinutes by practiceVM.dailyGoalMinutes.collectAsState()
     val referencePitchA by tunerVM.referencePitchA.collectAsState()
+    val selectedInstrument by userPreferencesManager.selectedInstrument.collectAsState()
 
     Column(
         modifier = modifier
@@ -82,6 +84,67 @@ fun SettingsScreen(
             lang = lang,
             onLanguageSelected = { userPreferencesManager.setAppLanguage(it) }
         )
+
+        // --- INSTRUMENT SELECTOR CARD ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.04f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = Localization.get("instrument_label", lang),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val instruments = listOf(
+                        Instrument.VIOLIN to "instrument_violin",
+                        Instrument.VIOLA to "instrument_viola",
+                        Instrument.CELLO to "instrument_cello"
+                    )
+
+                    instruments.forEach { (inst, labelKey) ->
+                        val isSelected = selectedInstrument == inst
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                )
+                                .border(
+                                    1.dp,
+                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                    RoundedCornerShape(10.dp)
+                                )
+                                .clickable { userPreferencesManager.setSelectedInstrument(inst) }
+                                .padding(vertical = 12.dp)
+                                .testTag("instrument_btn_${inst.name}"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = Localization.get(labelKey, lang),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         // --- SECURE USER PROFILE ACCESS CARD ---
         AccountSection(

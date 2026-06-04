@@ -1,10 +1,13 @@
 package com.violinmaster.app.ui.screens
 
+import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.di.UserPreferencesManager
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.viewmodel.TunerViewModel
 import org.junit.After
@@ -22,15 +25,19 @@ class TunerScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private lateinit var context: Context
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var tunerEngine: TunerEngine
+    private lateinit var userPreferencesManager: UserPreferencesManager
     private lateinit var viewModel: TunerViewModel
 
     @Before
     fun setup() {
+        context = ApplicationProvider.getApplicationContext<Context>()
         audioEngine = ViolinAudioEngine()
         tunerEngine = TunerEngine()
-        viewModel = TunerViewModel(audioEngine, tunerEngine)
+        userPreferencesManager = UserPreferencesManager(context)
+        viewModel = TunerViewModel(audioEngine, tunerEngine, userPreferencesManager)
     }
 
     @After

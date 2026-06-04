@@ -70,14 +70,14 @@ class InstrumentTest {
     assertEquals("G", strings[0].name)
     assertEquals(196.0, strings[0].frequency, 0.01)
 
-    assertEquals("D", strings[1].name)
-    assertEquals(293.7, strings[1].frequency, 0.01)
+        assertEquals("D", strings[1].name)
+        assertEquals(293.66, strings[1].frequency, 0.01)
 
-    assertEquals("A", strings[2].name)
-    assertEquals(440.0, strings[2].frequency, 0.01)
+        assertEquals("A", strings[2].name)
+        assertEquals(440.0, strings[2].frequency, 0.01)
 
-    assertEquals("E", strings[3].name)
-    assertEquals(659.3, strings[3].frequency, 0.01)
+        assertEquals("E", strings[3].name)
+        assertEquals(659.25, strings[3].frequency, 0.01)
   }
 
   // ── Viola strings ───────────────────────────────────────────────────
@@ -93,8 +93,8 @@ class InstrumentTest {
     assertEquals("G", strings[1].name)
     assertEquals(196.0, strings[1].frequency, 0.01)
 
-    assertEquals("D", strings[2].name)
-    assertEquals(293.7, strings[2].frequency, 0.01)
+        assertEquals("D", strings[2].name)
+        assertEquals(293.66, strings[2].frequency, 0.01)
 
     assertEquals("A", strings[3].name)
     assertEquals(440.0, strings[3].frequency, 0.01)
@@ -165,8 +165,8 @@ class InstrumentTest {
     }
 
     @Test
-    fun `octaveLabel — violin D4 (293_7 Hz)`() {
-        assertEquals("D4", octaveLabel(InstrumentString("D", 293.7)))
+    fun `octaveLabel — violin D4 (293_66 Hz)`() {
+        assertEquals("D4", octaveLabel(InstrumentString("D", 293.66)))
     }
 
     @Test
@@ -175,8 +175,8 @@ class InstrumentTest {
     }
 
     @Test
-    fun `octaveLabel — violin E5 (659_3 Hz)`() {
-        assertEquals("E5", octaveLabel(InstrumentString("E", 659.3)))
+    fun `octaveLabel — violin E5 (659_25 Hz)`() {
+        assertEquals("E5", octaveLabel(InstrumentString("E", 659.25)))
     }
 
     @Test

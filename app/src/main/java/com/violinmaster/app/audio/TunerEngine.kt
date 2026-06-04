@@ -55,10 +55,11 @@ class TunerEngine @Inject constructor() {
     /**
      * Start capturing microphone audio and detecting pitch.
      *
-     * @param referencePitchA Reference pitch for A4 in Hz (default 440).
-     *        Affects which violin string notes the detected frequency maps to.
+     * Emits raw [PitchResult] values (frequency + YIN confidence) via [pitchFlow].
+     * Note-to-string mapping is performed downstream by the ViewModel using the
+     * active instrument — the engine stays instrument-agnostic.
      */
-    fun startListening(referencePitchA: Int = 440) {
+    fun startListening() {
         if (isListening) return
 
         val bufferSizeInBytes = BUFFER_SIZE_SAMPLES * 2 // 16-bit = 2 bytes per sample
@@ -99,7 +100,9 @@ class TunerEngine @Inject constructor() {
                     val readResult = audioRecord?.read(shortBuffer, 0, BUFFER_SIZE_SAMPLES) ?: -1
 
                     if (readResult > 0) {
-                        // Run YIN pitch detection on the PCM buffer
+                        // Run YIN pitch detection on the PCM buffer.
+                        // Note mapping is performed downstream by the ViewModel using
+                        // the active instrument — TunerEngine emits raw frequency only.
                         val pitchResult = YinPitchDetector.detectPitch(
                             buffer = shortBuffer,
                             sampleRate = SAMPLE_RATE,
@@ -107,16 +110,7 @@ class TunerEngine @Inject constructor() {
                             minFrequency = 50f
                         )
 
-                        if (pitchResult != null) {
-                            // Map frequency to violin note and compute cents
-                            val mapped = YinPitchDetector.frequencyToNoteAndCents(
-                                frequency = pitchResult.frequency,
-                                referencePitchA = referencePitchA
-                            )
-                            _pitchFlow.value = mapped.copy(confidence = pitchResult.confidence)
-                        } else {
-                            _pitchFlow.value = null
-                        }
+                        _pitchFlow.value = pitchResult
                     } else if (readResult < 0) {
                         Log.w(TAG, "AudioRecord read error: $readResult")
                         break

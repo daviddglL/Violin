@@ -8,6 +8,8 @@ import com.violinmaster.app.audio.tuner.YinPitchDetector
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,7 +48,7 @@ class TunerEngine @Inject constructor() {
 
     private var audioRecord: AudioRecord? = null
     private var captureJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Volatile
     var isListening: Boolean = false
@@ -151,5 +153,6 @@ class TunerEngine @Inject constructor() {
      */
     fun release() {
         stopListening()
+        scope.cancel()
     }
 }

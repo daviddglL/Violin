@@ -1,6 +1,7 @@
 package com.violinmaster.app.audio
 
 import com.violinmaster.app.audio.tuner.YinPitchDetector
+import com.violinmaster.app.domain.model.Instrument
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -100,15 +101,15 @@ class TunerEngineTest {
     }
 
     @Test
-    fun `frequencyToNote maps 293_66 to D with 0 cents`() {
-        val result = YinPitchDetector.frequencyToNoteAndCents(293.66f, 440)
+    fun `frequencyToNote maps 293_7 to D with 0 cents`() {
+        val result = YinPitchDetector.frequencyToNoteAndCents(293.7f, 440)
         assertEquals("D", result.note)
         assertEquals(0f, result.cents, 0.01f)
     }
 
     @Test
-    fun `frequencyToNote maps 659_25 to E with 0 cents`() {
-        val result = YinPitchDetector.frequencyToNoteAndCents(659.25f, 440)
+    fun `frequencyToNote maps 659_3 to E with 0 cents`() {
+        val result = YinPitchDetector.frequencyToNoteAndCents(659.3f, 440)
         assertEquals("E", result.note)
         assertEquals(0f, result.cents, 0.01f)
     }
@@ -165,6 +166,36 @@ class TunerEngineTest {
     fun `frequencyToNote returns low confidence for far-off frequency`() {
         val result = YinPitchDetector.frequencyToNoteAndCents(500.0f, 440)
         assertTrue("Confidence should decrease with distance from note", result!!.confidence < 0.5f)
+    }
+
+    // ---- Instrument-aware note mapping tests ----
+
+    @Test
+    fun `frequencyToNote maps viola C3 130_8 to C with instrument param`() {
+        val result = YinPitchDetector.frequencyToNoteAndCents(130.8f, 440, Instrument.VIOLA)
+        assertEquals("C", result.note)
+        assertEquals(0f, result.cents, 0.01f)
+    }
+
+    @Test
+    fun `frequencyToNote maps cello C2 65_4 to C with instrument param`() {
+        val result = YinPitchDetector.frequencyToNoteAndCents(65.4f, 440, Instrument.CELLO)
+        assertEquals("C", result.note)
+        assertEquals(0f, result.cents, 0.01f)
+    }
+
+    @Test
+    fun `frequencyToNote maps cello A3 220 to A with instrument param`() {
+        val result = YinPitchDetector.frequencyToNoteAndCents(220.0f, 440, Instrument.CELLO)
+        assertEquals("A", result.note)
+        assertEquals(0f, result.cents, 0.01f)
+    }
+
+    @Test
+    fun `frequencyToNote maps violin D4 293_7 to D with instrument param regression`() {
+        val result = YinPitchDetector.frequencyToNoteAndCents(293.7f, 440, Instrument.VIOLIN)
+        assertEquals("D", result.note)
+        assertEquals(0f, result.cents, 0.01f)
     }
 
     // ---- Parabolic interpolation improves accuracy ----

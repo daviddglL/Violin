@@ -4,9 +4,9 @@ package com.violinmaster.app.audio
  * Result of pitch detection from the YIN algorithm.
  *
  * @param frequency Detected frequency in Hz (0 if no pitch detected)
- * @param cents Offset from nearest violin string note in cents (-50 to +50).
+ * @param cents Offset from nearest instrument string note in cents (-50 to +50).
  *              Positive = sharp, negative = flat.
- * @param note Nearest violin string note: "G", "D", "A", "E", or null if no match within range
+ * @param note Nearest instrument string note: "G", "D", "A", "E", "C", or null if no match within range
  * @param confidence Detection confidence 0.0 to 1.0 (higher = more reliable detection)
  */
 

@@ -6,6 +6,7 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Build
 import android.util.Log
+import com.violinmaster.app.domain.model.Instrument
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -144,14 +145,13 @@ class ViolinAudioEngine @Inject constructor() {
         playContinuousFrequency(hz)
     }
 
-    fun playStringTone(noteName: String, referencePitchA: Int = 440) {
-        // G3 (approx 196Hz), D4 (approx 293.7Hz), A4 (approx 440Hz), E5 (approx 659.3Hz)
-        val ratioToA = when (noteName.uppercase()) {
-            "G" -> 196.0 / 440.0
-            "D" -> 293.66 / 440.0
-            "A" -> 1.0
-            "E" -> 659.25 / 440.0
-            else -> 1.0
+    fun playStringTone(noteName: String, referencePitchA: Int = 440, instrument: Instrument = Instrument.VIOLIN) {
+        // Resolve the target frequency from the active instrument's string definitions
+        val string = instrument.strings.find { it.name.equals(noteName, ignoreCase = true) }
+        val ratioToA = if (string != null) {
+            string.frequency / 440.0
+        } else {
+            1.0 // fallback to A4
         }
         val targetFreq = referencePitchA * ratioToA
         playContinuousFrequency(targetFreq)

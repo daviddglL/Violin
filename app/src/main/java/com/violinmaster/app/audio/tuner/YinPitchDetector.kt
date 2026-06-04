@@ -1,6 +1,7 @@
 package com.violinmaster.app.audio.tuner
 
 import com.violinmaster.app.audio.PitchResult
+import com.violinmaster.app.domain.model.Instrument
 import kotlin.math.abs
 import kotlin.math.log2
 
@@ -16,14 +17,6 @@ import kotlin.math.log2
  * @see TunerEngine for the AudioRecord-based wrapper.
  */
 internal object YinPitchDetector {
-
-    /** Violin string frequencies relative to A4=440Hz */
-    private val VIOLIN_NOTE_RATIOS = mapOf(
-        "G" to 196.00 / 440.00,
-        "D" to 293.66 / 440.00,
-        "A" to 1.0,
-        "E" to 659.25 / 440.00
-    )
 
     /**
      * Detect the fundamental frequency in a PCM buffer using the YIN algorithm.
@@ -109,29 +102,32 @@ internal object YinPitchDetector {
     }
 
     /**
-     * Map a detected frequency to the nearest violin string note and compute cents offset.
+     * Map a detected frequency to the nearest instrument string note and compute cents offset.
+     *
+     * Iterates the active instrument's open strings to find the closest match by frequency.
      *
      * @param frequency Detected frequency in Hz
      * @param referencePitchA Reference pitch for A4 in Hz (default 440)
+     * @param instrument Active instrument whose open strings define the note targets (default VIOLIN)
      * @return [PitchResult] with note name, cents offset, and mapping confidence
      */
     fun frequencyToNoteAndCents(
         frequency: Float,
-        referencePitchA: Int = 440
+        referencePitchA: Int = 440,
+        instrument: Instrument = Instrument.VIOLIN
     ): PitchResult {
-        val ratio = referencePitchA.toFloat() / 440.0f
-
-        // Find the closest violin string
+        // Find the closest instrument string
         var bestNote: String? = null
         var bestDist = Float.MAX_VALUE
         var bestTargetFreq = 0f
 
-        for ((note, noteRatio) in VIOLIN_NOTE_RATIOS) {
+        for (string in instrument.strings) {
+            val noteRatio = string.frequency / 440.0
             val targetFreq = (noteRatio * referencePitchA).toFloat()
             val dist = abs(frequency - targetFreq)
             if (dist < bestDist) {
                 bestDist = dist
-                bestNote = note
+                bestNote = string.name
                 bestTargetFreq = targetFreq
             }
         }

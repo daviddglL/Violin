@@ -58,7 +58,11 @@ class ChatViewModelTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
+        val inlineExecutor = java.util.concurrent.Executor { r -> r.run() }
+        database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java)
+            .setTransactionExecutor(inlineExecutor)
+            .setQueryExecutor(inlineExecutor)
+            .build()
         dao = database.chatDao()
         fakeRepo = FakeChatRepository(dao)
         authManager = AuthManager(context)

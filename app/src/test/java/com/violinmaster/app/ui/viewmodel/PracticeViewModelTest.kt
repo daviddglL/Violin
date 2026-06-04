@@ -61,7 +61,11 @@ class PracticeViewModelTest {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
+        val inlineExecutor = java.util.concurrent.Executor { r -> r.run() }
+        database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java)
+            .setTransactionExecutor(inlineExecutor)
+            .setQueryExecutor(inlineExecutor)
+            .build()
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
         authManager = AuthManager(context)
         userPreferencesManager = UserPreferencesManager(context)

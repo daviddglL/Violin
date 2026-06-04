@@ -11,9 +11,11 @@ import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
 import com.violinmaster.app.security.SecurityUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -42,6 +44,9 @@ class AuthViewModelTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        // Clear SharedPreferences to avoid cross-test pollution
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            .edit().clear().commit()
         // Run Room queries inline so suspend DAO functions complete synchronously in tests
         val inlineExecutor = java.util.concurrent.Executor { r -> r.run() }
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java)
@@ -53,23 +58,30 @@ class AuthViewModelTest {
         securityUtils = SecurityUtils(context)
         loginUseCase = LoginUseCase(repository, authManager)
         registerUseCase = RegisterUseCase(repository)
+        createViewModel()
+    }
+
+    private fun createViewModel() {
+        Dispatchers.setMain(Dispatchers.Unconfined)
         viewModel = AuthViewModel(repository, authManager, securityUtils, loginUseCase, registerUseCase)
     }
 
     @After
     fun tearDown() {
         database.close()
+        Dispatchers.resetMain()
     }
 
     @Test
-    fun `login with valid credentials sets currentUser`() = runTest {
+    fun `login with valid credentials sets currentUser`() = runBlocking {
+        createViewModel()
         // Arrange: register a user first
         viewModel.register("testuser", "1234", "STUDENT")
-        advanceUntilIdle()
+
 
         // Act: login with valid credentials
         viewModel.login("testuser", "1234")
-        advanceUntilIdle()
+
 
         // Assert
         assertNotNull(viewModel.currentUser.value)
@@ -78,14 +90,14 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `login with invalid credentials sets loginError`() = runTest {
+    fun `login with invalid credentials sets loginError`() = runBlocking {
         // Arrange: register a user first
         viewModel.register("testuser", "1234", "STUDENT")
-        advanceUntilIdle()
+
 
         // Act: login with wrong pin
         viewModel.login("testuser", "5678")
-        advanceUntilIdle()
+
 
         // Assert
         assertNull(viewModel.currentUser.value)
@@ -93,10 +105,11 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `register creates new user and sets signupSuccess`() = runTest {
+    fun `register creates new user and sets signupSuccess`() = runBlocking {
+        createViewModel()
         // Act
         viewModel.register("newuser", "1234", "STUDENT")
-        advanceUntilIdle()
+
 
         // Assert
         assertEquals("success_register", viewModel.signupSuccess.value)
@@ -104,21 +117,22 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `register with existing username sets loginError`() = runTest {
+    fun `register with existing username sets loginError`() = runBlocking {
+        createViewModel()
         // Arrange
         viewModel.register("dupeuser", "1234", "STUDENT")
-        advanceUntilIdle()
+
 
         // Act: register again with same username
         viewModel.register("dupeuser", "5678", "STUDENT")
-        advanceUntilIdle()
+
 
         // Assert
         assertEquals("error_user_exists", viewModel.loginError.value)
     }
 
     @Test
-    fun `register with blank username sets loginError`() = runTest {
+    fun `register with blank username sets loginError`() = runBlocking {
         // Act
         viewModel.register("", "1234", "STUDENT")
 
@@ -127,7 +141,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `register with short pin sets loginError`() = runTest {
+    fun `register with short pin sets loginError`() = runBlocking {
         // Act
         viewModel.register("someuser", "12", "STUDENT")
 
@@ -136,17 +150,18 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `logout clears currentUser`() = runTest {
+    fun `logout clears currentUser`() = runBlocking {
+        createViewModel()
         // Arrange: register and login
         viewModel.register("testuser", "1234", "STUDENT")
-        advanceUntilIdle()
+
         viewModel.login("testuser", "1234")
-        advanceUntilIdle()
+
         assertNotNull(viewModel.currentUser.value)
 
         // Act
         viewModel.logout()
-        advanceUntilIdle()
+
 
         // Assert
         assertNull(viewModel.currentUser.value)
@@ -155,10 +170,10 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `authenticatePasscode with correct pin returns true`() = runTest {
+    fun `authenticatePasscode with correct pin returns true`() = runBlocking {
         // Arrange: set a passcode
         securityUtils.savePasscode("7890")
-        advanceUntilIdle()
+
 
         // Act
         val result = viewModel.authenticatePasscode("7890")
@@ -170,10 +185,10 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `authenticatePasscode with wrong pin returns false`() = runTest {
+    fun `authenticatePasscode with wrong pin returns false`() = runBlocking {
         // Arrange: set a passcode
         securityUtils.savePasscode("7890")
-        advanceUntilIdle()
+
 
         // Act
         val result = viewModel.authenticatePasscode("1111")
@@ -184,7 +199,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `setPasscodeLock sets security state`() = runTest {
+    fun `setPasscodeLock sets security state`() = runBlocking {
         // Act
         viewModel.setPasscodeLock("5678")
 
@@ -195,7 +210,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `removePasscodeLock with correct code removes security`() = runTest {
+    fun `removePasscodeLock with correct code removes security`() = runBlocking {
         // Arrange
         viewModel.setPasscodeLock("5678")
 
@@ -208,7 +223,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `removePasscodeLock with wrong code sets error`() = runTest {
+    fun `removePasscodeLock with wrong code sets error`() = runBlocking {
         // Arrange
         viewModel.setPasscodeLock("5678")
 
@@ -221,7 +236,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `clearAuthMessages clears error and success`() = runTest {
+    fun `clearAuthMessages clears error and success`() = runBlocking {
         // Arrange: trigger an error
         viewModel.register("", "1234", "STUDENT")
         assertEquals("error_username_empty", viewModel.loginError.value)
@@ -235,7 +250,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `lockSessionPromptly locks when passcode is set`() = runTest {
+    fun `lockSessionPromptly locks when passcode is set`() = runBlocking {
         // Arrange: set a passcode and authenticate
         viewModel.setPasscodeLock("1234")
         assertTrue(viewModel.isUserAuthenticated.value)
@@ -248,7 +263,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `lockSessionPromptly does nothing when no passcode`() = runTest {
+    fun `lockSessionPromptly does nothing when no passcode`() = runBlocking {
         // Arrange: no passcode set
         securityUtils.clearPasscode()
         val initialAuth = viewModel.isUserAuthenticated.value
@@ -261,34 +276,35 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `linkTeacherCode updates user teacher code for student`() = runTest {
+    fun `linkTeacherCode updates user teacher code for student`() = runBlocking {
+        createViewModel()
         // Arrange: register and login as student
         viewModel.register("student1", "1234", "STUDENT")
-        advanceUntilIdle()
+
         viewModel.login("student1", "1234")
-        advanceUntilIdle()
+
         assertNotNull(viewModel.currentUser.value)
 
         // Act
         viewModel.linkTeacherCode("TEACH-5678")
-        advanceUntilIdle()
+
 
         // Assert
         assertEquals("TEACH-5678", viewModel.currentUser.value?.teacherCode)
     }
 
     @Test
-    fun `linkTeacherCode does nothing for non-student`() = runTest {
+    fun `linkTeacherCode does nothing for non-student`() = runBlocking {
         // Arrange: register and login as teacher
         viewModel.register("teacher1", "1234", "TEACHER")
-        advanceUntilIdle()
+
         viewModel.login("teacher1", "1234")
-        advanceUntilIdle()
+
         val originalCode = viewModel.currentUser.value?.teacherCode
 
         // Act
         viewModel.linkTeacherCode("NEW-CODE")
-        advanceUntilIdle()
+
 
         // Assert: code unchanged
         assertEquals(originalCode, viewModel.currentUser.value?.teacherCode)
@@ -296,41 +312,38 @@ class AuthViewModelTest {
 
     @Test
     fun `authManager isGoogleSignedIn defaults to false`() {
-        // AuthManager.isGoogleSignedIn should default to false
-        // (no Google sign-in state persisted in SharedPreferences)
         assertEquals(false, authManager.isGoogleSignedIn.value)
-        // Companion key for SharedPreferences should NOT be null (access check)
-        assertNotNull(authManager.getSavedUserId())
+        assertNull(authManager.getSavedUserId())
     }
 
     @Test
-    fun `authManager setGoogleSignedIn updates state`() = runTest {
+    fun `authManager setGoogleSignedIn updates state`() = runBlocking {
         // Initially false
         assertEquals(false, authManager.isGoogleSignedIn.value)
 
         // Act: set Google signed in
         authManager.setGoogleSignedIn(true)
-        advanceUntilIdle()
+
 
         // Assert: state updated
         assertEquals(true, authManager.isGoogleSignedIn.value)
 
         // Act: set Google signed out
         authManager.setGoogleSignedIn(false)
-        advanceUntilIdle()
+
 
         // Assert: state reverted
         assertEquals(false, authManager.isGoogleSignedIn.value)
     }
 
     @Test
-    fun `logout clears unlocked area and resets auth state`() = runTest {
+    fun `logout clears unlocked area and resets auth state`() = runBlocking {
         // Arrange
         securityUtils.savePasscode("4321")
         viewModel.register("testuser", "1234", "STUDENT")
-        advanceUntilIdle()
+
         viewModel.login("testuser", "1234")
-        advanceUntilIdle()
+
         viewModel.authenticatePasscode("4321")
         assertTrue(viewModel.isUserAuthenticated.value)
 

@@ -26,6 +26,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -98,6 +99,12 @@ fun VirtualFingerboard(
 
   val defaultString = supportedStrings.firstOrNull() ?: "A"
   var selectedFretString by remember { mutableStateOf(defaultString) }
+
+  // Reset string tab selection when instrument changes
+  LaunchedEffect(instrument) {
+    selectedFretString = defaultString
+  }
+
   val notesAndPositions = if (selectedFretString in instrumentStringNames) {
     fingeringMap[selectedFretString] ?: emptyList()
   } else {

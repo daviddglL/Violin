@@ -12,6 +12,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,6 +25,18 @@ class TunerViewModel @Inject constructor(
 
     // --- Active Instrument ---
     val selectedInstrument: StateFlow<Instrument> = userPreferencesManager.selectedInstrument
+
+    init {
+        // Clear selected note when switching to an instrument that doesn't have it
+        viewModelScope.launch {
+            selectedInstrument.drop(1).collect { newInstrument ->
+                val currentNote = _tunerSelectedNote.value
+                if (currentNote != null && newInstrument.strings.none { it.name == currentNote }) {
+                    selectTunerNote(null)
+                }
+            }
+        }
+    }
 
     // --- Reference Pitch A ---
     private val _referencePitchA = MutableStateFlow(440)
@@ -132,5 +145,6 @@ class TunerViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         stopPitchCollection()
+        audioEngine.stopTone()
     }
 }

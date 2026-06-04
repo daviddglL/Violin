@@ -177,7 +177,7 @@ fun VirtualFingerboard(
         if (instrument != Instrument.VIOLIN) {
           // Placeholder for non-violin instruments
           Text(
-            text = "Fingering data available for Violin only",
+            text = Localization.get("fingering_violin_only", appLanguage),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(vertical = 24.dp)

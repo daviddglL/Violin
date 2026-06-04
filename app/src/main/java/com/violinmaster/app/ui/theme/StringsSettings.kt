@@ -74,7 +74,8 @@ object StringsSettings {
     "blur_processing" to "Protecting identity...",
     "blur_progress" to "Processing frame %1\$d/%2\$d",
     "blur_warning" to "Face blur could not be applied. Video sent without blur.",
-    "blur_disabled" to "Face blur not required (adult user)"
+    "blur_disabled" to "Face blur not required (adult user)",
+    "fingering_violin_only" to "Fingering data available for Violin only"
   )
 
   val es = mapOf(
@@ -150,6 +151,7 @@ object StringsSettings {
     "blur_processing" to "Protegiendo identidad...",
     "blur_progress" to "Procesando frame %1\$d/%2\$d",
     "blur_warning" to "No se pudo aplicar el difuminado facial. Video enviado sin difuminar.",
-    "blur_disabled" to "Difuminado no requerido (usuario adulto)"
+    "blur_disabled" to "Difuminado no requerido (usuario adulto)",
+    "fingering_violin_only" to "Datos de digitación disponibles solo para Violín"
   )
 }

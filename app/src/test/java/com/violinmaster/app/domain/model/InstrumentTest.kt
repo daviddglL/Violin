@@ -1,5 +1,6 @@
 package com.violinmaster.app.domain.model
 
+import com.violinmaster.app.ui.component.octaveLabel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -146,13 +147,65 @@ class InstrumentTest {
     assertEquals("CELLO", Instrument.CELLO.name)
   }
 
-  // ── No Android dependencies ─────────────────────────────────────────
+    // ── No Android dependencies ─────────────────────────────────────────
 
-  @Test
-  fun `Instrument is pure Kotlin — no Android imports needed`() {
-    // Verify Instrument can be used without any Android context
-    val instrument: Instrument = Instrument.VIOLIN
-    assertNotNull(instrument)
-    assertEquals(4, instrument.strings.size)
-  }
+    @Test
+    fun `Instrument is pure Kotlin — no Android imports needed`() {
+        // Verify Instrument can be used without any Android context
+        val instrument: Instrument = Instrument.VIOLIN
+        assertNotNull(instrument)
+        assertEquals(4, instrument.strings.size)
+    }
+
+    // ── octaveLabel ─────────────────────────────────────────────────────
+
+    @Test
+    fun `octaveLabel — violin G3 (196 Hz)`() {
+        assertEquals("G3", octaveLabel(InstrumentString("G", 196.0)))
+    }
+
+    @Test
+    fun `octaveLabel — violin D4 (293_7 Hz)`() {
+        assertEquals("D4", octaveLabel(InstrumentString("D", 293.7)))
+    }
+
+    @Test
+    fun `octaveLabel — A4 reference (440 Hz)`() {
+        assertEquals("A4", octaveLabel(InstrumentString("A", 440.0)))
+    }
+
+    @Test
+    fun `octaveLabel — violin E5 (659_3 Hz)`() {
+        assertEquals("E5", octaveLabel(InstrumentString("E", 659.3)))
+    }
+
+    @Test
+    fun `octaveLabel — viola C3 (130_8 Hz)`() {
+        assertEquals("C3", octaveLabel(InstrumentString("C", 130.8)))
+    }
+
+    @Test
+    fun `octaveLabel — cello C2 (65_4 Hz)`() {
+        assertEquals("C2", octaveLabel(InstrumentString("C", 65.4)))
+    }
+
+    @Test
+    fun `octaveLabel — cello G2 (98 Hz)`() {
+        assertEquals("G2", octaveLabel(InstrumentString("G", 98.0)))
+    }
+
+    @Test
+    fun `octaveLabel — cello D3 (146_8 Hz)`() {
+        assertEquals("D3", octaveLabel(InstrumentString("D", 146.8)))
+    }
+
+    @Test
+    fun `octaveLabel — cello A3 (220 Hz)`() {
+        assertEquals("A3", octaveLabel(InstrumentString("A", 220.0)))
+    }
+
+    @Test
+    fun `octaveLabel — viola G3 (196 Hz) same octave as violin G`() {
+        assertEquals("G3", octaveLabel(InstrumentString("G", 196.0)))
+    }
 }

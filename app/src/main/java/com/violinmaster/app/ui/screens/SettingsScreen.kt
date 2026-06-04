@@ -108,13 +108,7 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val instruments = listOf(
-                        Instrument.VIOLIN to "instrument_violin",
-                        Instrument.VIOLA to "instrument_viola",
-                        Instrument.CELLO to "instrument_cello"
-                    )
-
-                    instruments.forEach { (inst, labelKey) ->
+                    Instrument.values().forEach { inst ->
                         val isSelected = selectedInstrument == inst
                         Box(
                             modifier = Modifier
@@ -135,7 +129,7 @@ fun SettingsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = Localization.get(labelKey, lang),
+                                text = Localization.get(inst.labelKey, lang),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant

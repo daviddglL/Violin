@@ -101,15 +101,15 @@ class TunerEngineTest {
     }
 
     @Test
-    fun `frequencyToNote maps 293_7 to D with 0 cents`() {
-        val result = YinPitchDetector.frequencyToNoteAndCents(293.7f, 440)
+    fun `frequencyToNote maps 293_66 to D with 0 cents`() {
+        val result = YinPitchDetector.frequencyToNoteAndCents(293.66f, 440)
         assertEquals("D", result.note)
         assertEquals(0f, result.cents, 0.01f)
     }
 
     @Test
-    fun `frequencyToNote maps 659_3 to E with 0 cents`() {
-        val result = YinPitchDetector.frequencyToNoteAndCents(659.3f, 440)
+    fun `frequencyToNote maps 659_25 to E with 0 cents`() {
+        val result = YinPitchDetector.frequencyToNoteAndCents(659.25f, 440)
         assertEquals("E", result.note)
         assertEquals(0f, result.cents, 0.01f)
     }
@@ -192,8 +192,8 @@ class TunerEngineTest {
     }
 
     @Test
-    fun `frequencyToNote maps violin D4 293_7 to D with instrument param regression`() {
-        val result = YinPitchDetector.frequencyToNoteAndCents(293.7f, 440, Instrument.VIOLIN)
+    fun `frequencyToNote maps violin D4 293_66 to D with instrument param regression`() {
+        val result = YinPitchDetector.frequencyToNoteAndCents(293.66f, 440, Instrument.VIOLIN)
         assertEquals("D", result.note)
         assertEquals(0f, result.cents, 0.01f)
     }
@@ -247,7 +247,7 @@ class TunerEngineTest {
     @org.junit.Ignore("Requires real microphone — AudioRecord not available in unit tests")
     fun `TunerEngine integration captures microphone audio and detects pitch`() {
         val engine = TunerEngine()
-        engine.startListening(440)
+        engine.startListening()
         // In a real test, we'd wait for pitch detection and assert on pitchFlow
         Thread.sleep(1000)
         engine.stopListening()

@@ -18,9 +18,9 @@ enum class Instrument(
     labelKey = "instrument_violin",
     strings = listOf(
       InstrumentString(name = "G", frequency = 196.0),
-      InstrumentString(name = "D", frequency = 293.7),
+      InstrumentString(name = "D", frequency = 293.66),
       InstrumentString(name = "A", frequency = 440.0),
-      InstrumentString(name = "E", frequency = 659.3)
+      InstrumentString(name = "E", frequency = 659.25)
     )
   ),
   VIOLA(
@@ -28,7 +28,7 @@ enum class Instrument(
     strings = listOf(
       InstrumentString(name = "C", frequency = 130.8),
       InstrumentString(name = "G", frequency = 196.0),
-      InstrumentString(name = "D", frequency = 293.7),
+      InstrumentString(name = "D", frequency = 293.66),
       InstrumentString(name = "A", frequency = 440.0)
     )
   ),

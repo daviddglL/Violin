@@ -95,7 +95,7 @@ class TunerViewModel @Inject constructor(
     private fun startPitchCollection() {
         stopPitchCollection()
 
-        tunerEngine.startListening(_referencePitchA.value)
+        tunerEngine.startListening()
 
         pitchCollectionJob = viewModelScope.launch {
             tunerEngine.pitchFlow.collect { result ->

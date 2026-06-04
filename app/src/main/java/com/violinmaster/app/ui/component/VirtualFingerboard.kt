@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.violinmaster.app.domain.model.Instrument
 import com.violinmaster.app.ui.screens.BorderStrokeHelper
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
@@ -87,10 +88,21 @@ val fingeringMap = mapOf(
 @Composable
 fun VirtualFingerboard(
   tunerVM: TunerViewModel,
-  appLanguage: AppLanguage = AppLanguage.ENGLISH
+  appLanguage: AppLanguage = AppLanguage.ENGLISH,
+  instrument: Instrument = Instrument.VIOLIN
 ) {
-  var selectedFretString by remember { mutableStateOf("A") }
-  val notesAndPositions = fingeringMap[selectedFretString] ?: emptyList()
+  val instrumentStringNames = instrument.strings.map { it.name }.toSet()
+
+  // Filter fingeringMap to only show strings belonging to the active instrument
+  val supportedStrings = fingeringMap.keys.filter { it in instrumentStringNames }
+
+  val defaultString = supportedStrings.firstOrNull() ?: "A"
+  var selectedFretString by remember { mutableStateOf(defaultString) }
+  val notesAndPositions = if (selectedFretString in instrumentStringNames) {
+    fingeringMap[selectedFretString] ?: emptyList()
+  } else {
+    emptyList()
+  }
   var activeFingeringNote by remember { mutableStateOf<FingeringNote?>(null) }
 
   Column(
@@ -111,7 +123,8 @@ fun VirtualFingerboard(
       modifier = Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-      listOf("G", "D", "A", "E").forEach { s ->
+      instrument.strings.forEach { string ->
+        val s = string.name
         val isSelected = selectedFretString == s
         Box(
           modifier = Modifier
@@ -161,65 +174,75 @@ fun VirtualFingerboard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        notesAndPositions.forEach { fNote ->
-          val isFingerActive = activeFingeringNote?.finger == fNote.finger
-          Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .clip(RoundedCornerShape(10.dp))
-              .background(if (isFingerActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else Color.Transparent)
-              .clickable {
-                activeFingeringNote = fNote
-                tunerVM.playCustomFrequency(fNote.frequency)
+        if (instrument != Instrument.VIOLIN) {
+          // Placeholder for non-violin instruments
+          Text(
+            text = "Fingering data available for Violin only",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 24.dp)
+          )
+        } else {
+          notesAndPositions.forEach { fNote ->
+            val isFingerActive = activeFingeringNote?.finger == fNote.finger
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(if (isFingerActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else Color.Transparent)
+                .clickable {
+                  activeFingeringNote = fNote
+                  tunerVM.playCustomFrequency(fNote.frequency)
+                }
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                  modifier = Modifier
+                    .size(34.dp)
+                    .background(
+                      if (isFingerActive) MaterialTheme.colorScheme.primary else Color(0xFF493628),
+                      CircleShape
+                    ),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Text(
+                    text = fNote.finger.take(1),
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    fontSize = 13.sp
+                  )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                  Text(
+                    text = fNote.finger,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                  )
+                  Text(
+                    text = Localization.get("position_relative_tape", appLanguage),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                }
               }
-              .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+
               Box(
                 modifier = Modifier
-                  .size(34.dp)
-                  .background(
-                    if (isFingerActive) MaterialTheme.colorScheme.primary else Color(0xFF493628),
-                    CircleShape
-                  ),
-                contentAlignment = Alignment.Center
+                  .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                  .padding(horizontal = 10.dp, vertical = 4.dp)
               ) {
                 Text(
-                  text = fNote.finger.take(1),
-                  fontWeight = FontWeight.Bold,
-                  color = Color.White,
-                  fontSize = 13.sp
+                  text = String.format(Localization.get("note_frequency_format", appLanguage), fNote.noteName, fNote.frequency.toInt()),
+                  style = MaterialTheme.typography.labelSmall,
+                  color = MaterialTheme.colorScheme.primary,
+                  fontWeight = FontWeight.ExtraBold
                 )
               }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = fNote.finger,
-                  style = MaterialTheme.typography.bodyMedium,
-                  fontWeight = FontWeight.Bold,
-                  color = Color.White
-                )
-                Text(
-                  text = Localization.get("position_relative_tape", appLanguage),
-                  style = MaterialTheme.typography.bodySmall,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-              }
-            }
-
-            Box(
-              modifier = Modifier
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                .padding(horizontal = 10.dp, vertical = 4.dp)
-            ) {
-              Text(
-                text = String.format(Localization.get("note_frequency_format", appLanguage), fNote.noteName, fNote.frequency.toInt()),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.ExtraBold
-              )
             }
           }
         }

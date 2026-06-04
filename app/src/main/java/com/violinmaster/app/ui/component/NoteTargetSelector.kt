@@ -25,8 +25,27 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.violinmaster.app.domain.model.Instrument
+import com.violinmaster.app.domain.model.InstrumentString
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
+import kotlin.math.log2
+import kotlin.math.roundToInt
+
+/**
+ * Derive a display label with octave suffix from an instrument string definition.
+ *
+ * Uses the MIDI note formula (A4 = 69) to determine the octave number,
+ * producing labels like "G3", "D4", "A4", "E5", "C2", "C3" etc.
+ *
+ * @param string The instrument string definition (name + frequency).
+ * @return Display label with octave suffix, e.g. "G3".
+ */
+private fun octaveLabel(string: InstrumentString): String {
+    val midiNote = 69.0 + 12.0 * log2(string.frequency / 440.0)
+    val octave = (midiNote / 12.0).roundToInt() - 1
+    return "${string.name}$octave"
+}
 
 @Composable
 fun NoteTargetSelector(
@@ -34,21 +53,17 @@ fun NoteTargetSelector(
     isListening: Boolean,
     appLanguage: AppLanguage,
     onNoteSelected: (String?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    instrument: Instrument = Instrument.VIOLIN
 ) {
-    val stringFrequencies = mapOf(
-        "G" to "196.0 Hz",
-        "D" to "293.7 Hz",
-        "A" to "440.0 Hz",
-        "E" to "659.3 Hz"
-    )
-
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        val noteOrder = listOf("G", "D", "A", "E")
-        for (note in noteOrder) {
+        for (string in instrument.strings) {
+            val note = string.name
+            val displayLabel = octaveLabel(string)
+            val freqLabel = "%.1f Hz".format(string.frequency)
             val isSelected = selectedNote == note && !isListening
             Box(
                 modifier = Modifier
@@ -75,14 +90,14 @@ fun NoteTargetSelector(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = note,
+                        text = displayLabel,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.White
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = stringFrequencies[note] ?: "",
+                        text = freqLabel,
                         style = MaterialTheme.typography.labelSmall,
                         fontSize = 8.sp,
                         color = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant

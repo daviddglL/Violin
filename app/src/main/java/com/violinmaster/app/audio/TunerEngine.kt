@@ -103,7 +103,8 @@ class TunerEngine @Inject constructor() {
                         val pitchResult = YinPitchDetector.detectPitch(
                             buffer = shortBuffer,
                             sampleRate = SAMPLE_RATE,
-                            threshold = 0.15f
+                            threshold = 0.15f,
+                            minFrequency = 50f
                         )
 
                         if (pitchResult != null) {

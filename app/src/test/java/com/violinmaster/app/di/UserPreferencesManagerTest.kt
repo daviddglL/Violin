@@ -2,8 +2,12 @@ package com.violinmaster.app.di
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.violinmaster.app.domain.model.Instrument
 import com.violinmaster.app.ui.theme.AppLanguage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -84,6 +88,100 @@ class UserPreferencesManagerTest {
 
     userPreferencesManager.setAppLanguage(AppLanguage.ENGLISH)
     assertEquals(AppLanguage.ENGLISH, userPreferencesManager.appLanguage.value)
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // selectedInstrument tests
+  // ═══════════════════════════════════════════════════════════════════
+
+  @Test
+  fun `selectedInstrument defaults to VIOLIN on first launch`() = runTest {
+    assertEquals(
+      "Default instrument should be VIOLIN",
+      Instrument.VIOLIN,
+      userPreferencesManager.selectedInstrument.value
+    )
+  }
+
+  @Test
+  fun `setSelectedInstrument changes instrument and persists across instances`() = runTest {
+    userPreferencesManager.setSelectedInstrument(Instrument.CELLO)
+    assertEquals(
+      "Instrument should be CELLO after setting",
+      Instrument.CELLO,
+      userPreferencesManager.selectedInstrument.value
+    )
+
+    // Verify persistence by creating a new manager with same prefs
+    val secondManager = UserPreferencesManager(context)
+    assertEquals(
+      "Instrument should persist across instances",
+      Instrument.CELLO,
+      secondManager.selectedInstrument.value
+    )
+  }
+
+  @Test
+  fun `selectedInstrument StateFlow emits correctly`() = runTest {
+    val emissions = mutableListOf<Instrument>()
+    val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+      userPreferencesManager.selectedInstrument.collect { emissions.add(it) }
+    }
+
+    // First emission should be the default
+    assertEquals(
+      "First emission should be VIOLIN",
+      Instrument.VIOLIN,
+      emissions.first()
+    )
+
+    // Set to VIOLA — flow should emit
+    userPreferencesManager.setSelectedInstrument(Instrument.VIOLA)
+    assertEquals(
+      "Should emit VIOLA after setSelectedInstrument",
+      Instrument.VIOLA,
+      emissions.last()
+    )
+
+    job.cancel()
+  }
+
+  @Test
+  fun `setSelectedInstrument overwrites previous value`() = runTest {
+    userPreferencesManager.setSelectedInstrument(Instrument.VIOLA)
+    assertEquals(
+      "Should be VIOLA after first set",
+      Instrument.VIOLA,
+      userPreferencesManager.selectedInstrument.value
+    )
+
+    userPreferencesManager.setSelectedInstrument(Instrument.CELLO)
+    assertEquals(
+      "Should be CELLO after overwrite",
+      Instrument.CELLO,
+      userPreferencesManager.selectedInstrument.value
+    )
+  }
+
+  @Test
+  fun `selectedInstrument name survives process death`() = runTest {
+    // Set instrument to VIOLA
+    userPreferencesManager.setSelectedInstrument(Instrument.VIOLA)
+
+    // Simulate process death: create two new instances
+    val instance1 = UserPreferencesManager(context)
+    val instance2 = UserPreferencesManager(context)
+
+    assertEquals(
+      "Instance 1 should see VIOLA after simulated process death",
+      Instrument.VIOLA,
+      instance1.selectedInstrument.value
+    )
+    assertEquals(
+      "Instance 2 should see VIOLA after simulated process death",
+      Instrument.VIOLA,
+      instance2.selectedInstrument.value
+    )
   }
 
   // ═══════════════════════════════════════════════════════════════════

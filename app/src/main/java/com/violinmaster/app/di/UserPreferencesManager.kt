@@ -1,6 +1,7 @@
 package com.violinmaster.app.di
 
 import android.content.Context
+import com.violinmaster.app.domain.model.Instrument
 import com.violinmaster.app.ui.theme.AppLanguage
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,9 @@ class UserPreferencesManager @Inject constructor(
   private val _appLanguage = MutableStateFlow(loadSavedLanguage())
   val appLanguage: StateFlow<AppLanguage> = _appLanguage.asStateFlow()
 
+  private val _selectedInstrument = MutableStateFlow(loadSavedInstrument())
+  val selectedInstrument: StateFlow<Instrument> = _selectedInstrument.asStateFlow()
+
   private fun loadSavedLanguage(): AppLanguage {
     val savedLangStr = prefs.getString(KEY_APP_LANG, AppLanguage.ENGLISH.name)
     return try {
@@ -38,6 +42,20 @@ class UserPreferencesManager @Inject constructor(
     prefs.edit().putString(KEY_APP_LANG, lang.name).apply()
   }
 
+  private fun loadSavedInstrument(): Instrument {
+    val savedName = prefs.getString(KEY_SELECTED_INSTRUMENT, Instrument.VIOLIN.name)
+    return try {
+      Instrument.valueOf(savedName ?: "VIOLIN")
+    } catch (e: Exception) {
+      Instrument.VIOLIN
+    }
+  }
+
+  fun setSelectedInstrument(instrument: Instrument) {
+    _selectedInstrument.value = instrument
+    prefs.edit().putString(KEY_SELECTED_INSTRUMENT, instrument.name).apply()
+  }
+
   fun getDailyTasksCompleted(today: String): Set<String> {
     return prefs.getStringSet("daily_completed_$today", emptySet()) ?: emptySet()
   }
@@ -49,5 +67,6 @@ class UserPreferencesManager @Inject constructor(
   companion object {
     private const val PREFS_NAME = "app_settings"
     private const val KEY_APP_LANG = "app_lang"
+    private const val KEY_SELECTED_INSTRUMENT = "selected_instrument"
   }
 }

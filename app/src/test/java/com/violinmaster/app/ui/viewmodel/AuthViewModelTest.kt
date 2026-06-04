@@ -12,8 +12,8 @@ import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
 import com.violinmaster.app.security.SecurityUtils
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -42,7 +42,12 @@ class AuthViewModelTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
+        // Run Room queries inline so suspend DAO functions complete synchronously in tests
+        val inlineExecutor = java.util.concurrent.Executor { r -> r.run() }
+        database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java)
+            .setTransactionExecutor(inlineExecutor)
+            .setQueryExecutor(inlineExecutor)
+            .build()
         repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
         authManager = AuthManager(context)
         securityUtils = SecurityUtils(context)

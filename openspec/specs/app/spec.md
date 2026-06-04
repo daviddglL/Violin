@@ -250,31 +250,37 @@ The detected frequency MUST map to the closest violin string note: G3 (196 Hz), 
 
 ---
 
-### REQ-TN-004 — Pitch Offset Display
+### REQ-TN-004 — Pitch Offset Display with Configurable Range
 
-The detected pitch offset in cents MUST be displayed on the UI needle gauge, ranging from -50 (flat) to +50 (sharp) with smooth animation.
+The detected pitch offset in cents MUST be displayed on the UI needle gauge with smooth animation. The needle range is configurable via `maxCents` (default ±50 cents, configurable 25–200 in 25-step increments). The ViewModel SHALL NOT clamp pitch offsets — raw detected cent values pass through unmodified. When the offset exceeds `maxCents`, the needle pins at the arc edge and an overflow indicator label (e.g., `≥+200` or `≤-200`) is shown. The `TuningWheel` composable adapts tick density to the configured range: `(maxCents / 25) × 2` total ticks across a 120° arc (60° each side of center).
 
-**Scenarios**:
+**Scenarios (updated — tuner-custom-configurations)**:
 
-- GIVEN a detected frequency of 445 Hz with A4=440 Hz reference WHEN the offset is calculated THEN `tunerPitchOffsetCents` emits approximately +19.6 cents AND the needle points to the sharp side.
+- GIVEN a detected frequency of 445 Hz with A4=440 Hz reference and maxCents=50 WHEN the offset is calculated THEN `tunerPitchOffsetCents` emits approximately +19.6 cents AND the needle points to the sharp side.
 
 - GIVEN the offset is within ±2.5 cents of the target WHEN displayed THEN the needle turns green (`Color(0xFF81C784)`) and the label shows "PERFECTLY IN TUNE".
 
-**Acceptance**: The existing needle gauge Canvas composable in `TunerScreen.kt` renders real pitch data instead of simulated `Random()` values.
+- GIVEN maxCents is set to 100 and the detected offset exceeds +100 cents WHEN displayed THEN the needle pins at the right arc edge AND the overflow label shows "≥+100".
+
+- GIVEN the user changes maxCents from 50 to 200 WHEN `TuningWheel` recomposes THEN tick marks adapt to (200/25)×2 = 16 ticks across the arc.
+
+**Acceptance**: The `TuningWheel` Canvas composable in `TunerScreen.kt` renders real YIN pitch data, adapts ticks to the configured maxCents range, and shows overflow indicators at arc edges with amber-colored pinned needle.
 
 ---
 
-### REQ-TN-005 — Reference Tone Playback Preserved
+### REQ-TN-005 — Reference Tone Playback with Configurable Pitch A
 
-The existing reference tone playback functionality (synthesized sine wave for G/D/A/E strings) MUST continue to work unchanged. Selecting a string note plays the correct frequency through `AudioTrack`.
+The existing reference tone playback functionality (synthesized sine wave for G/D/A/E strings) MUST continue to work unchanged. The reference pitch A (A4 tuning standard) is now user-configurable via the tuning configuration bottom sheet, supporting 200–900 Hz (UI restricted to 350–500 Hz for practical violin range). Selecting a string note plays the correct frequency through `AudioTrack` using the current reference pitch.
 
-**Scenarios**:
+**Scenarios (updated — tuner-custom-configurations)**:
 
-- GIVEN the user taps the "A" string button WHEN listening mode is off THEN `ViolinAudioEngine.playStringTone("A", 440)` plays a 440 Hz sine wave through the speaker.
+- GIVEN the user taps the "A" string button WHEN listening mode is off THEN `ViolinAudioEngine.playStringTone("A", currentReferencePitch)` plays a sine wave at the configured reference pitch through the speaker.
 
-- GIVEN reference pitch A is changed to 442 Hz WHEN the user plays the A string tone THEN the playback frequency is 442 Hz.
+- GIVEN reference pitch A is changed to 442 Hz via the config bottom sheet WHEN the user plays the A string tone THEN the playback frequency is 442 Hz.
 
-**Acceptance**: Reference tone buttons produce audible sine waves at correct frequencies. No behavior change from current prototype.
+- GIVEN the config bottom sheet is open WHEN the user adjusts the reference pitch slider to 432 Hz THEN `TunerViewModel.updateReferencePitch(432)` is called AND subsequent reference tone playback uses 432 Hz.
+
+**Acceptance**: Reference tone buttons produce audible sine waves at the currently configured reference pitch. Backward compatible — default 440 Hz when no custom config exists.
 
 ---
 

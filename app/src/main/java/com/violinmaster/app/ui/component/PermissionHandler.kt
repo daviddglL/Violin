@@ -34,7 +34,7 @@ import androidx.core.content.ContextCompat
  * Usage:
  * ```kotlin
  * PermissionHandler(
- *     onPermissionGranted = { tunerViewModel.startListening() },
+ *     onPermissionGranted = { tunerViewModel.toggleListeningTuner() },
  *     onPermissionDenied = { /* show error */ }
  * ) {
  *     // Your listening-mode UI here

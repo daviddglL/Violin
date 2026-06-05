@@ -27,12 +27,19 @@ class TunerViewModel @Inject constructor(
     val selectedInstrument: StateFlow<Instrument> = userPreferencesManager.selectedInstrument
 
     init {
-        // Clear selected note when switching to an instrument that doesn't have it
+        // Update selected note on instrument change: re-resolve frequency if the
+        // note exists in the new instrument, clear it if the string no longer exists.
         viewModelScope.launch {
             selectedInstrument.drop(1).collect { newInstrument ->
                 val currentNote = _tunerSelectedNote.value
-                if (currentNote != null && newInstrument.strings.none { it.name == currentNote }) {
-                    selectTunerNote(null)
+                if (currentNote != null) {
+                    if (newInstrument.strings.any { it.name == currentNote }) {
+                        // Note exists in both — re-play at the new instrument's frequency
+                        selectTunerNote(currentNote)
+                    } else {
+                        // Note is absent — clear selection
+                        selectTunerNote(null)
+                    }
                 }
             }
         }
@@ -108,7 +115,7 @@ class TunerViewModel @Inject constructor(
     private fun startPitchCollection() {
         stopPitchCollection()
 
-        tunerEngine.startListening()
+        tunerEngine.startListening(minFrequencyHz = minFrequencyForInstrument(selectedInstrument.value))
 
         pitchCollectionJob = viewModelScope.launch {
             tunerEngine.pitchFlow.collect { result ->
@@ -142,9 +149,24 @@ class TunerViewModel @Inject constructor(
         _tunerAutoDetect.value = !_tunerAutoDetect.value
     }
 
+    /**
+     * Returns the minimum detectable frequency for the given instrument.
+     * Uses 70% of the instrument's lowest string frequency, clamped to
+     * [MIN_FREQ_HZ] to avoid mains hum false positives (50/60 Hz).
+     */
+    private fun minFrequencyForInstrument(instrument: Instrument): Float {
+        val lowestString = instrument.strings.minOf { it.frequency }
+        return maxOf((lowestString * 0.7).toFloat(), MIN_FREQ_HZ)
+    }
+
     override fun onCleared() {
         super.onCleared()
         stopPitchCollection()
         audioEngine.stopTone()
+    }
+
+    companion object {
+        /** Minimum pitch detection floor. Above common mains hum frequencies (50/60 Hz). */
+        private const val MIN_FREQ_HZ = 65f
     }
 }

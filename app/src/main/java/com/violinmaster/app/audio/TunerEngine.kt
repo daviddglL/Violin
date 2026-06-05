@@ -27,7 +27,7 @@ import javax.inject.Singleton
  *
  * Usage:
  * ```kotlin
- * tunerEngine.startListening(referencePitchA = 440)
+ * tunerEngine.startListening()
  * tunerEngine.pitchFlow.collect { result -> /* update UI */ }
  * tunerEngine.stopListening()
  * ```
@@ -60,8 +60,12 @@ class TunerEngine @Inject constructor() {
      * Emits raw [PitchResult] values (frequency + YIN confidence) via [pitchFlow].
      * Note-to-string mapping is performed downstream by the ViewModel using the
      * active instrument — the engine stays instrument-agnostic.
+     *
+     * @param minFrequencyHz Lower bound for pitch detection in Hz.
+     *   Default 80 Hz is safe for violin/viola; lower to 55 Hz for cello (C2 = 65.4 Hz).
+     *   Values below ~55 Hz risk false positives from mains hum (50/60 Hz).
      */
-    fun startListening() {
+    fun startListening(minFrequencyHz: Float = 80f) {
         if (isListening) return
 
         val bufferSizeInBytes = BUFFER_SIZE_SAMPLES * 2 // 16-bit = 2 bytes per sample
@@ -109,7 +113,7 @@ class TunerEngine @Inject constructor() {
                             buffer = shortBuffer,
                             sampleRate = SAMPLE_RATE,
                             threshold = 0.15f,
-                            minFrequency = 50f
+                            minFrequency = minFrequencyHz
                         )
 
                         _pitchFlow.value = pitchResult

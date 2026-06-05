@@ -151,6 +151,7 @@ class ViolinAudioEngine @Inject constructor() {
         val ratioToA = if (string != null) {
             string.frequency / 440.0
         } else {
+            Log.w("ViolinAudioEngine", "Note '$noteName' not found in instrument ${instrument.name}; falling back to A4")
             1.0 // fallback to A4
         }
         val targetFreq = referencePitchA * ratioToA

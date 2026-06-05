@@ -97,12 +97,14 @@ fun VirtualFingerboard(
   // Filter fingeringMap to only show strings belonging to the active instrument
   val supportedStrings = fingeringMap.keys.filter { it in instrumentStringNames }
 
-  val defaultString = supportedStrings.firstOrNull() ?: "A"
+  // Fall back to the instrument's first string if no overlap with fingering map
+  val fallbackString = instrument.strings.firstOrNull()?.name ?: "A"
+  val defaultString = supportedStrings.firstOrNull() ?: fallbackString
   var selectedFretString by remember { mutableStateOf(defaultString) }
 
   // Reset string tab selection when instrument changes
   LaunchedEffect(instrument) {
-    selectedFretString = defaultString
+    selectedFretString = supportedStrings.firstOrNull() ?: fallbackString
   }
 
   val notesAndPositions = if (selectedFretString in instrumentStringNames) {

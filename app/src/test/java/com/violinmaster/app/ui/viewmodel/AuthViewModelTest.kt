@@ -14,7 +14,10 @@ import com.violinmaster.app.security.SecurityUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -23,7 +26,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -67,6 +69,11 @@ class AuthViewModelTest {
         viewModel = AuthViewModel(repository, authManager, securityUtils, loginUseCase, registerUseCase)
     }
 
+    /** Creates a ViewModel without touching the test-wide [viewModel] field. Used by [runTest]-based tests. */
+    private fun createTestViewModel() = AuthViewModel(
+        repository, authManager, securityUtils, loginUseCase, registerUseCase
+    )
+
     @After
     fun tearDown() {
         database.close()
@@ -74,27 +81,27 @@ class AuthViewModelTest {
     }
 
     @Test
-    @Ignore("viewModelScope dispatcher not advancing in runBlocking — needs Dispatchers.Main override investigation")
-    fun `login with valid credentials sets currentUser`() = runBlocking {
-        createViewModel()
+    fun `login with valid credentials sets currentUser`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
         // Arrange: register a user first
-        viewModel.register("testuser", "1234", "STUDENT")
-
-
+        vm.register("testuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
         // Act: login with valid credentials
-        viewModel.login("testuser", "1234")
-
-
+        vm.login("testuser", "1234")
+        advanceUntilIdle()
         // Assert
-        assertNotNull(viewModel.currentUser.value)
-        assertEquals("testuser", viewModel.currentUser.value?.username)
-        assertNull(viewModel.loginError.value)
+        assertNotNull(vm.currentUser.value)
+        assertEquals("testuser", vm.currentUser.value?.username)
+        assertNull(vm.loginError.value)
+        Dispatchers.resetMain()
     }
 
     @Test
     fun `login with invalid credentials sets loginError`() = runBlocking {
         // Arrange: register a user first
-        viewModel.register("testuser", "1234", "STUDENT")
+        viewModel.register("testuser", "1234", "STUDENT", birthYear = 2000)
 
 
         // Act: login with wrong pin
@@ -107,32 +114,33 @@ class AuthViewModelTest {
     }
 
     @Test
-    @Ignore("viewModelScope dispatcher not advancing in runBlocking")
-    fun `register creates new user and sets signupSuccess`() = runBlocking {
-        createViewModel()
+    fun `register creates new user and sets signupSuccess`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
         // Act
-        viewModel.register("newuser", "1234", "STUDENT")
-
-
+        vm.register("newuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
         // Assert
-        assertEquals("success_register", viewModel.signupSuccess.value)
-        assertNull(viewModel.loginError.value)
+        assertEquals("success_register", vm.signupSuccess.value)
+        assertNull(vm.loginError.value)
+        Dispatchers.resetMain()
     }
 
     @Test
-    @Ignore("viewModelScope dispatcher not advancing in runBlocking")
-    fun `register with existing username sets loginError`() = runBlocking {
-        createViewModel()
+    fun `register with existing username sets loginError`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
         // Arrange
-        viewModel.register("dupeuser", "1234", "STUDENT")
-
-
+        vm.register("dupeuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
         // Act: register again with same username
-        viewModel.register("dupeuser", "5678", "STUDENT")
-
-
+        vm.register("dupeuser", "5678", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
         // Assert
-        assertEquals("error_user_exists", viewModel.loginError.value)
+        assertEquals("error_user_exists", vm.loginError.value)
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -154,24 +162,23 @@ class AuthViewModelTest {
     }
 
     @Test
-    @Ignore("viewModelScope dispatcher not advancing in runBlocking")
-    fun `logout clears currentUser`() = runBlocking {
-        createViewModel()
+    fun `logout clears currentUser`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
         // Arrange: register and login
-        viewModel.register("testuser", "1234", "STUDENT")
-
-        viewModel.login("testuser", "1234")
-
-        assertNotNull(viewModel.currentUser.value)
-
+        vm.register("testuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+        vm.login("testuser", "1234")
+        advanceUntilIdle()
+        assertNotNull(vm.currentUser.value)
         // Act
-        viewModel.logout()
-
-
+        vm.logout()
         // Assert
-        assertNull(viewModel.currentUser.value)
-        assertNull(viewModel.loginError.value)
-        assertNull(viewModel.signupSuccess.value)
+        assertNull(vm.currentUser.value)
+        assertNull(vm.loginError.value)
+        assertNull(vm.signupSuccess.value)
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -281,28 +288,28 @@ class AuthViewModelTest {
     }
 
     @Test
-    @Ignore("viewModelScope dispatcher not advancing in runBlocking")
-    fun `linkTeacherCode updates user teacher code for student`() = runBlocking {
-        createViewModel()
+    fun `linkTeacherCode updates user teacher code for student`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
         // Arrange: register and login as student
-        viewModel.register("student1", "1234", "STUDENT")
-
-        viewModel.login("student1", "1234")
-
-        assertNotNull(viewModel.currentUser.value)
-
+        vm.register("student1", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+        vm.login("student1", "1234")
+        advanceUntilIdle()
+        assertNotNull(vm.currentUser.value)
         // Act
-        viewModel.linkTeacherCode("TEACH-5678")
-
-
+        vm.linkTeacherCode("TEACH-5678")
+        advanceUntilIdle()
         // Assert
-        assertEquals("TEACH-5678", viewModel.currentUser.value?.teacherCode)
+        assertEquals("TEACH-5678", vm.currentUser.value?.teacherCode)
+        Dispatchers.resetMain()
     }
 
     @Test
     fun `linkTeacherCode does nothing for non-student`() = runBlocking {
         // Arrange: register and login as teacher
-        viewModel.register("teacher1", "1234", "TEACHER")
+        viewModel.register("teacher1", "1234", "TEACHER", birthYear = 2000)
 
         viewModel.login("teacher1", "1234")
 
@@ -346,7 +353,7 @@ class AuthViewModelTest {
     fun `logout clears unlocked area and resets auth state`() = runBlocking {
         // Arrange
         securityUtils.savePasscode("4321")
-        viewModel.register("testuser", "1234", "STUDENT")
+        viewModel.register("testuser", "1234", "STUDENT", birthYear = 2000)
 
         viewModel.login("testuser", "1234")
 

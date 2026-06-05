@@ -51,7 +51,7 @@ import com.violinmaster.app.ui.component.EmptyChatState
 import com.violinmaster.app.ui.component.ErrorBanner
 import com.violinmaster.app.ui.component.ErrorState
 import com.violinmaster.app.ui.component.LoadingShimmer
-import com.violinmaster.app.ui.components.MessageBubble
+import com.violinmaster.app.ui.component.MessageBubble
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.ChatViewModel

@@ -1,4 +1,4 @@
-package com.violinmaster.app.ui.components
+package com.violinmaster.app.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

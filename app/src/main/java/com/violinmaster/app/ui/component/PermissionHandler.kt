@@ -1,4 +1,4 @@
-package com.violinmaster.app.ui.components
+package com.violinmaster.app.ui.component
 
 import android.Manifest
 import android.content.pm.PackageManager

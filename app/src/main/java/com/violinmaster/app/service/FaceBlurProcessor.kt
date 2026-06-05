@@ -1,24 +1,14 @@
 package com.violinmaster.app.service
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Matrix
-import android.graphics.Paint
-import android.graphics.Rect
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.media.MediaMuxer
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.FaceDetection
-import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,7 +21,7 @@ import javax.inject.Singleton
  *
  * Pipeline (for minor users only):
  * 1. Extract frames via [MediaMetadataRetriever] (every 5th)
- * 2. Detect faces with ML Kit [FaceDetection]
+ * 2. Detect faces with [FaceDetectionProcessor]
  * 3. Apply Gaussian blur to face regions via Canvas
  * 4. Re-encode processed frames into output video via [MediaCodec] + [MediaMuxer]
  * 5. If processing fails: fall back to original video + warning
@@ -44,75 +34,6 @@ import javax.inject.Singleton
  */
 @Singleton
 open class FaceBlurProcessor @Inject constructor() {
-
-    companion object {
-        private const val SAMPLE_RATE = 5         // Every 5th frame
-        private const val MIN_KERNEL = 15         // Minimum blur kernel size
-        private const val KERNEL_DIVISOR = 10     // faceWidth / KERNEL_DIVISOR
-        private const val MIME_TYPE = "video/avc"
-        private const val TARGET_FRAME_RATE = 30
-        private const val I_FRAME_INTERVAL = 1
-        private const val TIMEOUT_US = 10_000L
-        private const val FACE_DETECTION_WINDOW_SECONDS = 30  // Check first 30s
-
-        /**
-         * Determines whether a user is a minor (under 18) based on birth year.
-         *
-         * REQ-BLR-006: Blur pipeline gate.
-         *
-         * @param birthYear User's birth year from registration.
-         * @param currentYear Current calendar year.
-         * @return true if user is under 18, false otherwise (including legacy users with birthYear ≤ 1900).
-         */
-        fun isMinor(birthYear: Int, currentYear: Int): Boolean {
-            if (birthYear <= 1900) return false  // legacy/edge guard
-            return (currentYear - birthYear) < 18
-        }
-
-        /**
-         * Calculates the Gaussian blur kernel size based on face box width.
-         *
-         * REQ-BLR-004: kernelSize = max(faceBox.width / 10, 15).
-         * Always returns an odd number for proper Gaussian matrix symmetry.
-         *
-         * @param faceBoxWidth Width of the detected face bounding box in pixels.
-         * @return Odd kernel size, minimum 15.
-         */
-        fun calculateBlurKernel(faceBoxWidth: Int): Int {
-            val kernel = maxOf(faceBoxWidth / KERNEL_DIVISOR, MIN_KERNEL)
-            // Ensure odd (Gaussian blur requires odd kernel)
-            return if (kernel % 2 == 0) kernel + 1 else kernel
-        }
-
-        /**
-         * Generates the list of frame indices to sample for face detection.
-         *
-         * REQ-BLR-003: Every 5th frame (0, 5, 10, 15, ...).
-         *
-         * @param totalFrames Total number of frames in the video.
-         * @param sampleRate How often to sample (default 5 = every 5th frame).
-         * @return List of frame indices to process.
-         */
-        fun sampleFrames(totalFrames: Int, sampleRate: Int = SAMPLE_RATE): List<Int> {
-            if (totalFrames <= 0) return emptyList()
-            return (0 until totalFrames step sampleRate).toList()
-        }
-
-        /**
-         * Simulates the copy path for non-minor users: copies inputFile to outputFile.
-         *
-         * Used in tests to verify the non-minor gate without needing MediaCodec.
-         *
-         * @param inputFile Source file to copy.
-         * @param outputFile Destination file.
-         * @return The output file (copy of input).
-         */
-        fun processFileCopyWhenNotMinor(inputFile: File, outputFile: File): File {
-            outputFile.parentFile?.mkdirs()
-            inputFile.copyTo(outputFile, overwrite = true)
-            return outputFile
-        }
-    }
 
     /**
      * Processes a video file: applies face blur if the user is a minor.
@@ -165,76 +86,34 @@ open class FaceBlurProcessor @Inject constructor() {
                 MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION
             )?.toIntOrNull() ?: 0
 
-            // ── 2. Extract frames for ML Kit detection ─────────────────
-            val totalFrames = estimateFrameCount(durationMs, TARGET_FRAME_RATE)
-            val sampledIndices = sampleFrames(totalFrames)
+            // ── 2. Extract frames + face detection ─────────────────────
+            val totalFrames = estimateFrameCount(durationMs, FaceBlurUtils.TARGET_FRAME_RATE)
+            val sampledIndices = FaceBlurUtils.sampleFrames(totalFrames)
 
-            val faceBounds = mutableMapOf<Int, List<Rect>>()
-            var anyFaceDetected = false
-            var detectionWindowFrames = 0
+            val detectionProcessor = FaceDetectionProcessor()
+            val detectionResult = detectionProcessor.detectFaces(
+                retriever = retriever,
+                sampledIndices = sampledIndices,
+                videoWidth = videoWidth,
+                videoHeight = videoHeight,
+                rotation = rotation,
+                targetFrameRate = FaceBlurUtils.TARGET_FRAME_RATE,
+                sampleRate = FaceBlurUtils.SAMPLE_RATE,
+                detectionWindowSeconds = FaceBlurUtils.FACE_DETECTION_WINDOW_SECONDS,
+                onProgress = onProgress
+            )
 
-            // Set up ML Kit face detector (FAST mode, no contours)
-            val faceDetectorOptions = FaceDetectorOptions.Builder()
-                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-                .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
-                .build()
-            val faceDetector = FaceDetection.getClient(faceDetectorOptions)
-
-            for ((processedCount, frameIdx) in sampledIndices.withIndex()) {
-                onProgress("Processing frame ${processedCount + 1}/${sampledIndices.size}")
-
-                // Extract frame as Bitmap
-                val frameTimeUs = frameIdx * (1_000_000L / TARGET_FRAME_RATE)
-                val frameBitmap = retriever.getFrameAtTime(
-                    frameTimeUs,
-                    MediaMetadataRetriever.OPTION_CLOSEST_SYNC
-                )
-
-                if (frameBitmap != null) {
-                    try {
-                        val inputImage = InputImage.fromBitmap(frameBitmap, rotation)
-                        val faces = com.google.android.gms.tasks.Tasks.await(
-                            faceDetector.process(inputImage)
-                        )
-
-                        if (faces.isNotEmpty()) {
-                            anyFaceDetected = true
-                            val bounds = faces.map { face ->
-                                val box = face.boundingBox
-                                Rect(box).apply {
-                                    // Expand slightly for safety margin
-                                    val margin = 5
-                                    left = maxOf(0, left - margin)
-                                    top = maxOf(0, top - margin)
-                                    right = minOf(videoWidth, right + margin)
-                                    bottom = minOf(videoHeight, bottom + margin)
-                                }
-                            }
-                            faceBounds[frameIdx] = bounds
-                        }
-
-                        detectionWindowFrames += SAMPLE_RATE
-                    } catch (e: Exception) {
-                        // Face detection failed for this frame — continue
-                    } finally {
-                        frameBitmap.recycle()
-                    }
-                }
-
-                // Check: if we've processed the detection window and no faces found, warn but continue
-                val detectionTimeMs = detectionWindowFrames * (1000L / TARGET_FRAME_RATE)
-                if (detectionTimeMs >= FACE_DETECTION_WINDOW_SECONDS * 1000L && !anyFaceDetected) {
-                    // REQ-BLR-007: Fallback — no faces detected in first 30s
-                    faceDetector.close()
-                    outputFile.parentFile?.mkdirs()
-                    inputFile.copyTo(outputFile, overwrite = true)
-                    onProgress("Face blur could not be applied. Video sent without blur.")
-                    retriever.release()
-                    return@withContext outputFile
-                }
+            // REQ-BLR-007: Fallback — no faces detected in detection window
+            if (detectionResult.shouldFallback) {
+                outputFile.parentFile?.mkdirs()
+                inputFile.copyTo(outputFile, overwrite = true)
+                onProgress("Face blur could not be applied. Video sent without blur.")
+                retriever.release()
+                return@withContext outputFile
             }
 
-            faceDetector.close()
+            val faceBounds = detectionResult.faceBounds
+            val anyFaceDetected = detectionResult.anyFaceDetected
 
             // ── 3. Re-encode video with blurred face regions ────────────
             //
@@ -266,7 +145,7 @@ open class FaceBlurProcessor @Inject constructor() {
 
             // Configure encoder
             val encoderFormat = MediaFormat.createVideoFormat(
-                MIME_TYPE,
+                FaceBlurUtils.MIME_TYPE,
                 videoWidth,
                 videoHeight
             ).apply {
@@ -274,15 +153,15 @@ open class FaceBlurProcessor @Inject constructor() {
                     MediaFormat.KEY_BIT_RATE,
                     inputFormat.getInteger(MediaFormat.KEY_BIT_RATE)
                 )
-                setInteger(MediaFormat.KEY_FRAME_RATE, TARGET_FRAME_RATE)
-                setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, I_FRAME_INTERVAL)
+                setInteger(MediaFormat.KEY_FRAME_RATE, FaceBlurUtils.TARGET_FRAME_RATE)
+                setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, FaceBlurUtils.I_FRAME_INTERVAL)
                 setInteger(
                     MediaFormat.KEY_COLOR_FORMAT,
                     MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
                 )
             }
 
-            codec = MediaCodec.createEncoderByType(MIME_TYPE)
+            codec = MediaCodec.createEncoderByType(FaceBlurUtils.MIME_TYPE)
             codec.configure(encoderFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
             codec.start()
 
@@ -300,7 +179,7 @@ open class FaceBlurProcessor @Inject constructor() {
             var eosReceived = false
 
             while (!eosReceived) {
-                val inputBufferIndex = codec.dequeueInputBuffer(TIMEOUT_US)
+                val inputBufferIndex = codec.dequeueInputBuffer(FaceBlurUtils.TIMEOUT_US)
                 if (inputBufferIndex >= 0) {
                     val inputBuffer = codec.getInputBuffer(inputBufferIndex) ?: continue
                     val sampleSize = extractor.readSampleData(inputBuffer, 0)
@@ -327,13 +206,13 @@ open class FaceBlurProcessor @Inject constructor() {
                     }
                 }
 
-                var outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                var outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, FaceBlurUtils.TIMEOUT_US)
                 while (outputBufferIndex >= 0) {
                     val outputBuffer = codec.getOutputBuffer(outputBufferIndex) ?: continue
 
                     if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                         codec.releaseOutputBuffer(outputBufferIndex, false)
-                        outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                        outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, FaceBlurUtils.TIMEOUT_US)
                         continue
                     }
 
@@ -356,7 +235,7 @@ open class FaceBlurProcessor @Inject constructor() {
                         break
                     }
 
-                    outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                    outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, FaceBlurUtils.TIMEOUT_US)
                 }
             }
 

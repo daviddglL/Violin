@@ -41,7 +41,7 @@ class FaceBlurProcessorTest {
         val birthYear15 = currentYear - 15  // 2011 → age 15
 
         // When checking minority status
-        val result = FaceBlurProcessor.isMinor(birthYear15, currentYear)
+        val result = FaceBlurUtils.isMinor(birthYear15, currentYear)
 
         // Then should be true — under 18
         assertTrue(
@@ -60,7 +60,7 @@ class FaceBlurProcessorTest {
         val currentYear = 2026
         val birthYear18 = currentYear - 18  // 2008 → age 18
 
-        val result = FaceBlurProcessor.isMinor(birthYear18, currentYear)
+        val result = FaceBlurUtils.isMinor(birthYear18, currentYear)
 
         assertFalse(
             "User aged exactly 18 should NOT be considered a minor",
@@ -74,7 +74,7 @@ class FaceBlurProcessorTest {
         val currentYear = 2026
         val birthYear35 = currentYear - 35  // 1991 → age 35
 
-        val result = FaceBlurProcessor.isMinor(birthYear35, currentYear)
+        val result = FaceBlurUtils.isMinor(birthYear35, currentYear)
 
         assertFalse(
             "User aged 35 should NOT be considered a minor",
@@ -90,7 +90,7 @@ class FaceBlurProcessorTest {
     @Test
     fun `isMinor returns false for legacy user with birthYear 0`() {
         // Given a legacy user whose birthYear was never set (default 0)
-        val result = FaceBlurProcessor.isMinor(0, 2026)
+        val result = FaceBlurUtils.isMinor(0, 2026)
 
         assertFalse(
             "Legacy user (birthYear=0) should NOT be considered a minor — blur skipped",
@@ -101,7 +101,7 @@ class FaceBlurProcessorTest {
     @Test
     fun `isMinor returns false for birthYear in 1900`() {
         // Given a very old birth year that would produce unrealistic age
-        val result = FaceBlurProcessor.isMinor(1900, 2026)
+        val result = FaceBlurUtils.isMinor(1900, 2026)
 
         assertFalse(
             "User with birthYear ≤ 1900 should NOT be considered a minor (edge case guard)",
@@ -115,7 +115,7 @@ class FaceBlurProcessorTest {
         val currentYear = 2026
         val birthYear17 = currentYear - 17  // age 17
 
-        val result = FaceBlurProcessor.isMinor(birthYear17, currentYear)
+        val result = FaceBlurUtils.isMinor(birthYear17, currentYear)
 
         assertTrue(
             "User aged 17 should be considered a minor (last year before adulthood)",
@@ -133,7 +133,7 @@ class FaceBlurProcessorTest {
         // Given a very small face box (50px wide)
         val smallFaceWidth = 50  // kernel = max(50/10=5, 15) = 15
 
-        val kernelSize = FaceBlurProcessor.calculateBlurKernel(smallFaceWidth)
+        val kernelSize = FaceBlurUtils.calculateBlurKernel(smallFaceWidth)
 
         assertEquals(
             "Small face (50px) should get minimum kernel of 15",
@@ -147,7 +147,7 @@ class FaceBlurProcessorTest {
         // Given a typical face box (200px wide)
         val faceWidth = 200  // kernel = max(200/10=20, 15) = 20
 
-        val kernelSize = FaceBlurProcessor.calculateBlurKernel(faceWidth)
+        val kernelSize = FaceBlurUtils.calculateBlurKernel(faceWidth)
 
         assertEquals(
             "Face 200px wide should get kernel of 20",
@@ -161,7 +161,7 @@ class FaceBlurProcessorTest {
         // Given a large face box (400px wide)
         val faceWidth = 400  // kernel = max(400/10=40, 15) = 40
 
-        val kernelSize = FaceBlurProcessor.calculateBlurKernel(faceWidth)
+        val kernelSize = FaceBlurUtils.calculateBlurKernel(faceWidth)
 
         assertEquals(
             "Large face 400px wide should get kernel of 40",
@@ -173,7 +173,7 @@ class FaceBlurProcessorTest {
     @Test
     fun `blur kernel always odd for proper gaussian`() {
         // The kernel must be odd for a proper Gaussian blur matrix
-        val kernelSize = FaceBlurProcessor.calculateBlurKernel(200)
+        val kernelSize = FaceBlurUtils.calculateBlurKernel(200)
 
         assertTrue(
             "Blur kernel must be odd for Gaussian matrix: got $kernelSize",
@@ -191,7 +191,7 @@ class FaceBlurProcessorTest {
         // 30 fps × 90s = 2700 frames → ~540 keyframes sampled
         val totalFrames = 2700
 
-        val sampledIndices = FaceBlurProcessor.sampleFrames(totalFrames, sampleRate = 5)
+        val sampledIndices = FaceBlurUtils.sampleFrames(totalFrames, sampleRate = 5)
 
         // Should include frame 0
         assertTrue(
@@ -222,7 +222,7 @@ class FaceBlurProcessorTest {
         // Given 100 frames
         val totalFrames = 100
 
-        val sampledIndices = FaceBlurProcessor.sampleFrames(totalFrames, sampleRate = 5)
+        val sampledIndices = FaceBlurUtils.sampleFrames(totalFrames, sampleRate = 5)
 
         // Last frame (99) should be sampled or close to it
         val lastSampled = sampledIndices.last()
@@ -237,7 +237,7 @@ class FaceBlurProcessorTest {
         // Given only 3 frames (shorter than sample rate of 5)
         val totalFrames = 3
 
-        val sampledIndices = FaceBlurProcessor.sampleFrames(totalFrames, sampleRate = 5)
+        val sampledIndices = FaceBlurUtils.sampleFrames(totalFrames, sampleRate = 5)
 
         // Should sample at least frame 0
         assertTrue("Should sample frame 0", 0 in sampledIndices)
@@ -250,7 +250,7 @@ class FaceBlurProcessorTest {
 
     @Test
     fun `sampleFrames returns empty for zero frames`() {
-        val sampledIndices = FaceBlurProcessor.sampleFrames(0, sampleRate = 5)
+        val sampledIndices = FaceBlurUtils.sampleFrames(0, sampleRate = 5)
 
         assertTrue(
             "Zero total frames should produce empty sample list",
@@ -274,7 +274,7 @@ class FaceBlurProcessorTest {
         val outputFile = File(context.cacheDir, "test_output_${System.nanoTime()}.mp4")
 
         // Use a helper that simulates the copy path without MediaCodec
-        val result = FaceBlurProcessor.processFileCopyWhenNotMinor(inputFile, outputFile)
+        val result = FaceBlurUtils.processFileCopyWhenNotMinor(inputFile, outputFile)
 
         // Then: output should exist and match input
         assertTrue("Output file should exist when isMinor=false", result.exists())
@@ -298,7 +298,7 @@ class FaceBlurProcessorTest {
         inputFile.writeBytes(ByteArray(1024))
         val outputFile = File(context.cacheDir, "test_skip_out_${System.nanoTime()}.mp4")
 
-        val result = FaceBlurProcessor.processFileCopyWhenNotMinor(inputFile, outputFile)
+        val result = FaceBlurUtils.processFileCopyWhenNotMinor(inputFile, outputFile)
 
         // The returned file should be the output file (which is a copy of input)
         assertTrue("Copy should succeed", result.exists())

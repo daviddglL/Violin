@@ -53,13 +53,13 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3: Integration & UI (PR 3)
 
-- [ ] 3.1 **RED**: Add instrument switching tests to `TunerViewModelTest.kt` — switch to viola updates `selectedInstrument`, `selectTunerNote` passes instrument to engine, auto-detect works for cello A3
+- [x] 3.1 **RED**: Add instrument switching tests to `TunerViewModelTest.kt` — switch to viola updates `selectedInstrument`, `selectTunerNote` passes instrument to engine, auto-detect works for cello A3
   > Spec: app — Auto-Detect Mode with Active Instrument
-- [ ] 3.2 **GREEN**: Inject `UserPreferencesManager` into `TunerViewModel` — expose `selectedInstrument` StateFlow, pass instrument to `playStringTone()` and `frequencyToNoteAndCents()`. Update test constructor call
+- [x] 3.2 **GREEN**: Inject `UserPreferencesManager` into `TunerViewModel` — expose `selectedInstrument` StateFlow, pass instrument to `playStringTone()` and `frequencyToNoteAndCents()`. Update test constructor call
   > Spec: instrument-selection — Persistent Instrument Selection
-- [ ] 3.3 Add `instrument: Instrument` param to `NoteTargetSelector` — render buttons from `instrument.strings`, apply octave suffix (G3/G2) for disambiguation where note names overlap
+- [x] 3.3 Add `instrument: Instrument` param to `NoteTargetSelector` — render buttons from `instrument.strings`, apply octave suffix (G3/G2) for disambiguation where note names overlap
   > Spec: app — Instrument-Aware NoteTargetSelector
-- [ ] 3.4 Add `instrument: Instrument` param to `VirtualFingerboard` — filter `fingeringMap` by instrument string names; show "Fingering data available for Violin only" placeholder for viola/cello
+- [x] 3.4 Add `instrument: Instrument` param to `VirtualFingerboard` — filter `fingeringMap` by instrument string names; show "Fingering data available for Violin only" placeholder for viola/cello
   > Spec: proposal (out of scope guard: open strings only, full fingering deferred)
-- [ ] 3.5 Insert instrument selector card in `SettingsScreen` between `LanguageSelector` and `AccountSection` — 3-button Row, selected highlighted with primary color, tap calls `userPreferencesManager.setSelectedInstrument()`, labels via `Localization.get()`
+- [x] 3.5 Insert instrument selector card in `SettingsScreen` between `LanguageSelector` and `AccountSection` — 3-button Row, selected highlighted with primary color, tap calls `userPreferencesManager.setSelectedInstrument()`, labels via `Localization.get()`
   > Spec: instrument-selection — Instrument Selector in Settings

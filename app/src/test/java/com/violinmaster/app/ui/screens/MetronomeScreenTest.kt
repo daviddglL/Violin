@@ -15,7 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-@Ignore("Requires ActivityResultRegistry — Compose UI tests need NavHost or Activity wrapper")
+@Ignore("2/7 tests pass; 5 fail: toggle, time_sig, tap_tempo, accent, SPANISH tags not found. Fix: verify testTag names in MetronomeScreen composable match test expectations after UI refactoring")
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class MetronomeScreenTest {

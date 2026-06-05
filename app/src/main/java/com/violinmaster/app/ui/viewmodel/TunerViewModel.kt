@@ -152,11 +152,17 @@ class TunerViewModel @Inject constructor(
     /**
      * Returns the minimum detectable frequency for the given instrument.
      * Uses 70% of the instrument's lowest string frequency, clamped to
-     * [MIN_FREQ_HZ] to avoid mains hum false positives (50/60 Hz).
+     * a floor that avoids mains hum false positives (50/60 Hz).
+     *
+     * Instruments with strings below 60 Hz (e.g., double bass E1 = 41.2 Hz)
+     * use a lower floor of [LOW_FREQ_FLOOR_HZ] to capture fundamentals,
+     * trading some noise immunity for detection range.
      */
     private fun minFrequencyForInstrument(instrument: Instrument): Float {
         val lowestString = instrument.strings.minOf { it.frequency }
-        return maxOf((lowestString * 0.7).toFloat(), MIN_FREQ_HZ)
+        val computed = (lowestString * 0.7).toFloat()
+        val floor = if (lowestString < 60.0) LOW_FREQ_FLOOR_HZ else MIN_FREQ_HZ
+        return maxOf(computed, floor)
     }
 
     override fun onCleared() {
@@ -166,7 +172,9 @@ class TunerViewModel @Inject constructor(
     }
 
     companion object {
-        /** Minimum pitch detection floor. Above common mains hum frequencies (50/60 Hz). */
+        /** Safe pitch floor for violin/viola/cello — above 50/60 Hz mains hum. */
         private const val MIN_FREQ_HZ = 65f
+        /** Lower floor for double bass — needed to detect E1 = 41.2 Hz. */
+        private const val LOW_FREQ_FLOOR_HZ = 30f
     }
 }

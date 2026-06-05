@@ -40,6 +40,15 @@ enum class Instrument(
       InstrumentString(name = "D", frequency = 146.8),
       InstrumentString(name = "A", frequency = 220.0)
     )
+  ),
+  DOUBLE_BASS(
+    labelKey = "instrument_double_bass",
+    strings = listOf(
+      InstrumentString(name = "E", frequency = 41.2),
+      InstrumentString(name = "A", frequency = 55.0),
+      InstrumentString(name = "D", frequency = 73.4),
+      InstrumentString(name = "G", frequency = 98.0)
+    )
   )
 }
 

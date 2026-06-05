@@ -35,12 +35,13 @@ class InstrumentTest {
   // ── Enum values ─────────────────────────────────────────────────────
 
   @Test
-  fun `Instrument has exactly three values`() {
+  fun `Instrument has exactly four values`() {
     val values = Instrument.values()
-    assertEquals("Should have 3 instrument values", 3, values.size)
+    assertEquals("Should have 4 instrument values", 4, values.size)
     assertTrue("Should contain VIOLIN", values.contains(Instrument.VIOLIN))
     assertTrue("Should contain VIOLA", values.contains(Instrument.VIOLA))
     assertTrue("Should contain CELLO", values.contains(Instrument.CELLO))
+    assertTrue("Should contain DOUBLE_BASS", values.contains(Instrument.DOUBLE_BASS))
   }
 
   // ── Label keys ──────────────────────────────────────────────────────
@@ -120,6 +121,31 @@ class InstrumentTest {
     assertEquals(220.0, strings[3].frequency, 0.01)
   }
 
+  // ── Double Bass strings ──────────────────────────────────────────────
+
+  @Test
+  fun `DOUBLE_BASS has four strings E1 A1 D2 G2`() {
+    val strings = Instrument.DOUBLE_BASS.strings
+    assertEquals("Double Bass should have 4 strings", 4, strings.size)
+
+    assertEquals("E", strings[0].name)
+    assertEquals(41.2, strings[0].frequency, 0.01)
+
+    assertEquals("A", strings[1].name)
+    assertEquals(55.0, strings[1].frequency, 0.01)
+
+    assertEquals("D", strings[2].name)
+    assertEquals(73.4, strings[2].frequency, 0.01)
+
+    assertEquals("G", strings[3].name)
+    assertEquals(98.0, strings[3].frequency, 0.01)
+  }
+
+  @Test
+  fun `DOUBLE_BASS labelKey is instrument_double_bass`() {
+    assertEquals("instrument_double_bass", Instrument.DOUBLE_BASS.labelKey)
+  }
+
   // ── valueOf roundtrip ───────────────────────────────────────────────
 
   @Test
@@ -131,6 +157,12 @@ class InstrumentTest {
   @Test
   fun `valueOf VIOLIN roundtrip`() {
     assertEquals(Instrument.VIOLIN, Instrument.valueOf("VIOLIN"))
+  }
+
+  @Test
+  fun `valueOf DOUBLE_BASS roundtrip`() {
+    assertEquals(Instrument.DOUBLE_BASS, Instrument.valueOf("DOUBLE_BASS"))
+    assertEquals("DOUBLE_BASS", Instrument.DOUBLE_BASS.name)
   }
 
   @Test

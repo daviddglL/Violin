@@ -55,6 +55,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
 import com.violinmaster.app.ui.screens.HomeScreen
 import com.violinmaster.app.ui.screens.LessonsScreen
 import com.violinmaster.app.ui.screens.MetronomeScreen
@@ -84,13 +85,14 @@ class MainActivity : ComponentActivity() {
   @Inject lateinit var authManager: AuthManager
   @Inject lateinit var navigationManager: NavigationManager
   @Inject lateinit var googleAuthRepository: IGoogleAuthRepository
+  @Inject lateinit var credentialManager: CredentialManager
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
       MyApplicationTheme {
-        MainLayout(userPreferencesManager, authManager, navigationManager, googleAuthRepository)
+        MainLayout(userPreferencesManager, authManager, navigationManager, googleAuthRepository, credentialManager)
       }
     }
   }
@@ -102,7 +104,8 @@ fun MainLayout(
   userPreferencesManager: UserPreferencesManager,
   authManager: AuthManager,
   navigationManager: NavigationManager,
-  googleAuthRepository: IGoogleAuthRepository
+  googleAuthRepository: IGoogleAuthRepository,
+  credentialManager: CredentialManager
 ) {
   val currentUser by authManager.currentUser.collectAsState()
   val lang by userPreferencesManager.appLanguage.collectAsState()
@@ -139,6 +142,7 @@ fun MainLayout(
       AuthenticationScreen(
         authViewModel = authViewModel,
         googleAuthRepository = googleAuthRepository,
+        credentialManager = credentialManager,
         authManager = authManager,
         appLanguage = lang,
         modifier = Modifier.padding(innerPadding)

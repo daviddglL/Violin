@@ -1,13 +1,11 @@
-@file:Suppress("DEPRECATION") // GoogleSignInClient deprecated in play-services-auth 21+
-
 package com.violinmaster.app.data.auth
 
-import android.content.Context
-import android.content.Intent
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,21 +14,19 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Repository managing Firebase Auth + Google Sign-In lifecycle.
+ * Repository managing Firebase Auth + Google Sign-In lifecycle via Credential Manager.
+ *
+ * Migrated from deprecated GoogleSignInClient (play-services-auth 21+) to
+ * Credential Manager API (androidx.credentials). Token acquisition is handled
+ * by the UI layer; this repository exchanges ID tokens for Firebase credentials.
  *
  * Each user signs in with their own Google account → Gemini API calls use
  * that user's OAuth token, consuming their own Gemini quota.
- *
- * FirebaseAuth and GoogleSignInClient cannot run in unit tests;
- * test subclasses override [getAccessToken] and [isSignedIn] for testing.
- *
- * TODO(auth): GoogleSignInClient is deprecated in play-services-auth 21+.
- * Migrate to Credential Manager API (androidx.credentials) when ready.
  */
 @Singleton
 open class GoogleAuthRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val googleSignInClient: GoogleSignInClient
+    private val credentialManager: CredentialManager
 ) : IGoogleAuthRepository {
     // Lazily initialized to avoid Firebase instantiation in unit tests
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
@@ -39,8 +35,8 @@ open class GoogleAuthRepository @Inject constructor(
     override open val signedInFlow: StateFlow<Boolean> = _signedInFlow.asStateFlow()
 
     /**
-     * Exchanges a Google Sign-In ID token for Firebase Auth credentials
-     * and signs the user in to Firebase.
+     * Exchanges a Google Sign-In ID token (obtained via CredentialManager in the UI)
+     * for Firebase Auth credentials and signs the user in to Firebase.
      *
      * @param idToken The ID token from a successful Google Sign-In.
      * @return [Result] containing [GoogleUser] on success or an exception on failure.
@@ -68,13 +64,13 @@ open class GoogleAuthRepository @Inject constructor(
     }
 
     /**
-     * Signs out from Firebase and Google.
+     * Signs out from Firebase and clears Credential Manager state.
      */
     override open suspend fun signOut() {
         try {
-            googleSignInClient.signOut().await()
+            credentialManager.clearCredentialState(ClearCredentialStateRequest())
         } catch (_: Exception) {
-            // Ignore Google sign-out errors — proceed with Firebase sign-out
+            // Ignore Credential Manager clear errors — proceed with Firebase sign-out
         }
         auth.signOut()
         _signedInFlow.value = false
@@ -90,7 +86,6 @@ open class GoogleAuthRepository @Inject constructor(
         val currentUser = auth.currentUser ?: return null
         // getIdToken(false) returns cached token if still valid, refreshes if needed
         return try {
-            // Synchronous call: getIdToken blocks briefly for cached tokens
             val task = currentUser.getIdToken(false)
             if (task.isSuccessful) {
                 task.result?.token
@@ -106,12 +101,6 @@ open class GoogleAuthRepository @Inject constructor(
      * Whether a Firebase user is currently signed in.
      */
     override open fun isSignedIn(): Boolean = auth.currentUser != null
-
-    /**
-     * Returns the [Intent] to launch the Google Sign-In UI.
-     * Call this from the Activity/Composable to start the sign-in flow.
-     */
-    override fun getSignInIntent(): Intent = googleSignInClient.signInIntent
 }
 
 /**

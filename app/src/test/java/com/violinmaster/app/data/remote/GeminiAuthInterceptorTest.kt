@@ -150,7 +150,6 @@ class GeminiAuthInterceptorTest {
         override suspend fun signOut() {}
         override fun getAccessToken(): String? = token
         override fun isSignedIn(): Boolean = isSignedIn
-        override fun getSignInIntent(): Intent = Intent()
     }
 
     /**

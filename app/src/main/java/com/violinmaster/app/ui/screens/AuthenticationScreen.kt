@@ -1,10 +1,5 @@
-@file:Suppress("DEPRECATION") // GoogleSignIn deprecated in play-services-auth 21+
-
 package com.violinmaster.app.ui.screens
 
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -32,8 +27,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.common.api.ApiException
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.violinmaster.app.data.auth.IGoogleAuthRepository
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.ui.component.AuthShieldHeader
@@ -52,6 +50,7 @@ import kotlinx.coroutines.launch
 fun AuthenticationScreen(
     authViewModel: AuthViewModel,
     googleAuthRepository: IGoogleAuthRepository,
+    credentialManager: CredentialManager,
     authManager: AuthManager,
     appLanguage: AppLanguage,
     modifier: Modifier = Modifier
@@ -64,41 +63,52 @@ fun AuthenticationScreen(
     var isRegisterMode by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
     var pin by remember { mutableStateOf("") }
-    var selectedRole by remember { mutableStateOf("STUDENT") } // "TEACHER", "STUDENT", "FREELANCER"
+    var selectedRole by remember { mutableStateOf("STUDENT") }
     var teacherCodeToLink by remember { mutableStateOf("") }
-    var birthYear by remember { mutableStateOf("") } // Required for registration
+    var birthYear by remember { mutableStateOf("") }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // Google Sign-In launcher
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            coroutineScope.launch {
-                try {
-                    val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                    val account = task.getResult(ApiException::class.java)
-                    val idToken = account.idToken
-                    if (idToken != null) {
-                        val signInResult = googleAuthRepository.signIn(idToken)
-                        signInResult.onSuccess {
-                            authManager.setGoogleSignedIn(true)
-                        }.onFailure { error ->
-                            snackbarHostState.showSnackbar(
-                                "Google Sign-In failed: ${error.message ?: "Unknown error"}"
-                            )
-                        }
-                    } else {
-                        snackbarHostState.showSnackbar("Google Sign-In failed: no ID token received")
+    // Google Sign-In via Credential Manager
+    val googleSignIn: () -> Unit = {
+        coroutineScope.launch {
+            try {
+                val serverClientId = context.getString(com.violinmaster.app.R.string.default_web_client_id)
+                val googleIdOption = GetGoogleIdOption.Builder()
+                    .setServerClientId(serverClientId)
+                    .setFilterByAuthorizedAccounts(false)
+                    .setAutoSelectEnabled(false)
+                    .build()
+
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+
+                val result = credentialManager.getCredential(
+                    context = context,
+                    request = request
+                )
+
+                val credential = result.credential
+                if (credential is GoogleIdTokenCredential) {
+                    val idToken = credential.idToken
+                    val signInResult = googleAuthRepository.signIn(idToken)
+                    signInResult.onSuccess {
+                        authManager.setGoogleSignedIn(true)
+                    }.onFailure { error ->
+                        snackbarHostState.showSnackbar(
+                            "Google Sign-In failed: ${error.message ?: "Unknown error"}"
+                        )
                     }
-                } catch (e: ApiException) {
-                    snackbarHostState.showSnackbar("Google Sign-In failed: ${e.statusCode}")
-                } catch (e: Exception) {
-                    snackbarHostState.showSnackbar("Google Sign-In failed: ${e.message}")
+                } else {
+                    snackbarHostState.showSnackbar("Google Sign-In failed: unexpected credential type")
                 }
+            } catch (e: GetCredentialException) {
+                snackbarHostState.showSnackbar("Google Sign-In failed: ${e.message}")
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar("Google Sign-In failed: ${e.message}")
             }
         }
     }
@@ -250,13 +260,10 @@ fun AuthenticationScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Google Sign-In section
+            // Google Sign-In section — uses Credential Manager via callback
             GoogleSignInSection(
                 isGoogleSignedIn = isGoogleSignedIn,
-                onSignInClick = {
-                    val signInIntent = googleAuthRepository.getSignInIntent()
-                    googleSignInLauncher.launch(signInIntent)
-                }
+                onSignInClick = googleSignIn
             )
 
             // SnackbarHost for Google Sign-In errors
@@ -267,4 +274,3 @@ fun AuthenticationScreen(
         }
     }
 }
-

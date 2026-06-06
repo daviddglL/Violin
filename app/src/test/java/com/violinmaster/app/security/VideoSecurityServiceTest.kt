@@ -24,9 +24,14 @@ class VideoSecurityServiceTest {
     }
 
     @Test
-    fun `obtainSecureSignedUrl returns empty for unknown video ID`() {
-        val url = VideoSecurityService.obtainSecureSignedUrl("nonexistent", "token")
-        assertEquals("", url)
+    fun `obtainSecureSignedUrl generates signed URL for unknown video ID`() {
+        // Dynamic/unknown IDs now also receive signed URLs (used by PublishAssignmentUseCase)
+        val url = VideoSecurityService.obtainSecureSignedUrl("vid_dynamic_123", "token")
+        assertTrue(url.isNotEmpty())
+        assertTrue(url.startsWith("https://cdn.violinmaster.secure/video-stream/"))
+        assertTrue(url.contains("expiration="))
+        assertTrue(url.contains("nonce="))
+        assertTrue(url.contains("signed_ticket="))
     }
 
     @Test

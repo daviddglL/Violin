@@ -1,5 +1,6 @@
 package com.violinmaster.app.security
 
+import com.violinmaster.app.BuildConfig
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -18,10 +19,18 @@ data class SecureMasterclassVideo(
 
 object VideoSecurityService {
 
-    // TODO(production): Replace with BuildConfig field or environment-seeded key before production release.
-    // In real production, the signing key lives in a secure backend vault and is NEVER present
-    // in client-side code. This simulated service uses a local key only for dev/demo purposes.
-    private const val CDN_SIGNING_PRIVATE_KEY = "demo_signing_key_not_for_production"
+    /**
+     * CDN URL signing key sourced from BuildConfig (injected by Secrets Gradle Plugin from `.env`).
+     *
+     * In production, the signing key lives in a secure backend vault and should NEVER be
+     * present in client-side code. This simulated service uses a local key for dev/demo.
+     *
+     * Fallback for test environments where BuildConfig may not be initialized (e.g. unit tests
+     * running without the Secrets plugin): uses a hardcoded dev key identical to `.env.example`.
+     */
+    private val CDN_SIGNING_PRIVATE_KEY: String
+        get() = runCatching { BuildConfig.CDN_SIGNING_PRIVATE_KEY }
+            .getOrDefault("violin_master_dev_signing_key_2026")
 
     val masterclassVideos = listOf(
         SecureMasterclassVideo(

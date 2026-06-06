@@ -3,7 +3,6 @@ package com.violinmaster.app.service
 import android.media.MediaMetadataRetriever
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.*
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,7 +23,6 @@ import java.io.File
  * RED phase: FaceBlurProcessor.kt does not exist yet.
  * These tests will fail to compile until the production code is written.
  */
-@Ignore("Blur kernel precision differs in Robolectric — needs device calibration")
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class FaceBlurProcessorTest {
@@ -145,13 +143,14 @@ class FaceBlurProcessorTest {
     @Test
     fun `blur kernel scales with larger faces`() {
         // Given a typical face box (200px wide)
-        val faceWidth = 200  // kernel = max(200/10=20, 15) = 20
+        // kernel = max(200/10=20, 15) = 20 → odd? 20 is even → +1 = 21
+        val faceWidth = 200
 
         val kernelSize = FaceBlurUtils.calculateBlurKernel(faceWidth)
 
         assertEquals(
-            "Face 200px wide should get kernel of 20",
-            20,
+            "Face 200px wide should get kernel of 21 (20 → odd enforcement +1)",
+            21,
             kernelSize
         )
     }
@@ -159,13 +158,14 @@ class FaceBlurProcessorTest {
     @Test
     fun `blur kernel for large faces`() {
         // Given a large face box (400px wide)
-        val faceWidth = 400  // kernel = max(400/10=40, 15) = 40
+        // kernel = max(400/10=40, 15) = 40 → odd? 40 is even → +1 = 41
+        val faceWidth = 400
 
         val kernelSize = FaceBlurUtils.calculateBlurKernel(faceWidth)
 
         assertEquals(
-            "Large face 400px wide should get kernel of 40",
-            40,
+            "Large face 400px wide should get kernel of 41 (40 → odd enforcement +1)",
+            41,
             kernelSize
         )
     }

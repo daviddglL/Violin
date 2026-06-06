@@ -115,23 +115,30 @@ open class FaceBlurProcessor @Inject constructor() {
             val faceBounds = detectionResult.faceBounds
             val anyFaceDetected = detectionResult.anyFaceDetected
 
-            // ── 3. Re-encode video with blurred face regions ────────────
+            // ── 3. Transcode video with blurred face regions ────────────
             //
-            // FIXME(blur): Face detection collects faceBounds correctly above,
-            // but the re-encoding loop below feeds raw compressed frames from
-            // MediaExtractor straight to MediaCodec without decoding them to
-            // pixel data. This means face blur is NEVER actually applied to
-            // the output video — the faceBounds map is populated but unused.
+            // REQ-BLR-001 through REQ-BLR-005: Full decode→modify→encode
+            // pipeline. Compressed frames from MediaExtractor are decoded
+            // to raw NV12 pixel data via MediaCodec decoder, face regions
+            // are pixelated in-place on the NV12 buffer (no full-frame
+            // per-pixel conversion), then modified frames are re-encoded.
             //
-            // To fix: decode each frame via MediaCodec (decoder) → apply
-            // Gaussian blur to face bounding boxes on the decoded Bitmap →
-            // re-encode via MediaCodec (encoder) + MediaMuxer. This requires
-            // a full decode→modify→encode pipeline (transcoding), not the
-            // current passthrough approach.
+            // Architecture:
+            //   extractor → decoder → (pixelate face in NV12) → encoder → muxer
             //
-            // REQ-BLR-001 through REQ-BLR-005 are partially implemented;
-            // blur is detected but not rendered.
-            // Set up MediaExtractor for re-encoding
+            // Blur approach: box pixelation directly on NV12 Y+UV planes.
+            // Each face region is divided into kernelSize×kernelSize blocks;
+            // block pixels are replaced with the block average. This is
+            // O(face-area) not O(frame-area).
+            //
+            // Edge cases handled:
+            //   - No face bounds for a frame → pass through unmodified
+            //   - Multiple faces → each face region pixelated independently
+            //   - Face partially out of frame → bounds clamped to frame dims
+
+            // Detach the retriever's file handle before extractor opens it
+            retriever.release()
+
             extractor = MediaExtractor()
             extractor.setDataSource(inputFile.absolutePath)
 
@@ -142,123 +149,201 @@ open class FaceBlurProcessor @Inject constructor() {
 
             extractor.selectTrack(videoTrackIndex)
             val inputFormat = extractor.getTrackFormat(videoTrackIndex)
+            val mime = inputFormat.getString(MediaFormat.KEY_MIME)
+                ?: throw IllegalStateException("Unknown video MIME type")
 
-            // Configure encoder
-            val encoderFormat = MediaFormat.createVideoFormat(
-                FaceBlurUtils.MIME_TYPE,
-                videoWidth,
-                videoHeight
-            ).apply {
-                setInteger(
-                    MediaFormat.KEY_BIT_RATE,
-                    inputFormat.getInteger(MediaFormat.KEY_BIT_RATE)
+            // ── 3a. Set up decoder ─────────────────────────────────────
+            var decoder: MediaCodec? = null
+            try {
+                decoder = MediaCodec.createDecoderByType(mime)
+                decoder.configure(inputFormat, null, null, 0)
+                decoder.start()
+
+                // ── 3b. Set up encoder ─────────────────────────────────
+                // Preserve original bitrate; allow encoder to request any
+                // COLOR_FormatYUV420Flexible variant for broad compatibility.
+                codec = MediaCodec.createEncoderByType(FaceBlurUtils.MIME_TYPE)
+                val encoderFormat = MediaFormat.createVideoFormat(
+                    FaceBlurUtils.MIME_TYPE,
+                    videoWidth,
+                    videoHeight
+                ).apply {
+                    setInteger(
+                        MediaFormat.KEY_BIT_RATE,
+                        inputFormat.getInteger(MediaFormat.KEY_BIT_RATE)
+                    )
+                    setInteger(MediaFormat.KEY_FRAME_RATE, FaceBlurUtils.TARGET_FRAME_RATE)
+                    setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, FaceBlurUtils.I_FRAME_INTERVAL)
+                    setInteger(
+                        MediaFormat.KEY_COLOR_FORMAT,
+                        MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
+                    )
+                }
+                codec.configure(encoderFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+                codec.start()
+
+                // ── 3c. Set up muxer ───────────────────────────────────
+                outputFile.parentFile?.mkdirs()
+                muxer = MediaMuxer(
+                    outputFile.absolutePath,
+                    MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
                 )
-                setInteger(MediaFormat.KEY_FRAME_RATE, FaceBlurUtils.TARGET_FRAME_RATE)
-                setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, FaceBlurUtils.I_FRAME_INTERVAL)
-                setInteger(
-                    MediaFormat.KEY_COLOR_FORMAT,
-                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
-                )
-            }
 
-            codec = MediaCodec.createEncoderByType(FaceBlurUtils.MIME_TYPE)
-            codec.configure(encoderFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
-            codec.start()
+                // ── 3d. Transcoding loop ───────────────────────────────
+                var muxerStarted = false
+                var muxerTrackIndex = -1
+                var frameIndex = 0
+                var extractorDone = false
+                var decoderEosReceived = false
+                var encoderEosReceived = false
+                val decInfo = MediaCodec.BufferInfo()
+                val encInfo = MediaCodec.BufferInfo()
 
-            // Set up MediaMuxer
-            outputFile.parentFile?.mkdirs()
-            muxer = MediaMuxer(
-                outputFile.absolutePath,
-                MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
-            )
-
-            var muxerStarted = false
-            var muxerTrackIndex = -1
-            var frameIndex = 0
-            val bufferInfo = MediaCodec.BufferInfo()
-            var eosReceived = false
-
-            while (!eosReceived) {
-                val inputBufferIndex = codec.dequeueInputBuffer(FaceBlurUtils.TIMEOUT_US)
-                if (inputBufferIndex >= 0) {
-                    val inputBuffer = codec.getInputBuffer(inputBufferIndex) ?: continue
-                    val sampleSize = extractor.readSampleData(inputBuffer, 0)
-                    val sampleTime = extractor.sampleTime
-
-                    if (sampleSize < 0) {
-                        codec.queueInputBuffer(
-                            inputBufferIndex, 0, 0, 0,
-                            MediaCodec.BUFFER_FLAG_END_OF_STREAM
-                        )
-                        eosReceived = true
-                    } else {
-                        codec.queueInputBuffer(
-                            inputBufferIndex, 0, sampleSize,
-                            sampleTime, 0
-                        )
-                        extractor.advance()
-                        frameIndex++
-
-                        // Report progress during re-encode
-                        if (frameIndex % 30 == 0) {
-                            onProgress("Encoding frame $frameIndex/${totalFrames}")
+                while (!encoderEosReceived) {
+                    // Feed extractor → decoder
+                    if (!extractorDone) {
+                        val decInIdx = decoder.dequeueInputBuffer(FaceBlurUtils.TIMEOUT_US)
+                        if (decInIdx >= 0) {
+                            val decInBuf = decoder.getInputBuffer(decInIdx)
+                            if (decInBuf != null) {
+                                val sampleSize = extractor.readSampleData(decInBuf, 0)
+                                if (sampleSize < 0) {
+                                    decoder.queueInputBuffer(
+                                        decInIdx, 0, 0, 0,
+                                        MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                                    )
+                                    extractorDone = true
+                                } else {
+                                    decoder.queueInputBuffer(
+                                        decInIdx, 0, sampleSize,
+                                        extractor.sampleTime, 0
+                                    )
+                                    extractor.advance()
+                                }
+                            }
                         }
                     }
+
+                    // Drain decoder → pixelate faces → feed encoder
+                    var decOutIdx = decoder.dequeueOutputBuffer(decInfo, FaceBlurUtils.TIMEOUT_US)
+                    while (decOutIdx >= 0) {
+                        if ((decInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                            decoder.releaseOutputBuffer(decOutIdx, false)
+                            decOutIdx = decoder.dequeueOutputBuffer(decInfo, FaceBlurUtils.TIMEOUT_US)
+                            continue
+                        }
+
+                        // Propagate EOS from decoder to encoder
+                        if ((decInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                            decoderEosReceived = true
+                            val encInIdx = codec.dequeueInputBuffer(FaceBlurUtils.TIMEOUT_US)
+                            if (encInIdx >= 0) {
+                                codec.queueInputBuffer(
+                                    encInIdx, 0, 0, 0,
+                                    MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                                )
+                            }
+                            decoder.releaseOutputBuffer(decOutIdx, false)
+                            break
+                        }
+
+                        val decOutBuf = decoder.getOutputBuffer(decOutIdx)
+                        if (decOutBuf != null && decInfo.size > 0) {
+                            // Apply pixelation blur to face regions in-place on NV12 buffer
+                            val bounds = findFaceBoundsForFrame(
+                                faceBounds, frameIndex, FaceBlurUtils.SAMPLE_RATE
+                            )
+                            if (bounds.isNotEmpty()) {
+                                val kernel = calculateBlurKernelForFrame(bounds)
+                                pixelateFaceRegionsNv12(
+                                    buffer = decOutBuf,
+                                    bufferOffset = decInfo.offset,
+                                    frameWidth = videoWidth,
+                                    frameHeight = videoHeight,
+                                    faceRegions = bounds,
+                                    kernelSize = kernel
+                                )
+                            }
+
+                            // Feed modified buffer to encoder
+                            var encInIdx = codec.dequeueInputBuffer(FaceBlurUtils.TIMEOUT_US)
+                            // Drain encoder outputs if encoder input isn't ready (avoids deadlock)
+                            while (encInIdx < 0) {
+                                drainEncoderOutput(codec, muxer, encInfo, muxerStarted, muxerTrackIndex)?.let {
+                                    if (it.first) muxerStarted = true
+                                    if (it.second >= 0) muxerTrackIndex = it.second
+                                    if (it.third) encoderEosReceived = true
+                                }
+                                if (encoderEosReceived) break
+                                encInIdx = codec.dequeueInputBuffer(FaceBlurUtils.TIMEOUT_US)
+                            }
+                            if (encoderEosReceived) {
+                                decoder.releaseOutputBuffer(decOutIdx, false)
+                                break
+                            }
+
+                            val encInBuf = codec.getInputBuffer(encInIdx)
+                            if (encInBuf != null) {
+                                // Copy modified decoder output to encoder input
+                                decOutBuf.position(decInfo.offset)
+                                decOutBuf.limit(decInfo.offset + decInfo.size)
+                                encInBuf.clear()
+                                encInBuf.put(decOutBuf)
+                                codec.queueInputBuffer(
+                                    encInIdx, 0, decInfo.size,
+                                    decInfo.presentationTimeUs, 0
+                                )
+                            }
+
+                            frameIndex++
+                            if (frameIndex % 30 == 0) {
+                                onProgress("Processing frame $frameIndex/${totalFrames}")
+                            }
+                        }
+
+                        decoder.releaseOutputBuffer(decOutIdx, false)
+                        decOutIdx = decoder.dequeueOutputBuffer(decInfo, FaceBlurUtils.TIMEOUT_US)
+                    }
+
+                    // Drain encoder → muxer
+                    drainEncoderOutput(codec, muxer, encInfo, muxerStarted, muxerTrackIndex)?.let {
+                        if (it.first) muxerStarted = true
+                        if (it.second >= 0) muxerTrackIndex = it.second
+                        if (it.third) encoderEosReceived = true
+                    }
                 }
 
-                var outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, FaceBlurUtils.TIMEOUT_US)
-                while (outputBufferIndex >= 0) {
-                    val outputBuffer = codec.getOutputBuffer(outputBufferIndex) ?: continue
+                // ── 3e. Cleanup decoder ─────────────────────────────────
+                try { decoder.stop() } catch (_: Exception) {}
+                try { decoder.release() } catch (_: Exception) {}
+                decoder = null
 
-                    if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-                        codec.releaseOutputBuffer(outputBufferIndex, false)
-                        outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, FaceBlurUtils.TIMEOUT_US)
-                        continue
-                    }
+                // ── 4. Finalize ─────────────────────────────────────────
+                muxer.stop()
+                muxer.release()
+                muxer = null
+                codec.stop()
+                codec.release()
+                codec = null
+                extractor.release()
+                extractor = null
 
-                    if (!muxerStarted && bufferInfo.size > 0) {
-                        muxerTrackIndex = muxer.addTrack(codec.outputFormat)
-                        muxer.start()
-                        muxerStarted = true
-                    }
+                onProgress("Face blur completed")
 
-                    if (muxerStarted && bufferInfo.size > 0) {
-                        outputBuffer.position(bufferInfo.offset)
-                        outputBuffer.limit(bufferInfo.offset + bufferInfo.size)
-                        muxer.writeSampleData(muxerTrackIndex, outputBuffer, bufferInfo)
-                    }
-
-                    codec.releaseOutputBuffer(outputBufferIndex, false)
-
-                    if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                        eosReceived = true
-                        break
-                    }
-
-                    outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, FaceBlurUtils.TIMEOUT_US)
+                if (outputFile.exists() && outputFile.length() > 0) {
+                    outputFile
+                } else {
+                    // Output empty — fallback to original
+                    outputFile.delete()
+                    onProgress("Face blur could not be applied. Video sent without blur.")
+                    inputFile
                 }
-            }
 
-            // ── 4. Finalize ─────────────────────────────────────────────
-            muxer.stop()
-            muxer.release()
-            muxer = null
-            codec.stop()
-            codec.release()
-            codec = null
-            extractor.release()
-            extractor = null
-            retriever.release()
-
-            onProgress("Face blur completed")
-
-            if (outputFile.exists() && outputFile.length() > 0) {
-                outputFile
-            } else {
-                // Output empty — fallback to original
-                outputFile.delete()
-                onProgress("Face blur could not be applied. Video sent without blur.")
-                inputFile
+            } catch (e: Exception) {
+                // Release decoder on any failure within the transcode block
+                try { decoder?.stop() } catch (_: Exception) {}
+                try { decoder?.release() } catch (_: Exception) {}
+                throw e
             }
 
         } catch (e: Exception) {
@@ -274,7 +359,243 @@ open class FaceBlurProcessor @Inject constructor() {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // Private helpers
+    // Frame-level helpers
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Maps a frame index to the nearest sampled frame's face bounds.
+     *
+     * Face detection runs every [sampleRate]-th frame, but blur must be
+     * applied to ALL frames. This function finds the nearest sampled
+     * frame that has detected faces, so non-sampled frames reuse bounds
+     * from the closest detection sample. Face movement between 2-3 frames
+     * at 30fps is negligible for privacy blur purposes.
+     *
+     * Search order: current block's sampled frame → previous block → next block.
+     *
+     * @param faceBounds Map from sampled frame index to detected face rectangles.
+     * @param frameIndex The current frame being processed.
+     * @param sampleRate Frame sampling interval (e.g., 5 = every 5th frame).
+     * @return List of face rectangles for this frame, or empty if none nearby.
+     */
+    private fun findFaceBoundsForFrame(
+        faceBounds: Map<Int, List<android.graphics.Rect>>,
+        frameIndex: Int,
+        sampleRate: Int
+    ): List<android.graphics.Rect> {
+        if (faceBounds.isEmpty()) return emptyList()
+
+        // Map current frame to its sample block (e.g., frames 0-4 → sample 0)
+        val sampledFrame = (frameIndex / sampleRate) * sampleRate
+
+        // Try exact match first, then adjacent sampled frames (within ±1 block)
+        faceBounds[sampledFrame]?.let { return it }
+        faceBounds[sampledFrame - sampleRate]?.let { return it }
+        faceBounds[sampledFrame + sampleRate]?.let { return it }
+
+        return emptyList()
+    }
+
+    /**
+     * Calculates a pixelation kernel size from detected face bounds.
+     *
+     * Uses the widest face box to determine kernel size per
+     * [FaceBlurUtils.calculateBlurKernel]. Falls back to
+     * [FaceBlurUtils.MIN_KERNEL] if no bounds exist.
+     */
+    private fun calculateBlurKernelForFrame(bounds: List<android.graphics.Rect>): Int {
+        val maxWidth = bounds.maxOfOrNull { it.width() } ?: FaceBlurUtils.MIN_KERNEL
+        return FaceBlurUtils.calculateBlurKernel(maxWidth)
+    }
+
+    /**
+     * Applies box pixelation to face regions directly in an NV12 (YUV420 Semi-Planar)
+     * buffer — no Bitmap allocation, no full-frame per-pixel conversion.
+     *
+     * **NV12 layout** (COLOR_FormatYUV420Flexible / COLOR_FormatYUV420SemiPlanar):
+     * ```
+     * Y plane:  [Y Y Y ...]                      ← frameWidth × frameHeight bytes
+     * UV plane: [U V U V U V ...]                ← frameWidth × frameHeight/2 bytes (interleaved)
+     * ```
+     * Each UV pair covers a 2×2 block of Y pixels (4:2:0 chroma subsampling).
+     *
+     * **Pixelation algorithm**:
+     * For each face region, partition it into [kernelSize]×[kernelSize] blocks.
+     * Replace every pixel in a block with the block's average value.
+     * Both Y (luminance) and UV (chrominance) planes are pixelated independently.
+     *
+     * This is O(face-area) — the rest of the frame passes through untouched.
+     *
+     * @param buffer The NV12 ByteBuffer containing decoded frame data.
+     * @param bufferOffset Starting offset of frame data within the buffer (from BufferInfo.offset).
+     * @param frameWidth Width of the video frame in pixels.
+     * @param frameHeight Height of the video frame in pixels.
+     * @param faceRegions List of face bounding rectangles in pixel coordinates.
+     * @param kernelSize Block size for pixelation (from [FaceBlurUtils.calculateBlurKernel]).
+     */
+    private fun pixelateFaceRegionsNv12(
+        buffer: java.nio.ByteBuffer,
+        bufferOffset: Int,
+        frameWidth: Int,
+        frameHeight: Int,
+        faceRegions: List<android.graphics.Rect>,
+        kernelSize: Int
+    ) {
+        if (faceRegions.isEmpty() || kernelSize <= 0) return
+
+        val yOffset = bufferOffset
+        val uvOffset = bufferOffset + frameWidth * frameHeight
+
+        for (region in faceRegions) {
+            // Clamp region to frame boundaries (handles partially out-of-frame faces)
+            val left = region.left.coerceIn(0, frameWidth)
+            val top = region.top.coerceIn(0, frameHeight)
+            val right = region.right.coerceIn(0, frameWidth)
+            val bottom = region.bottom.coerceIn(0, frameHeight)
+
+            if (right <= left || bottom <= top) continue
+
+            // ── Pixelate Y (luminance) plane ──────────────────────────
+            var blockY = top
+            while (blockY < bottom) {
+                val blockH = minOf(kernelSize, bottom - blockY)
+                var blockX = left
+                while (blockX < right) {
+                    val blockW = minOf(kernelSize, right - blockX)
+
+                    // Average Y values in this block
+                    var sumY = 0
+                    var count = 0
+                    for (dy in 0 until blockH) {
+                        for (dx in 0 until blockW) {
+                            val idx = yOffset + (blockY + dy) * frameWidth + (blockX + dx)
+                            sumY += buffer[idx].toInt() and 0xFF
+                            count++
+                        }
+                    }
+                    val avgY = (sumY / count).toByte()
+
+                    // Write averaged Y back to block
+                    for (dy in 0 until blockH) {
+                        for (dx in 0 until blockW) {
+                            val idx = yOffset + (blockY + dy) * frameWidth + (blockX + dx)
+                            buffer.put(idx, avgY)
+                        }
+                    }
+
+                    blockX += blockW
+                }
+                blockY += blockH
+            }
+
+            // ── Pixelate UV (chrominance) plane ───────────────────────
+            // UV is at half resolution: each UV pair covers 2×2 Y pixels.
+            // UV plane row stride = frameWidth bytes (same as Y plane stride).
+            val uvLeft = left / 2
+            val uvTop = top / 2
+            val uvRight = (right + 1) / 2  // ceiling division for safety
+            val uvBottom = (bottom + 1) / 2
+            val uvKernel = maxOf(kernelSize / 2, 1)  // half-res kernel
+
+            var uvBlockY = uvTop
+            while (uvBlockY < uvBottom) {
+                val uvBlockH = minOf(uvKernel, uvBottom - uvBlockY)
+                var uvBlockX = uvLeft
+                while (uvBlockX < uvRight) {
+                    val uvBlockW = minOf(uvKernel, uvRight - uvBlockX)
+
+                    // Average U and V values in this UV block
+                    var sumU = 0
+                    var sumV = 0
+                    var uvCount = 0
+                    for (dy in 0 until uvBlockH) {
+                        for (dx in 0 until uvBlockW) {
+                            // Each UV pair is 2 bytes: U at even offset, V at odd offset
+                            val uIdx = uvOffset + (uvBlockY + dy) * frameWidth + (uvBlockX + dx) * 2
+                            sumU += buffer[uIdx].toInt() and 0xFF
+                            sumV += buffer[uIdx + 1].toInt() and 0xFF
+                            uvCount++
+                        }
+                    }
+                    val avgU = (sumU / uvCount).toByte()
+                    val avgV = (sumV / uvCount).toByte()
+
+                    // Write averaged UV back to block
+                    for (dy in 0 until uvBlockH) {
+                        for (dx in 0 until uvBlockW) {
+                            val uIdx = uvOffset + (uvBlockY + dy) * frameWidth + (uvBlockX + dx) * 2
+                            buffer.put(uIdx, avgU)
+                            buffer.put(uIdx + 1, avgV)
+                        }
+                    }
+
+                    uvBlockX += uvBlockW
+                }
+                uvBlockY += uvBlockH
+            }
+        }
+    }
+
+    /**
+     * Drains output buffers from the encoder to the muxer.
+     *
+     * Non-blocking: returns null if no output is available.
+     * Handles CODEC_CONFIG buffers (skip), starts the muxer on first valid
+     * output format, and detects end-of-stream.
+     *
+     * @return Triple(muxerStarted, muxerTrackIndex, encoderEosReceived) or null if no output.
+     */
+    private fun drainEncoderOutput(
+        encoder: MediaCodec,
+        muxer: MediaMuxer,
+        encInfo: MediaCodec.BufferInfo,
+        muxerStarted: Boolean,
+        muxerTrackIndex: Int
+    ): Triple<Boolean, Int, Boolean>? {
+        val outIdx = encoder.dequeueOutputBuffer(encInfo, FaceBlurUtils.TIMEOUT_US)
+        if (outIdx < 0) return null
+
+        var started = muxerStarted
+        var trackIdx = muxerTrackIndex
+        var eos = false
+
+        try {
+            if ((encInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                encoder.releaseOutputBuffer(outIdx, false)
+                return Triple(started, trackIdx, eos)
+            }
+
+            if ((encInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                eos = true
+                encoder.releaseOutputBuffer(outIdx, false)
+                return Triple(started, trackIdx, eos)
+            }
+
+            if (!started && encInfo.size > 0) {
+                trackIdx = muxer.addTrack(encoder.outputFormat)
+                muxer.start()
+                started = true
+            }
+
+            if (started && encInfo.size > 0) {
+                val outBuf = encoder.getOutputBuffer(outIdx)
+                if (outBuf != null) {
+                    outBuf.position(encInfo.offset)
+                    outBuf.limit(encInfo.offset + encInfo.size)
+                    muxer.writeSampleData(trackIdx, outBuf, encInfo)
+                }
+            }
+
+            encoder.releaseOutputBuffer(outIdx, false)
+        } catch (_: Exception) {
+            try { encoder.releaseOutputBuffer(outIdx, false) } catch (_: Exception) {}
+        }
+
+        return Triple(started, trackIdx, eos)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Utility helpers
     // ═══════════════════════════════════════════════════════════════════
 
     /**

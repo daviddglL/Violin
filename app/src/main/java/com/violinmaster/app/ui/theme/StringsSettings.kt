@@ -93,7 +93,7 @@ object StringsSettings {
     "ref_pitch_label" to "FRECUENCIA DEL CONCIERTO (Hz)",
     "auth_role_label" to "PERFIL DE USUARIO ACTIVO",
     "change_role_btn" to "Cerrar Sesión / Cambiar Perfil",
-    "delete_data" to "RECO_RESET: BORRAR TODO EL HISTORIAL",
+    "delete_data" to "ELIMINAR TODO EL HISTORIAL DE PRÁCTICA",
     "reset_success" to "Historial de práctica eliminado.",
     "active_session_label" to "SESIÓN ACTIVA",
     "seed_db_title" to "EXPLORAR REGISTROS DE PRÁCTICA",

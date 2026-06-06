@@ -7,6 +7,11 @@ plugins {
   alias(libs.plugins.hilt.android.gradle.plugin)
   alias(libs.plugins.ktlint)
   alias(libs.plugins.google.services)
+  alias(libs.plugins.jacoco)
+}
+
+kotlin {
+  jvmToolchain(11)
 }
 
 android {
@@ -119,4 +124,57 @@ dependencies {
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.hilt.android.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
+}
+
+tasks.withType<Test> {
+  javaLauncher = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
+  configure<JacocoTaskExtension> {
+    isIncludeNoLocationClasses = true
+    excludes = listOf("jdk.internal.*")
+  }
+}
+
+tasks.register<JacocoCoverageVerification>("jacocoCoverageVerification") {
+  dependsOn("testDebugUnitTest")
+
+  val fileFilter = listOf(
+    "**/R.class",
+    "**/R$*.class",
+    "**/BuildConfig.*",
+    "**/Manifest*.*",
+    "**/*Test*.*",
+    "android/**",
+    "androidx/**",
+    "**/di/**",
+    "**/*_Factory.*",
+    "**/*_HiltModules.*",
+    "**/*_MembersInjector.*",
+    "**/Dagger*.*",
+    "**/*_Impl*.*",
+    "**/databinding/*",
+  )
+  val debugTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
+    exclude(fileFilter)
+  }
+
+  classDirectories.setFrom(debugTree)
+  executionData.setFrom(fileTree("${layout.buildDirectory.get()}") {
+    include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+  })
+
+  violationRules {
+    rule {
+      element = "PACKAGE"
+      includes = listOf(
+        "com.violinmaster.app.domain.*",
+        "com.violinmaster.app.data.*",
+      )
+      limit {
+        counter = "LINE"
+        minimum = "0.60".toBigDecimal()
+      }
+    }
+  }
 }

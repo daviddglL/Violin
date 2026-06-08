@@ -189,7 +189,7 @@ fun LessonsScreen(
                         }
                     }
                     1 -> VirtualFingerboard(tunerVM = tunerVM, appLanguage = lang, instrument = instrument)
-                    2 -> TheoryQuizTab(practiceVM = practiceVM, userPreferencesManager = userPreferencesManager)
+                    2 -> TheoryQuizTab(practiceVM = practiceVM, userPreferencesManager = userPreferencesManager, instrument = instrument)
                     3 -> MasterclassTab(authViewModel = authVM)
                 }
             }

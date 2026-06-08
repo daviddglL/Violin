@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.violinmaster.app.di.UserPreferencesManager
+import com.violinmaster.app.domain.model.Instrument
 import com.violinmaster.app.ui.screens.BorderStrokeHelper
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
@@ -30,10 +31,14 @@ import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 @Composable
 fun TheoryQuizTab(
     practiceVM: PracticeViewModel,
-    userPreferencesManager: UserPreferencesManager
+    userPreferencesManager: UserPreferencesManager,
+    instrument: Instrument = Instrument.VIOLIN
 ) {
     val lang by userPreferencesManager.appLanguage.collectAsState()
     val isEs = lang == AppLanguage.SPANISH
+
+    // Load the instrument-specific quiz bank
+    val currentQuizBank = quizBanks[instrument] ?: quizBanks[Instrument.VIOLIN]!!
 
     var questionPointerIndex by rememberSaveable { mutableStateOf(0) }
     var userChosenOptionSelected by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -42,6 +47,16 @@ fun TheoryQuizTab(
     var liveStreakCount by rememberSaveable { mutableStateOf(0) }
     var quizIsUnderwayFinished by rememberSaveable { mutableStateOf(false) }
 
+    // Reset quiz state when the instrument changes
+    LaunchedEffect(instrument) {
+        questionPointerIndex = 0
+        userChosenOptionSelected = null
+        quizTurnAnswered = false
+        currentScoreVal = 0
+        liveStreakCount = 0
+        quizIsUnderwayFinished = false
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -49,7 +64,7 @@ fun TheoryQuizTab(
             .verticalScroll(rememberScrollState())
     ) {
         if (!quizIsUnderwayFinished) {
-            val q = quizQuestions[questionPointerIndex]
+            val q = currentQuizBank[questionPointerIndex]
             val dispQuestion = if (isEs) q.questionEs else q.question
             val dispOptions = if (isEs) q.optionsEs else q.options
             val dispExplanation = if (isEs) q.explanationEs else q.explanation
@@ -61,7 +76,7 @@ fun TheoryQuizTab(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (isEs) "PREGUNTA ${questionPointerIndex + 1} DE ${quizQuestions.size}" else "QUESTION ${questionPointerIndex + 1} OF ${quizQuestions.size}",
+                    text = if (isEs) "PREGUNTA ${questionPointerIndex + 1} DE ${currentQuizBank.size}" else "QUESTION ${questionPointerIndex + 1} OF ${currentQuizBank.size}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
@@ -81,7 +96,7 @@ fun TheoryQuizTab(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                quizQuestions.forEachIndexed { idx, _ ->
+                currentQuizBank.forEachIndexed { idx, _ ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -240,7 +255,7 @@ fun TheoryQuizTab(
 
                 Button(
                     onClick = {
-                        if (questionPointerIndex + 1 < quizQuestions.size) {
+                        if (questionPointerIndex + 1 < currentQuizBank.size) {
                             questionPointerIndex += 1
                             userChosenOptionSelected = null
                             quizTurnAnswered = false
@@ -255,7 +270,7 @@ fun TheoryQuizTab(
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    val nextLabel = if (questionPointerIndex + 1 < quizQuestions.size) {
+                    val nextLabel = if (questionPointerIndex + 1 < currentQuizBank.size) {
                         if (isEs) "SIGUIENTE PREGUNTA" else "NEXT QUESTION"
                     } else {
                         if (isEs) "MOSTRAR RESUMEN" else "SHOW FINISHED SUMMARY"

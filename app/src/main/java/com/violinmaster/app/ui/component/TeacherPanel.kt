@@ -29,7 +29,7 @@ fun TeacherDashboardTab(
     userPreferencesManager: UserPreferencesManager,
     authManager: AuthManager,
     chatViewModel: ChatViewModel,
-    videoViewModel: VideoUploadViewModel? = null,
+    videoViewModel: VideoUploadViewModel,
     modifier: Modifier = Modifier
 ) {
     val lang by userPreferencesManager.appLanguage.collectAsState()
@@ -43,7 +43,7 @@ fun TeacherDashboardTab(
     val teacherCode = teacher?.teacherCode ?: "TEACH-0000"
     val linkedStudents = allUsers.filter { it.role == "STUDENT" && it.teacherCode == teacherCode }
 
-    if (isRecordingVideo && videoViewModel != null) {
+    if (isRecordingVideo) {
         VideoRecordScreen(
             viewModel = videoViewModel,
             lang = lang,

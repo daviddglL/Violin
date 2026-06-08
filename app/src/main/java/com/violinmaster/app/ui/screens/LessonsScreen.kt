@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.NavigationManager
 import com.violinmaster.app.di.UserPreferencesManager
@@ -30,6 +31,7 @@ import com.violinmaster.app.ui.viewmodel.AuthViewModel
 import com.violinmaster.app.ui.viewmodel.ChatViewModel
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import com.violinmaster.app.ui.viewmodel.TunerViewModel
+import com.violinmaster.app.ui.viewmodel.VideoUploadViewModel
 
 // ----------------------------------------------------
 // MAIN SCREEN IMPLEMENTATION
@@ -52,6 +54,7 @@ fun LessonsScreen(
     val levelProgressList by practiceVM.allLevelProgress.collectAsState()
     val isPracticing by practiceVM.isPracticing.collectAsState()
     val practiceCategory by practiceVM.practiceCategoryName.collectAsState()
+    val videoViewModel: VideoUploadViewModel = hiltViewModel()
 
     var activeTabSubIndex by rememberSaveable { mutableStateOf(0) } // 0: Curriculum, 1: Fingerboard, 2: Theory Quiz, 3: Masterclass
 
@@ -166,13 +169,14 @@ fun LessonsScreen(
                 when (activeTabSubIndex) {
                     0 -> {
                         when (user?.role) {
-                            "TEACHER" -> TeacherDashboardTab(assignmentVM = assignmentVM, userPreferencesManager = userPreferencesManager, authManager = authManager, chatViewModel = chatViewModel)
+                            "TEACHER" -> TeacherDashboardTab(assignmentVM = assignmentVM, userPreferencesManager = userPreferencesManager, authManager = authManager, chatViewModel = chatViewModel, videoViewModel = videoViewModel)
                             "STUDENT" -> StudentAssignmentsTab(
                                 assignmentVM = assignmentVM,
                                 authVM = authVM,
                                 userPreferencesManager = userPreferencesManager,
                                 authManager = authManager,
                                 chatViewModel = chatViewModel,
+                                videoViewModel = videoViewModel,
                                 onPlayTutorialVideo = { url, title ->
                                     activeTutorVideoUrl = url
                                     activeTutorVideoTitle = title

@@ -44,14 +44,22 @@ class PublishAssignmentUseCaseTest {
   }
 
   @Test
-  fun `creates assignment with secure video url`() = runTest {
+  fun `creates assignment with real video url from upload pipeline`() = runTest {
     val user = UserAccount(
       username = "teacher1", role = "TEACHER",
       hashedPassword = "hash", salt = "salt", teacherCode = "TEACH-123"
     )
     authManager.restoreCurrentUser(user)
 
-    val result = useCase("Scale Practice", "Practice D major", "ALL", "Tutorial Video", 120)
+    val realVideoUrl = "https://firebasestorage.googleapis.com/v0/b/violin-app/o/videos%2FTEACH-123%2Fdefault%2Ftest.mp4?alt=media"
+    val result = useCase(
+      title = "Scale Practice",
+      description = "Practice D major",
+      targetStudent = "ALL",
+      videoTitle = "Tutorial Video",
+      durationSeconds = 120,
+      videoUrl = realVideoUrl
+    )
 
     assertNotNull(result)
     assertEquals("Scale Practice", result.title)
@@ -60,24 +68,47 @@ class PublishAssignmentUseCaseTest {
     assertEquals("ALL", result.studentUsername)
     assertEquals("Tutorial Video", result.videoTitle)
     assertEquals(120, result.videoDurationSeconds)
-    assertTrue(result.videoResourceUrl.isNotEmpty())
-    assertTrue(result.videoResourceUrl.contains("signed_ticket="))
+    assertEquals(realVideoUrl, result.videoResourceUrl)
     assertEquals(1, repo.insertedAssignments.size)
   }
 
   @Test
-  fun `creates assignment without video when title is empty`() = runTest {
+  fun `creates assignment without video when video url and title are empty`() = runTest {
     val user = UserAccount(
       username = "teacher1", role = "TEACHER",
       hashedPassword = "hash", salt = "salt", teacherCode = "TEACH-123"
     )
     authManager.restoreCurrentUser(user)
 
-    val result = useCase("No Video", "Just a note", "bob", "", 0)
+    val result = useCase("No Video", "Just a note", "bob", "", 0, videoUrl = "")
 
     assertEquals("", result.videoTitle)
     assertEquals(0, result.videoDurationSeconds)
     assertEquals("", result.videoResourceUrl)
+  }
+
+  @Test
+  fun `uses real video url when provided regardless of videoTitle`() = runTest {
+    val user = UserAccount(
+      username = "teacher1", role = "TEACHER",
+      hashedPassword = "hash", salt = "salt", teacherCode = "TEACH-123"
+    )
+    authManager.restoreCurrentUser(user)
+
+    val realVideoUrl = "https://storage.example.com/video/123.mp4"
+    // Empty videoTitle should still store the real URL
+    val result = useCase(
+      title = "Quick Task",
+      description = "Watch this",
+      targetStudent = "ALL",
+      videoTitle = "",
+      durationSeconds = 60,
+      videoUrl = realVideoUrl
+    )
+
+    assertEquals("", result.videoTitle)
+    assertEquals(60, result.videoDurationSeconds)
+    assertEquals(realVideoUrl, result.videoResourceUrl)
   }
 
   @Test(expected = IllegalStateException::class)

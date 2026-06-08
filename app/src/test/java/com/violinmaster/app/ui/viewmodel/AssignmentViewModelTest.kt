@@ -67,7 +67,7 @@ class AssignmentViewModelTest {
     }
 
     @Test
-    fun `publishAssignment creates assignment for teacher`() = runTest {
+    fun `publishAssignment creates assignment for teacher with real video url`() = runTest {
         // Arrange: login as teacher
         val teacher = UserAccount(
             username = "prof_mozart",
@@ -80,17 +80,20 @@ class AssignmentViewModelTest {
         advanceUntilIdle()
         authManager.restoreCurrentUser(teacher)
 
+        val realVideoUrl = "https://firebasestorage.googleapis.com/v0/b/violin-app/o/videos%2FTEACH-5678%2Fdefault%2Ftest.mp4?alt=media"
+
         // Act
         viewModel.publishAssignment(
             title = "Vibrato Practice",
             description = "Slow wave vibrato on D string",
             targetStudent = "ALL",
             videoTitle = "Vibrato Demo",
-            durationSeconds = 120
+            durationSeconds = 120,
+            videoUrl = realVideoUrl
         )
         advanceUntilIdle()
 
-        // Assert: an assignment was created
+        // Assert: an assignment was created with real video URL
         val assignments = repository.allAssignments.first()
         assertEquals(1, assignments.size)
         assertEquals("Vibrato Practice", assignments[0].title)
@@ -98,6 +101,38 @@ class AssignmentViewModelTest {
         assertEquals("ALL", assignments[0].studentUsername)
         assertEquals("Vibrato Demo", assignments[0].videoTitle)
         assertEquals(120, assignments[0].videoDurationSeconds)
+        assertEquals(realVideoUrl, assignments[0].videoResourceUrl)
+    }
+
+    @Test
+    fun `publishAssignment uses empty video url when not provided`() = runTest {
+        // Arrange: login as teacher
+        val teacher = UserAccount(
+            username = "prof_vivaldi2",
+            role = "TEACHER",
+            hashedPassword = "hash",
+            salt = "salt",
+            teacherCode = "TEACH-9012"
+        )
+        repository.insertUser(teacher)
+        advanceUntilIdle()
+        authManager.restoreCurrentUser(teacher)
+
+        // Act: no videoUrl parameter → defaults to empty string
+        viewModel.publishAssignment(
+            title = "Simple Task",
+            description = "No video needed",
+            targetStudent = "ALL",
+            videoTitle = "",
+            durationSeconds = 0
+        )
+        advanceUntilIdle()
+
+        // Assert: video URL is empty
+        val assignments = repository.allAssignments.first()
+        assertEquals(1, assignments.size)
+        assertEquals("Simple Task", assignments[0].title)
+        assertEquals("", assignments[0].videoResourceUrl)
     }
 
     @Test

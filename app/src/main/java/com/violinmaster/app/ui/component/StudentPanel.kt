@@ -55,7 +55,7 @@ fun StudentAssignmentsTab(
     userPreferencesManager: UserPreferencesManager,
     authManager: AuthManager,
     chatViewModel: ChatViewModel,
-    videoViewModel: VideoUploadViewModel? = null,
+    videoViewModel: VideoUploadViewModel,
     onPlayTutorialVideo: (String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -69,7 +69,7 @@ fun StudentAssignmentsTab(
     var selectedChatAssignment by remember { mutableStateOf<Pair<String, String>?>(null) }
     var isRecordingVideo by remember { mutableStateOf(false) }
 
-    if (isRecordingVideo && videoViewModel != null) {
+    if (isRecordingVideo) {
         VideoRecordScreen(
             viewModel = videoViewModel,
             lang = lang,

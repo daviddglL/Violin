@@ -68,12 +68,19 @@ class AssignmentViewModel @Inject constructor(
         }
     }
 
-    fun publishAssignment(title: String, description: String, targetStudent: String, videoTitle: String, durationSeconds: Int) {
+    fun publishAssignment(
+        title: String,
+        description: String,
+        targetStudent: String,
+        videoTitle: String,
+        durationSeconds: Int,
+        videoUrl: String = ""
+    ) {
         val userVal = authManager.currentUser.value ?: return
         if (userVal.role != "TEACHER") return
 
         viewModelScope.launch {
-            publishAssignmentUseCase(title, description, targetStudent, videoTitle, durationSeconds)
+            publishAssignmentUseCase(title, description, targetStudent, videoTitle, durationSeconds, videoUrl)
         }
     }
 

@@ -3,12 +3,13 @@ package com.violinmaster.app.domain.usecase
 import com.violinmaster.app.data.Assignment
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.di.AuthManager
-import com.violinmaster.app.security.VideoSecurityService
 
 /**
  * Creates and publishes a new assignment.
  *
- * Reads the teacher code from [AuthManager] and generates a secure video URL.
+ * Reads the teacher code from [AuthManager] and stores the real video URL
+ * from the upload pipeline directly. No longer generates fake signed URLs
+ * via [com.violinmaster.app.security.VideoSecurityService].
  * No Android imports — delegating to [IPracticeRepository] and [AuthManager].
  */
 class PublishAssignmentUseCase constructor(
@@ -23,6 +24,7 @@ class PublishAssignmentUseCase constructor(
      * @param targetStudent Target student username (or "ALL").
      * @param videoTitle Optional video title.
      * @param durationSeconds Video duration in seconds.
+     * @param videoUrl Real video URL from the upload pipeline (Firebase Storage download URL).
      * @return The created [Assignment].
      */
     suspend operator fun invoke(
@@ -30,17 +32,11 @@ class PublishAssignmentUseCase constructor(
         description: String,
         targetStudent: String,
         videoTitle: String,
-        durationSeconds: Int
+        durationSeconds: Int,
+        videoUrl: String = ""
     ): Assignment {
         val userVal = authManager.currentUser.value
             ?: throw IllegalStateException("No authenticated user")
-
-        val secureVideoUrl = if (videoTitle.isNotEmpty()) {
-            VideoSecurityService.obtainSecureSignedUrl(
-                "vid_dynamic_tutor_" + System.currentTimeMillis() % 1000,
-                "session_token_master"
-            )
-        } else ""
 
         val assignment = Assignment(
             title = title,
@@ -49,7 +45,7 @@ class PublishAssignmentUseCase constructor(
             studentUsername = targetStudent,
             videoTitle = videoTitle,
             videoDurationSeconds = durationSeconds,
-            videoResourceUrl = secureVideoUrl
+            videoResourceUrl = videoUrl
         )
         repository.insertAssignment(assignment)
         return assignment

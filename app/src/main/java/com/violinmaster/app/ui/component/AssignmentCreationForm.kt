@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,6 +34,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +53,8 @@ import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.theme.Localization
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
+import com.violinmaster.app.ui.viewmodel.VideoUploadViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +62,7 @@ fun AssignmentCreationForm(
     lang: AppLanguage,
     linkedStudents: List<UserAccount>,
     assignmentVM: AssignmentViewModel,
+    videoViewModel: VideoUploadViewModel? = null,
     modifier: Modifier = Modifier
 ) {
     var assignTitle by remember { mutableStateOf("") }
@@ -65,6 +73,23 @@ fun AssignmentCreationForm(
     var videoTitle by remember { mutableStateOf("") }
     var videoDurationSeconds by remember { mutableStateOf(120) }
     var studentDropdownExpanded by remember { mutableStateOf(false) }
+
+    // Observe video upload state for real pipeline integration
+    val uploadFlow = remember(videoViewModel) {
+        videoViewModel?.uploadState ?: MutableStateFlow<VideoUploadViewModel.UploadState?>(null)
+    }
+    val uploadState by uploadFlow.collectAsState()
+    var videoUploadUrl by remember { mutableStateOf<String?>(null) }
+
+    // When upload completes, wire the URL to publish
+    LaunchedEffect(uploadState) {
+        if (uploadState is VideoUploadViewModel.UploadState.Done) {
+            val done = uploadState as VideoUploadViewModel.UploadState.Done
+            videoUploadUrl = done.videoUrl
+            videoTitle = "Recorded Video"
+            attachVideo = true
+        }
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -212,32 +237,76 @@ fun AssignmentCreationForm(
                 modifier = Modifier.fillMaxWidth().height(100.dp)
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = attachVideo,
-                        onCheckedChange = { attachVideo = it }
-                    )
+            // Record Video Button (replaces checkbox when VideoUploadViewModel is wired)
+            if (videoViewModel != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text(
-                        text = Localization.get("attachment_allowed", lang),
+                        text = if (attachVideo) Localization.get("video_recorded_label", lang) else Localization.get("record_video", lang),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White
                     )
-                }
 
-                if (attachVideo) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                    Button(
+                        onClick = {
+                            videoViewModel.startRecording()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (attachVideo) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.height(36.dp).testTag("assignment_record_video_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Videocam,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.size(4.dp))
+                        Text(
+                            text = if (attachVideo) Localization.get("video_recorded", lang) else Localization.get("record_label", lang),
+                            fontSize = 11.sp,
+                            color = Color.White
+                        )
+                    }
+                }
+            } else {
+                // Fallback: checkbox-based video attachment (no real upload pipeline wired)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .padding(8.dp)
+                        .testTag("assignment_video_checkbox_section"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = attachVideo,
+                            onCheckedChange = { attachVideo = it }
+                        )
+                        Text(
+                            text = Localization.get("attachment_allowed", lang),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White
+                        )
+                    }
+
+                    if (attachVideo) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 
@@ -291,12 +360,15 @@ fun AssignmentCreationForm(
                         description = assignDesc,
                         targetStudent = selectedStudentUsername,
                         videoTitle = if (attachVideo) videoTitle else "",
-                        durationSeconds = if (attachVideo) videoDurationSeconds else 0
+                        durationSeconds = if (attachVideo) videoDurationSeconds else 0,
+                        videoUrl = videoUploadUrl ?: ""
                     )
                     assignTitle = ""
                     assignDesc = ""
                     videoTitle = ""
                     attachVideo = false
+                    videoUploadUrl = null
+                    videoViewModel?.resetState()
                 },
                 enabled = canSubmit,
                 shape = RoundedCornerShape(10.dp),

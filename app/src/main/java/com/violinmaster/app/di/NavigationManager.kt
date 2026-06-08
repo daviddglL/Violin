@@ -21,11 +21,23 @@ class NavigationManager @Inject constructor() {
   private val _currentOverlay = MutableStateFlow<String?>(null)
   val currentOverlay: StateFlow<String?> = _currentOverlay.asStateFlow()
 
+  private val _targetLessonsSubTab = MutableStateFlow(-1)
+  val targetLessonsSubTab: StateFlow<Int> = _targetLessonsSubTab.asStateFlow()
+
   fun selectTab(index: Int) {
     _currentTab.value = index
   }
 
   fun showOverlay(overlay: String?) {
     _currentOverlay.value = overlay
+  }
+
+  fun navigateToQuizTab() {
+    _currentTab.value = 1
+    _targetLessonsSubTab.value = 2
+  }
+
+  fun clearLessonsSubTabTarget() {
+    _targetLessonsSubTab.value = -1
   }
 }

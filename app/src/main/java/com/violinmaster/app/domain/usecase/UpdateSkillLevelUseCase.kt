@@ -16,12 +16,17 @@ class UpdateSkillLevelUseCase constructor(
     private val authManager: AuthManager
 ) {
     /**
-     * Sets the current user's skill level to [level].
+     * Sets the current user's skill level to [level] if the quiz score gate passes.
      *
-     * No-op when no user is authenticated.
+     * @param level the target skill level
+     * @param quizScore the quiz score (default -1 = backwards compat, bypasses gate).
+     *        Score >= 80 is required to persist the level update.
+     *
+     * No-op when no user is authenticated or quiz score < 80.
      */
-    suspend operator fun invoke(level: String) {
+    suspend operator fun invoke(level: String, quizScore: Int = -1) {
         val userVal = authManager.currentUser.value ?: return
+        if (quizScore < 80 && quizScore != -1) return
         val updatedUser = userVal.copy(skillLevel = level)
         repository.insertUser(updatedUser)
         authManager.restoreCurrentUser(updatedUser)

@@ -16,6 +16,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.Ignore
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -93,6 +94,70 @@ class UpdateSkillLevelUseCaseTest {
     assertEquals("STUDENT", repo.updatedUsers[0].role)
     assertEquals(500, repo.updatedUsers[0].points)
     assertEquals("Advanced", repo.updatedUsers[0].skillLevel)
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // QA-002: Quiz score gate
+  // ═══════════════════════════════════════════════════════════════════
+
+  @Test
+  fun `QA-002a - score 85 advances level`() = runTest {
+    val user = UserAccount(
+      username = "quizzer", role = "STUDENT",
+      hashedPassword = "hash", salt = "salt", skillLevel = "Beginner"
+    )
+    authManager.restoreCurrentUser(user)
+
+    useCase("Intermediate", 85)
+
+    assertEquals("Skill level should advance with score 85",
+      "Intermediate", repo.updatedUsers[0].skillLevel)
+  }
+
+  @Test
+  fun `QA-002b - score 60 blocked level unchanged`() = runTest {
+    val user = UserAccount(
+      username = "quizzer", role = "STUDENT",
+      hashedPassword = "hash", salt = "salt", skillLevel = "Beginner"
+    )
+    authManager.restoreCurrentUser(user)
+
+    useCase("Intermediate", 60)
+
+    assertTrue("No update should be persisted when score < 80",
+      repo.updatedUsers.isEmpty())
+    assertEquals("Current user skill should remain unchanged",
+      "Beginner", authManager.currentUser.value?.skillLevel)
+  }
+
+  @Test
+  fun `QA-002c - existing Intermediate preserved when score below threshold`() = runTest {
+    val user = UserAccount(
+      username = "intermediate", role = "STUDENT",
+      hashedPassword = "hash", salt = "salt", skillLevel = "Intermediate"
+    )
+    authManager.restoreCurrentUser(user)
+
+    useCase("Beginner", 60)
+
+    assertTrue("No update should be persisted when score < 80",
+      repo.updatedUsers.isEmpty())
+    assertEquals("Intermediate skill should be preserved",
+      "Intermediate", authManager.currentUser.value?.skillLevel)
+  }
+
+  @Test
+  fun `QA-002 - backwards compat quizScore default -1 persists`() = runTest {
+    val user = UserAccount(
+      username = "legacy", role = "STUDENT",
+      hashedPassword = "hash", salt = "salt", skillLevel = "Beginner"
+    )
+    authManager.restoreCurrentUser(user)
+
+    useCase("Advanced")
+
+    assertEquals("Backwards compat: default quizScore=-1 should persist",
+      "Advanced", repo.updatedUsers[0].skillLevel)
   }
 
   class FakeUpdateSkillRepo : IPracticeRepository {

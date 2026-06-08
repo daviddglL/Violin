@@ -430,4 +430,52 @@ class PracticeViewModelTest {
         assertNotNull(updatedUser)
         assertEquals("Advanced", updatedUser!!.skillLevel)
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // QA-002/APP-001: Quiz-gated updateSkillLevel
+    // ═══════════════════════════════════════════════════════════════
+
+    @Test
+    fun `QA-002a - updateSkillLevel with quizScore 85 advances level`() = runTest {
+        val user = UserAccount(
+            username = "quiz_passer",
+            role = "STUDENT",
+            hashedPassword = "hash",
+            salt = "salt",
+            points = 300,
+            skillLevel = "Beginner"
+        )
+        repository.insertUser(user)
+        advanceUntilIdle()
+        authManager.restoreCurrentUser(user)
+
+        viewModel.updateSkillLevel("Intermediate", 85)
+        advanceUntilIdle()
+
+        val updatedUser = repository.getUserByUsername("quiz_passer")
+        assertNotNull(updatedUser)
+        assertEquals("Intermediate", updatedUser!!.skillLevel)
+    }
+
+    @Test
+    fun `QA-002b - updateSkillLevel with quizScore 60 blocked`() = runTest {
+        val user = UserAccount(
+            username = "quiz_blocked",
+            role = "STUDENT",
+            hashedPassword = "hash",
+            salt = "salt",
+            points = 300,
+            skillLevel = "Beginner"
+        )
+        repository.insertUser(user)
+        advanceUntilIdle()
+        authManager.restoreCurrentUser(user)
+
+        viewModel.updateSkillLevel("Intermediate", 60)
+        advanceUntilIdle()
+
+        val updatedUser = repository.getUserByUsername("quiz_blocked")
+        assertNotNull(updatedUser)
+        assertEquals("Beginner", updatedUser!!.skillLevel)
+    }
 }

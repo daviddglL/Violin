@@ -233,9 +233,9 @@ class PracticeViewModel @Inject constructor(
         }
     }
 
-    fun updateSkillLevel(level: String) {
+    fun updateSkillLevel(level: String, quizScore: Int = -1) {
         viewModelScope.launch {
-            updateSkillLevelUseCase(level)
+            updateSkillLevelUseCase(level, quizScore)
         }
     }
 }

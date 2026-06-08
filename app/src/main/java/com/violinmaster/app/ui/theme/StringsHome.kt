@@ -58,6 +58,7 @@ object StringsHome {
     "analytics_sub_tab" to "ANALYTICS",
     "ranking_sub_tab" to "LEADERBOARD",
     "level_title" to "Skill Level",
+    "take_quiz_button" to "Take Quiz",
 
     "practice_streak" to "PRACTICE STREAK",
     "daily_average" to "DAILY AVERAGE",
@@ -127,6 +128,7 @@ object StringsHome {
     "analytics_sub_tab" to "ESTADÍSTICAS",
     "ranking_sub_tab" to "CLASIFICACIÓN",
     "level_title" to "Nivel de Habilidad",
+    "take_quiz_button" to "Tomar Cuestionario",
 
     "practice_streak" to "RACHA DE PRÁCTICA",
     "daily_average" to "PROMEDIO DIARIO",

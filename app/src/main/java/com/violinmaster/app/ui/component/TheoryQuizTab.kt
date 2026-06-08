@@ -32,7 +32,8 @@ import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 fun TheoryQuizTab(
     practiceVM: PracticeViewModel,
     userPreferencesManager: UserPreferencesManager,
-    instrument: Instrument = Instrument.VIOLIN
+    instrument: Instrument = Instrument.VIOLIN,
+    currentSkillLevel: String = "Beginner"
 ) {
     val lang by userPreferencesManager.appLanguage.collectAsState()
     val isEs = lang == AppLanguage.SPANISH
@@ -260,6 +261,14 @@ fun TheoryQuizTab(
                             userChosenOptionSelected = null
                             quizTurnAnswered = false
                         } else {
+                            if (currentScoreVal >= 80) {
+                                val nextLevel = when (currentSkillLevel) {
+                                    "Beginner" -> "Intermediate"
+                                    "Intermediate" -> "Advanced"
+                                    else -> "Beginner"
+                                }
+                                practiceVM.updateSkillLevel(nextLevel, currentScoreVal)
+                            }
                             practiceVM.earnPoints(currentScoreVal)
                             quizIsUnderwayFinished = true
                         }

@@ -2,7 +2,6 @@ package com.violinmaster.app.ui.component
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.violinmaster.app.ui.theme.AppLanguage
@@ -37,7 +37,7 @@ fun ProfilePointsCard(
     username: String,
     points: Int,
     skillLevel: String,
-    onCycleSkillLevel: (String) -> Unit,
+    readOnly: Boolean = true,
     appLanguage: AppLanguage,
     modifier: Modifier = Modifier
 ) {
@@ -100,21 +100,15 @@ fun ProfilePointsCard(
                         Surface(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.clickable {
-                                val nextLevel = when (skillLevel) {
-                                    "Beginner" -> "Intermediate"
-                                    "Intermediate" -> "Advanced"
-                                    else -> "Beginner"
-                                }
-                                onCycleSkillLevel(nextLevel)
-                            }
-                                .testTag("cycle_level_button")
+                            modifier = Modifier.testTag("cycle_level_button")
                         ) {
                             Text(
-                                text = "$skillLevelText 🔄",
+                                text = skillLevelText,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }

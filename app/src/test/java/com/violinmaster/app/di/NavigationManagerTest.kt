@@ -89,4 +89,33 @@ class NavigationManagerTest {
     navigationManager.showOverlay("tuner")
     assertEquals("tuner", navigationManager.currentOverlay.value)
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // QA-003: targetLessonsSubTab + navigateToQuizTab
+  // ═══════════════════════════════════════════════════════════════
+
+  @Test
+  fun `targetLessonsSubTab defaults to -1`() = runTest {
+    assertEquals("Default sentinel should be -1", -1, navigationManager.targetLessonsSubTab.value)
+  }
+
+  @Test
+  fun `navigateToQuizTab sets targetLessonsSubTab to 2`() = runTest {
+    navigationManager.navigateToQuizTab()
+    assertEquals("Quiz sub-tab index should be 2", 2, navigationManager.targetLessonsSubTab.value)
+  }
+
+  @Test
+  fun `navigateToQuizTab also sets currentTab to 1 for Lessons tab`() = runTest {
+    navigationManager.navigateToQuizTab()
+    assertEquals("Should navigate to Lessons tab (index 1)", 1, navigationManager.currentTab.value)
+  }
+
+  @Test
+  fun `can reset targetLessonsSubTab back to -1`() = runTest {
+    navigationManager.navigateToQuizTab()
+    assertEquals(2, navigationManager.targetLessonsSubTab.value)
+    navigationManager.clearLessonsSubTabTarget()
+    assertEquals("Cleared target should be -1", -1, navigationManager.targetLessonsSubTab.value)
+  }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.ViolinAudioEngine
@@ -23,6 +24,7 @@ import com.violinmaster.app.domain.usecase.UpdateLessonProgressUseCase
 import com.violinmaster.app.domain.usecase.UpdateSkillLevelUseCase
 import com.violinmaster.app.ui.viewmodel.PracticeViewModel
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -157,5 +159,26 @@ class HomeScreenTest {
         composeTestRule.onNodeWithTag("daily_task_item_beg_dt1").fetchSemanticsNode()
         composeTestRule.onNodeWithTag("daily_task_item_beg_dt2").fetchSemanticsNode()
         composeTestRule.onNodeWithTag("daily_task_item_beg_dt3").fetchSemanticsNode()
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // QA-003: "Take Quiz" button navigates to quiz tab
+    // ═══════════════════════════════════════════════════════════════
+
+    @Test
+    fun `QA-003 - take quiz button navigates to lessons tab`() {
+        composeTestRule.setContent {
+            HomeScreen(
+                practiceVM = viewModel,
+                authManager = authManager,
+                userPreferencesManager = userPreferencesManager,
+                navigationManager = navigationManager
+            )
+        }
+
+        composeTestRule.onNodeWithTag("take_quiz_button").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("take_quiz_button").performClick()
+
+        assertEquals("Should navigate to Lessons tab (index 1)", 1, navigationManager.currentTab.value)
     }
 }

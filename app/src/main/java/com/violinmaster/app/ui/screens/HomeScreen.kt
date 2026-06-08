@@ -104,8 +104,33 @@ fun HomeScreen(
                 username = userVal.username,
                 points = userVal.points,
                 skillLevel = userVal.skillLevel,
-                onCycleSkillLevel = { practiceVM.updateSkillLevel(it) },
+                readOnly = true,
                 appLanguage = appLanguage
+            )
+        }
+
+        // --- Take Quiz Button (QA-003) ---
+        Button(
+            onClick = { navigationManager.navigateToQuizTab() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .testTag("take_quiz_button"),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = Localization.get("take_quiz_button", appLanguage),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium
             )
         }
 

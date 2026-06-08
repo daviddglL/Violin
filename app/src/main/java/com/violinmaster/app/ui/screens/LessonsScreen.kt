@@ -58,6 +58,16 @@ fun LessonsScreen(
 
     var activeTabSubIndex by rememberSaveable { mutableStateOf(0) } // 0: Curriculum, 1: Fingerboard, 2: Theory Quiz, 3: Masterclass
 
+    // Observe cross-screen navigation target for quiz tab
+    LaunchedEffect(Unit) {
+        navigationManager.targetLessonsSubTab.collect { target ->
+            if (target == 2) {
+                activeTabSubIndex = 2
+                navigationManager.clearLessonsSubTabTarget()
+            }
+        }
+    }
+
     // Student tutor video target states
     var activeTutorVideoUrl by remember { mutableStateOf<String?>(null) }
     var activeTutorVideoTitle by remember { mutableStateOf<String?>(null) }
@@ -193,7 +203,7 @@ fun LessonsScreen(
                         }
                     }
                     1 -> VirtualFingerboard(tunerVM = tunerVM, appLanguage = lang, instrument = instrument)
-                    2 -> TheoryQuizTab(practiceVM = practiceVM, userPreferencesManager = userPreferencesManager, instrument = instrument)
+                    2 -> TheoryQuizTab(practiceVM = practiceVM, userPreferencesManager = userPreferencesManager, instrument = instrument, currentSkillLevel = user?.skillLevel ?: "Beginner")
                     3 -> MasterclassTab(authViewModel = authVM)
                 }
             }

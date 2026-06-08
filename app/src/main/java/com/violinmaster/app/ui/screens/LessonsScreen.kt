@@ -67,7 +67,7 @@ fun LessonsScreen(
         if (activeTutorVideoUrl != null && activeTutorVideoTitle != null) {
             LessonVideoPlayer(
                 videoTitle = activeTutorVideoTitle ?: "",
-                signedUrl = activeTutorVideoUrl ?: "",
+                videoUrl = activeTutorVideoUrl ?: "",
                 onClose = {
                     activeTutorVideoUrl = null
                     activeTutorVideoTitle = null

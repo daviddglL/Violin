@@ -32,10 +32,11 @@ fun UnlockedMasterclassHub(
     videos: List<SecureMasterclassVideo>,
     onSelectVideo: (String) -> Unit,
     onRefreshLockState: () -> Unit,
-    appLanguage: AppLanguage = AppLanguage.ENGLISH
+    appLanguage: AppLanguage = AppLanguage.ENGLISH,
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)

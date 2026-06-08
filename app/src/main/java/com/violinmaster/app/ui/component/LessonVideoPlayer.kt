@@ -10,22 +10,20 @@ import com.violinmaster.app.ui.theme.AppLanguage
 
 @Composable
 fun LessonVideoPlayer(
-  videoTitle: String,
-  signedUrl: String,
-  onClose: () -> Unit,
-  appLanguage: AppLanguage,
-  modifier: Modifier = Modifier
+    videoTitle: String,
+    videoUrl: String,
+    onClose: () -> Unit,
+    appLanguage: AppLanguage = AppLanguage.ENGLISH,
+    modifier: Modifier = Modifier
 ) {
-  Box(
-    modifier = modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colorScheme.background)
-  ) {
-    SecureMediaPlaybackConsole(
-      videoTitle = videoTitle,
-      signedUrl = signedUrl,
-      onClose = onClose,
-      appLanguage = appLanguage
-    )
-  }
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        VideoPlayer(
+            videoUrl = videoUrl,
+            onClose = onClose
+        )
+    }
 }

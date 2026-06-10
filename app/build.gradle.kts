@@ -46,6 +46,7 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
+      enableUnitTestCoverage = true
     }
   }
   compileOptions {
@@ -186,7 +187,7 @@ tasks.register<JacocoCoverageVerification>("jacocoCoverageVerification") {
         )
       limit {
         counter = "LINE"
-        minimum = "0.60".toBigDecimal()
+        minimum = "0.80".toBigDecimal()
       }
     }
   }

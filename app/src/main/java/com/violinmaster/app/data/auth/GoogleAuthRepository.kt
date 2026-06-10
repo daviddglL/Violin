@@ -78,20 +78,28 @@ open class GoogleAuthRepository @Inject constructor(
 
     /**
      * Returns the current Firebase user's ID token for Gemini API authentication.
-     * Returns `null` if no user is signed in.
+     * Returns `null` if no user is signed in or if token acquisition fails.
      *
-     * Callers (e.g., [GeminiAuthInterceptor]) should handle null gracefully.
+     * Uses a [java.util.concurrent.CountDownLatch] to safely await the async
+     * [com.google.firebase.auth.FirebaseUser.getIdToken] task with a 5-second
+     * timeout. This is called from [GeminiAuthInterceptor] on OkHttp's thread pool,
+     * where brief synchronous waiting is acceptable.
+     *
+     * Callers should handle null gracefully — [GeminiRepository] treats a missing
+     * token as an auth failure (HTTP 401).
      */
     override open fun getAccessToken(): String? {
         val currentUser = auth.currentUser ?: return null
-        // getIdToken(false) returns cached token if still valid, refreshes if needed
         return try {
-            val task = currentUser.getIdToken(false)
-            if (task.isSuccessful) {
-                task.result?.token
-            } else {
-                null
+            val latch = java.util.concurrent.CountDownLatch(1)
+            var token: String? = null
+            currentUser.getIdToken(false).addOnCompleteListener { task ->
+                token = if (task.isSuccessful) task.result?.token else null
+                latch.countDown()
             }
+            // Block up to 5 s for token acquisition; proceed without token on timeout
+            latch.await(5, java.util.concurrent.TimeUnit.SECONDS)
+            token
         } catch (e: Exception) {
             null
         }

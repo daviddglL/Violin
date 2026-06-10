@@ -15,7 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-@Ignore("Requires Room schema v2 JSON — needs 'gradlew :app:exportSchema' or manual export")
+@Ignore("Schema JSON has PLACEHOLDER identityHash — Room's MigrationTestHelper requires real hash matching compiled _Impl class (28e059dc...). Fix: run KSP at schema v2 then copy generated JSON with correct hash.")
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class MigrationTest {

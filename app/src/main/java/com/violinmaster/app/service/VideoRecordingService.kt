@@ -95,7 +95,7 @@ open class VideoRecordingService @Inject constructor(
      *
      * @return true if CAMERA permission is granted, false otherwise.
      */
-    fun hasCameraPermission(): Boolean {
+    open fun hasCameraPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.CAMERA

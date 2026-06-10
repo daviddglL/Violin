@@ -921,7 +921,9 @@ All Gemini API calls MUST execute on `Dispatchers.IO` via Kotlin coroutines. The
 
 ### REQ-GEM-005 — Error Handling
 
-Network failures, rate limiting (HTTP 429), and invalid API key (HTTP 403) MUST be handled gracefully with user-visible error messages. The app SHALL NOT crash on any API error condition.
+Network failures, rate limiting (HTTP 429), and authentication failures (HTTP 401/403) MUST be handled gracefully with user-visible error messages. The app SHALL NOT crash on any API error condition.
+
+Gemini authentication uses per-user Google OAuth tokens via [GeminiAuthInterceptor]. A missing or expired token results in HTTP 401; a revoked or unauthorized token results in HTTP 403.
 
 **Scenarios**:
 
@@ -929,9 +931,9 @@ Network failures, rate limiting (HTTP 429), and invalid API key (HTTP 403) MUST 
 
 - GIVEN the API returns HTTP 429 (rate limit) WHEN the response is processed THEN the UI displays a retry suggestion ("Too many requests. Try again in a moment.") with exponential backoff.
 
-- GIVEN the API key is invalid (HTTP 403) WHEN the response is processed THEN the UI displays "API authentication failed. Check your API key in .env."
+- GIVEN the user's OAuth token is expired or missing (HTTP 401/403) WHEN the response is processed THEN the UI displays "Authentication failed. Sign in with Google to use AI features."
 
-**Acceptance**: All Retrofit calls are wrapped in `try/catch`. Each error type (network, rate limit, auth) produces a distinct, localized error message.
+**Acceptance**: All Retrofit calls are wrapped in `try/catch`. Each error type (network, rate limit, auth) produces a distinct, localized error message. The deprecated `.env`-based API key flow is removed; all Gemini calls use per-user OAuth tokens.
 
 ---
 

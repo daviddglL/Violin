@@ -2,6 +2,8 @@ package com.violinmaster.app.ui.viewmodel
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.service.VideoCompressionService
 import com.violinmaster.app.service.VideoRecordingService
@@ -17,7 +19,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -36,7 +37,6 @@ import java.io.File
  * RED phase: VideoUploadViewModel.kt and service classes do not exist yet.
  * These tests will fail to compile until the production code is written.
  */
-@Ignore("Video services require Android permissions — not available in Robolectric unit tests")
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -52,6 +52,17 @@ class VideoUploadViewModelTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        // Initialize Firebase for Robolectric (needed for FirebaseStorage singleton)
+        if (FirebaseApp.getApps(context).isEmpty()) {
+            FirebaseApp.initializeApp(
+                context,
+                FirebaseOptions.Builder()
+                    .setApplicationId("com.violinmaster.app.test")
+                    .setApiKey("fake-api-key")
+                    .setProjectId("violin-master-test")
+                    .build()
+            )
+        }
         fakeFaceBlurProcessor = FakeFaceBlurProcessor()
         fakeRecordingService = FakeVideoRecordingService(context)
         fakeCompressionService = FakeVideoCompressionService()
@@ -331,6 +342,8 @@ class VideoUploadViewModelTest {
     class FakeVideoRecordingService(context: android.content.Context) : VideoRecordingService(context) {
         var isRecordingFlag: Boolean = false
         private var currentFile: File? = null
+
+        override fun hasCameraPermission(): Boolean = true
 
         override fun startRecording(outputFile: File, onError: (String) -> Unit) {
             isRecordingFlag = true

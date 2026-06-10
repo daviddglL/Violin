@@ -146,7 +146,7 @@ An `AuthViewModel` MUST handle login, register, logout, passcode set/remove/veri
 
 ### REQ-VM-005 — PracticeViewModel
 
-A `PracticeViewModel` MUST handle practice timer (start/pause/resume/stop-save/cancel), daily tasks (load/complete/score), session persistence, points earning, and daily goal tracking.
+A `PracticeViewModel` MUST handle practice timer (start/pause/resume/stop-save/cancel), daily tasks (load/complete/score), session persistence, points earning, daily goal tracking, and quiz-gated skill level advancement. The `updateSkillLevel` method SHALL accept a quiz score parameter and only persist advancement when score ≥ 80.
 
 **Scenarios**:
 
@@ -156,13 +156,17 @@ A `PracticeViewModel` MUST handle practice timer (start/pause/resume/stop-save/c
 
 - GIVEN a daily task is completed on first attempt WHEN `PracticeViewModel.completeDailyTask("task_1", 1)` is called THEN the user earns 100 points AND the task is marked completed in SharedPreferences for today.
 
-**Acceptance**: `HomeScreen.kt` practice timer controls and daily task UI bind exclusively to `PracticeViewModel`.
+- GIVEN user completed TheoryQuizTab with score 85 WHEN quiz summary triggers skill advancement THEN `updateSkillLevel("Intermediate", quizScore=85)` persists the new level.
+
+- GIVEN user completed TheoryQuizTab with score 60 WHEN quiz summary triggers skill advancement THEN the skill level remains unchanged.
+
+**Acceptance**: `HomeScreen.kt` practice timer controls, daily task UI, and quiz advancement bind exclusively to `PracticeViewModel`.
 
 ---
 
 ### REQ-VM-006 — AssignmentViewModel
 
-An `AssignmentViewModel` MUST handle assignment CRUD (teacher publish, student view, mark complete, delete) and teacher-student linking via invite code.
+An `AssignmentViewModel` MUST handle assignment CRUD (teacher publish, student view, mark complete, delete) and teacher-student linking via invite code. The `publishAssignment` method SHALL accept an optional real video URL from the upload pipeline, replacing the fake URL generation via VideoSecurityService.
 
 **Scenarios**:
 
@@ -171,6 +175,8 @@ An `AssignmentViewModel` MUST handle assignment CRUD (teacher publish, student v
 - GIVEN a student is logged in with a linked teacher code WHEN assignments flow emits items THEN `studentAssignments` state updates reactively with filtered assignments for that student.
 
 - GIVEN an assignment exists WHEN `AssignmentViewModel.markAssignmentComplete(id, true)` is called THEN the assignment's `completed` field is updated AND 200 points are earned.
+
+- GIVEN teacher has recorded and uploaded a video (real Firebase URL) WHEN `publishAssignment` is called with the URL THEN the Assignment stores the real URL, not a generated fake signed URL.
 
 **Acceptance**: `TeacherStudentWorkspace.kt` binds exclusively to `AssignmentViewModel` for assignment state.
 
@@ -203,6 +209,20 @@ All ViewModels MUST be annotated with `@HiltViewModel` and receive dependencies 
 - GIVEN a unit test instantiates a ViewModel WHEN the test provides mock dependencies via constructor THEN the ViewModel functions without Android framework dependencies (except where `Application` is genuinely needed for SharedPreferences, handled via Hilt-provided context).
 
 **Acceptance**: Every ViewModel constructor accepts interfaces/services via parameters. No `companion object` singletons or manual `Application()` constructor calls remain.
+
+---
+
+### REQ-VM-009 — Optional Passcode Wall
+
+The mandatory passcode authentication on MasterclassTab SHALL become optional. Users without a configured passcode SHALL access masterclass content directly. Users with a configured passcode SHALL continue to require PIN authentication. The `!isSecurityLocked` state in AuthViewModel MUST no longer force the passcode setup screen; it SHALL allow direct access to the content hub.
+
+**Scenarios**:
+
+- GIVEN no passcode is set in the system WHEN user navigates to MasterclassTab THEN the masterclass content hub renders immediately without lock screen.
+
+- GIVEN a passcode is configured WHEN user navigates to MasterclassTab THEN the passcode lock screen appears and requires correct PIN.
+
+**Acceptance**: Free-tier users can access masterclass content without PIN setup. Existing passcode users retain their lock behavior.
 
 ---
 
@@ -530,6 +550,20 @@ The `companion object` containing `@Volatile private var INSTANCE` and the `sync
 - GIVEN any code needs the database WHEN the dependency is resolved THEN Hilt provides it without manual singleton management.
 
 **Acceptance**: `grep -r "getDatabase" app/src/main/` returns zero results.
+
+---
+
+### REQ-DI-008 — VideoUploadViewModel Hilt Provision
+
+The Hilt dependency injection graph MUST provide VideoUploadViewModel with all service dependencies (VideoRecordingService, FaceBlurProcessor, VideoCompressionService, VideoUploadService). TeacherDashboardTab and StudentAssignmentsTab SHALL receive VideoUploadViewModel as a non-null parameter, replacing the current nullable default (`null`).
+
+**Scenarios**:
+
+- GIVEN the Hilt component graph is initialized WHEN TeacherDashboardTab is composed THEN VideoUploadViewModel is injected and non-null.
+
+- GIVEN teacher is viewing AssignmentCreationForm WHEN the video attachment section renders THEN a recording trigger button is present instead of the checkbox-only attachVideo toggle.
+
+**Acceptance**: Hilt DI graph builds without errors. Recording trigger visible in assignment creation form.
 
 ---
 
@@ -906,14 +940,14 @@ Network failures, rate limiting (HTTP 429), and invalid API key (HTTP 403) MUST 
 | SPEC  | Requirements                    | Count |
 |-------|--------------------------------|-------|
 | SPEC-1  | REQ-NS-001 .. REQ-NS-005      | 5     |
-| SPEC-2  | REQ-VM-001 .. REQ-VM-008      | 8     |
+| SPEC-2  | REQ-VM-001 .. REQ-VM-009      | 9     |
 | SPEC-3  | REQ-TN-001 .. REQ-TN-010      | 10    |
 | SPEC-4  | REQ-DB-001 .. REQ-DB-005      | 5     |
-| SPEC-5  | REQ-DI-001 .. REQ-DI-007      | 7     |
+| SPEC-5  | REQ-DI-001 .. REQ-DI-008      | 8     |
 | SPEC-6  | REQ-SEC-001 .. REQ-SEC-005    | 5     |
 | SPEC-7  | REQ-TST-001 .. REQ-TST-005    | 5     |
 | SPEC-8  | REQ-L10N-001 .. REQ-L10N-004  | 4     |
 | SPEC-9  | REQ-BLD-001 .. REQ-BLD-006    | 6     |
 | SPEC-10 | REQ-GEM-001 .. REQ-GEM-005    | 5     |
-| **Total** |                                | **60** |
+| **Total** |                                | **62** |
 

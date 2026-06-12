@@ -2,6 +2,8 @@ package com.violinmaster.app.data.firebase
 
 import com.violinmaster.app.data.PracticeSession
 import com.violinmaster.app.data.SessionDao
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -14,11 +16,13 @@ import kotlinx.coroutines.flow.Flow
  *
  * @param collection The Firestore collection abstraction (injected for testability).
  * @param sessionDao Room DAO for session cache operations.
+ * @param dispatcher Coroutine dispatcher. Defaults to [Dispatchers.IO].
  */
 class SessionSyncRepository(
     collection: IFirestoreCollection<SessionDoc>,
-    private val sessionDao: SessionDao
-) : FirestoreSyncRepository<PracticeSession, SessionDoc>(collection) {
+    private val sessionDao: SessionDao,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+) : FirestoreSyncRepository<PracticeSession, SessionDoc>(collection, dispatcher) {
 
     override fun PracticeSession.toFirestoreDoc(): SessionDoc = SessionDoc.fromEntity(this)
     override fun SessionDoc.toEntity(): PracticeSession = this.toEntity()

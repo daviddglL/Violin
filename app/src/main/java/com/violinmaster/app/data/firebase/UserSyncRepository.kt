@@ -2,6 +2,8 @@ package com.violinmaster.app.data.firebase
 
 import com.violinmaster.app.data.UserAccount
 import com.violinmaster.app.data.UserDao
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -16,11 +18,13 @@ import kotlinx.coroutines.flow.Flow
  *
  * @param collection The Firestore collection abstraction (injected for testability).
  * @param userDao Room DAO for user cache operations.
+ * @param dispatcher Coroutine dispatcher. Defaults to [Dispatchers.IO].
  */
 class UserSyncRepository(
     collection: IFirestoreCollection<UserDoc>,
-    private val userDao: UserDao
-) : FirestoreSyncRepository<UserAccount, UserDoc>(collection) {
+    private val userDao: UserDao,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+) : FirestoreSyncRepository<UserAccount, UserDoc>(collection, dispatcher) {
 
     override fun UserAccount.toFirestoreDoc(): UserDoc = UserDoc.fromEntity(this)
     override fun UserDoc.toEntity(): UserAccount = this.toEntity()

@@ -2,6 +2,8 @@ package com.violinmaster.app.data.firebase
 
 import com.violinmaster.app.data.LessonDao
 import com.violinmaster.app.data.LessonProgress
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -16,11 +18,13 @@ import kotlinx.coroutines.flow.Flow
  *
  * @param collection The Firestore collection abstraction (injected for testability).
  * @param lessonDao Room DAO for lesson cache operations.
+ * @param dispatcher Coroutine dispatcher. Defaults to [Dispatchers.IO].
  */
 class LessonSyncRepository(
     collection: IFirestoreCollection<LessonDoc>,
-    private val lessonDao: LessonDao
-) : FirestoreSyncRepository<LessonProgress, LessonDoc>(collection) {
+    private val lessonDao: LessonDao,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+) : FirestoreSyncRepository<LessonProgress, LessonDoc>(collection, dispatcher) {
 
     override fun LessonProgress.toFirestoreDoc(): LessonDoc = LessonDoc.fromEntity(this)
     override fun LessonDoc.toEntity(): LessonProgress = this.toEntity()

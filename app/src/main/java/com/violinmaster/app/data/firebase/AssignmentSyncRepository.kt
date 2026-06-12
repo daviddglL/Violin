@@ -2,6 +2,8 @@ package com.violinmaster.app.data.firebase
 
 import com.violinmaster.app.data.Assignment
 import com.violinmaster.app.data.AssignmentDao
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -14,11 +16,13 @@ import kotlinx.coroutines.flow.Flow
  *
  * @param collection The Firestore collection abstraction (injected for testability).
  * @param assignmentDao Room DAO for assignment cache operations.
+ * @param dispatcher Coroutine dispatcher. Defaults to [Dispatchers.IO].
  */
 class AssignmentSyncRepository(
     collection: IFirestoreCollection<AssignmentDoc>,
-    private val assignmentDao: AssignmentDao
-) : FirestoreSyncRepository<Assignment, AssignmentDoc>(collection) {
+    private val assignmentDao: AssignmentDao,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+) : FirestoreSyncRepository<Assignment, AssignmentDoc>(collection, dispatcher) {
 
     override fun Assignment.toFirestoreDoc(): AssignmentDoc = AssignmentDoc.fromEntity(this)
     override fun AssignmentDoc.toEntity(): Assignment = this.toEntity()

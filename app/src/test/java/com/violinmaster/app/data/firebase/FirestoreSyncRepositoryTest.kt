@@ -37,8 +37,9 @@ class FirestoreSyncRepositoryTest {
      * to call protected [insertCache].
      */
     private class TestSyncRepository(
-        collection: IFirestoreCollection<TestDoc>
-    ) : FirestoreSyncRepository<TestEntity, TestDoc>(collection) {
+        collection: IFirestoreCollection<TestDoc>,
+        dispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.Unconfined
+    ) : FirestoreSyncRepository<TestEntity, TestDoc>(collection, dispatcher) {
 
         // In-memory cache storage (public for test access)
         private val _cache = MutableStateFlow<List<TestEntity>>(emptyList())

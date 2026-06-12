@@ -419,11 +419,3 @@ class PracticeRepositoryFacadeTest {
     }
 }
 
-// ── Test helpers ──────────────────────────────────────────────────────────
-
-/**
- * CloudConfig variant that enables cloud sync for testing the cloud path.
- */
-private class CloudConfigWithSync : CloudConfig() {
-    override val cloudSyncEnabled: Boolean = true
-}

@@ -1,5 +1,6 @@
 package com.violinmaster.app.data.firebase
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -22,9 +23,13 @@ import kotlinx.coroutines.launch
  * @param T The Room/domain entity type (e.g., [com.violinmaster.app.data.PracticeSession]).
  * @param D The Firestore document type (e.g., [SessionDoc]).
  * @param collection The Firestore collection abstraction for testability.
+ * @param dispatcher Coroutine dispatcher for internal async operations.
+ *                   Defaults to [Dispatchers.IO]. Override in tests to use
+ *                   the test dispatcher for deterministic execution.
  */
 abstract class FirestoreSyncRepository<T, D>(
-    private val collection: IFirestoreCollection<D>
+    private val collection: IFirestoreCollection<D>,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     // ── Entity ↔ Document Mapping (implemented by subclasses) ────────────
 
@@ -85,7 +90,7 @@ abstract class FirestoreSyncRepository<T, D>(
         val cancelListener = collection.addSnapshotListener(
             onSnapshot = { docs ->
                 // Update Room cache from Firestore snapshot
-                CoroutineScope(Dispatchers.IO).launch {
+                CoroutineScope(dispatcher).launch {
                     for (doc in docs) {
                         try {
                             insertCache(doc.toEntity())
@@ -103,7 +108,7 @@ abstract class FirestoreSyncRepository<T, D>(
         )
 
         // Room cache Flow → re-emit into this callbackFlow
-        val job = CoroutineScope(Dispatchers.IO).launch {
+        val job = CoroutineScope(dispatcher).launch {
             observeCache().collect { entities ->
                 trySend(entities)
             }

@@ -16,6 +16,7 @@ import com.violinmaster.app.data.local.CachedMessage
  *       replacing destructive fallback with explicit [MIGRATION_2_3].
  * - v4: Add birthYear column to UserAccount for age verification.
  * - v5: Add cached_messages table for teacher-student chat offline cache.
+ * - v6: Add firebaseUid column to UserAccount for cloud auth reconciliation (REQ-DB-002, REQ-DB-006).
  */
 @Database(
     entities = [
@@ -25,7 +26,7 @@ import com.violinmaster.app.data.local.CachedMessage
         Assignment::class,
         CachedMessage::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class PracticeDatabase : RoomDatabase() {
@@ -88,6 +89,22 @@ abstract class PracticeDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "CREATE INDEX idx_cached_msg_assignment ON cached_messages(assignmentId, timestamp ASC)"
+                )
+            }
+        }
+
+        /**
+         * Migration from version 5 to version 6.
+         *
+         * Adds firebaseUid TEXT (nullable) to user_accounts for cloud auth
+         * reconciliation. Existing users get NULL — they remain PIN-only
+         * until they link a Google account.
+         * REQ-DB-002, REQ-DB-006.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE user_accounts ADD COLUMN firebaseUid TEXT"
                 )
             }
         }

@@ -39,4 +39,7 @@ interface LessonDao {
 
     @Query("UPDATE lesson_progress SET completed = :completed WHERE lessonId = :lessonId")
     suspend fun updateLessonCompletion(lessonId: String, completed: Boolean)
+
+    @Query("DELETE FROM lesson_progress WHERE lessonId = :lessonId")
+    suspend fun deleteLessonProgress(lessonId: String)
 }

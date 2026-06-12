@@ -12,7 +12,8 @@ data class UserAccount(
     val teacherCode: String = "", // For teachers, this is their OWN invite code; for students, this is who they linked to
     val points: Int = 0,
     val skillLevel: String = "Beginner", // "Beginner", "Intermediate", "Advanced"
-    val birthYear: Int = 0 // 0 = not set (legacy users). Required for new registrations.
+    val birthYear: Int = 0, // 0 = not set (legacy users). Required for new registrations.
+    val firebaseUid: String? = null // Firebase Auth UID; null for PIN-only users (REQ-AUTH-001, REQ-DB-006)
 ) {
     /** Whether the user is a minor (under 18). Computed from birthYear. */
     val isMinor: Boolean

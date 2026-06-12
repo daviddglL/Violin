@@ -3,6 +3,15 @@ package com.violinmaster.app.data
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.violinmaster.app.data.firebase.AssignmentDoc
+import com.violinmaster.app.data.firebase.AssignmentSyncRepository
+import com.violinmaster.app.data.firebase.FakeFirestoreCollection
+import com.violinmaster.app.data.firebase.LessonDoc
+import com.violinmaster.app.data.firebase.LessonSyncRepository
+import com.violinmaster.app.data.firebase.SessionDoc
+import com.violinmaster.app.data.firebase.SessionSyncRepository
+import com.violinmaster.app.data.firebase.UserDoc
+import com.violinmaster.app.data.firebase.UserSyncRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -34,7 +43,21 @@ class IPracticeRepositoryTest {
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, PracticeDatabase::class.java).build()
-        repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
+        val sessionSync = SessionSyncRepository(FakeFirestoreCollection<SessionDoc>(), database.sessionDao())
+        val lessonSync = LessonSyncRepository(FakeFirestoreCollection<LessonDoc>(), database.lessonDao())
+        val userSync = UserSyncRepository(FakeFirestoreCollection<UserDoc>(), database.userDao())
+        val assignmentSync = AssignmentSyncRepository(FakeFirestoreCollection<AssignmentDoc>(), database.assignmentDao())
+        repository = PracticeRepository(
+            sessionSync = sessionSync,
+            lessonSync = lessonSync,
+            userSync = userSync,
+            assignmentSync = assignmentSync,
+            sessionDao = database.sessionDao(),
+            lessonDao = database.lessonDao(),
+            userDao = database.userDao(),
+            assignmentDao = database.assignmentDao(),
+            cloudConfig = CloudConfig()
+        )
     }
 
     @After

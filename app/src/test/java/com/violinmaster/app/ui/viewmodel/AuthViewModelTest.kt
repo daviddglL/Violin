@@ -3,10 +3,20 @@ package com.violinmaster.app.ui.viewmodel
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.violinmaster.app.data.CloudConfig
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.UserAccount
+import com.violinmaster.app.data.firebase.AssignmentDoc
+import com.violinmaster.app.data.firebase.AssignmentSyncRepository
+import com.violinmaster.app.data.firebase.FakeFirestoreCollection
+import com.violinmaster.app.data.firebase.LessonDoc
+import com.violinmaster.app.data.firebase.LessonSyncRepository
+import com.violinmaster.app.data.firebase.SessionDoc
+import com.violinmaster.app.data.firebase.SessionSyncRepository
+import com.violinmaster.app.data.firebase.UserDoc
+import com.violinmaster.app.data.firebase.UserSyncRepository
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
@@ -56,7 +66,12 @@ class AuthViewModelTest {
             .setTransactionExecutor(inlineExecutor)
             .setQueryExecutor(inlineExecutor)
             .build()
-        repository = PracticeRepository(database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao())
+        val sessionSync = SessionSyncRepository(FakeFirestoreCollection<SessionDoc>(), database.sessionDao())
+        val lessonSync = LessonSyncRepository(FakeFirestoreCollection<LessonDoc>(), database.lessonDao())
+        val userSync = UserSyncRepository(FakeFirestoreCollection<UserDoc>(), database.userDao())
+        val assignmentSync = AssignmentSyncRepository(FakeFirestoreCollection<AssignmentDoc>(), database.assignmentDao())
+        repository = PracticeRepository(sessionSync, lessonSync, userSync, assignmentSync,
+            database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao(), CloudConfig())
         authManager = AuthManager(context)
         securityUtils = SecurityUtils(context)
         loginUseCase = LoginUseCase(repository, authManager)

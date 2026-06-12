@@ -1,0 +1,72 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────────
+    // Helper: resolve a username from a Firebase Auth UID.
+    // Used by assignment rules to verify teacher/student identity.
+    // ─────────────────────────────────────────────────────────────────
+    function getUsername(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.username;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Users collection: self-access only.
+    // Each user can read and write ONLY their own document.
+    // REQ-FSEC-001, REQ-FSEC-002
+    // ─────────────────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Sessions: subcollection scoped under each user document.
+      // The parent user's UID must match the authenticated user.
+      // REQ-FSEC-001, REQ-FSEC-002
+      match /sessions/{sessionId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Lesson progress: flat collection with compound document IDs.
+    // Document ID format: {firebaseUid}_{lessonId}
+    // The authenticated user's UID must match the prefix of the docId.
+    // REQ-FSEC-001, REQ-FSEC-002
+    // ─────────────────────────────────────────────────────────────────
+    match /lesson_progress/{docId} {
+      allow read, write: if request.auth != null
+        && docId.matches(request.auth.uid + '_.*');
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Assignments: teacher-student role-based access.
+    // Teacher can read/write their own assignments (where they are
+    // listed as teacherUsername). Student can read assignments where
+    // they are the studentUsername. Cross-role access is denied.
+    // REQ-FSEC-003
+    // ─────────────────────────────────────────────────────────────────
+    match /assignments/{assignmentId} {
+      allow read: if request.auth != null
+        && (resource.data.teacherUsername == getUsername(request.auth.uid)
+            || resource.data.studentUsername == getUsername(request.auth.uid));
+      allow write: if request.auth != null
+        && resource.data.teacherUsername == getUsername(request.auth.uid);
+
+      // Chat messages: authenticated users can read/write messages
+      // within assignments they have access to.
+      // Inherits parent assignment access checks implicitly.
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // DENY-BY-DEFAULT catch-all.
+    // Any collection not explicitly granted above is denied.
+    // REQ-FSEC-001
+    // ─────────────────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

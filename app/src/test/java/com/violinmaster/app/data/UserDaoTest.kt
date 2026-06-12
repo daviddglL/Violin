@@ -179,4 +179,142 @@ class UserDaoTest {
         val users = dao.getAllUsers().first()
         assertTrue(users.isEmpty())
     }
+
+    // ── firebaseUid field (REQ-AUTH-001, REQ-DB-006) ────────────────────
+
+    @Test
+    fun `UserAccount firebaseUid defaults to null`() = runTest {
+        val user = UserAccount(
+            username = "test_firebaseUid",
+            role = "FREELANCER",
+            hashedPassword = "hash_fbu",
+            salt = "salt_fbu",
+            firebaseUid = null
+        )
+        assertNull(user.firebaseUid)
+    }
+
+    @Test
+    fun `UserAccount can store non-null firebaseUid`() = runTest {
+        val user = UserAccount(
+            username = "cloud_user_1",
+            role = "FREELANCER",
+            hashedPassword = "hash_fbu2",
+            salt = "salt_fbu2",
+            firebaseUid = "abc123def456"
+        )
+        assertEquals("abc123def456", user.firebaseUid)
+        assertEquals("cloud_user_1", user.username)
+    }
+
+    // ── Firestore UID queries (REQ-AUTH-001) ────────────────────────────
+
+    @Test
+    fun `getUserByFirebaseUid returns user when found`() = runTest {
+        dao.insertUser(
+            UserAccount(
+                username = "cloud_user_uid",
+                role = "FREELANCER",
+                hashedPassword = "hash_uid",
+                salt = "salt_uid",
+                firebaseUid = "firebase_abc_123"
+            )
+        )
+        advanceUntilIdle()
+
+        val retrieved = dao.getUserByFirebaseUid("firebase_abc_123")
+        assertNotNull("User with matching firebaseUid should be found", retrieved)
+        assertEquals("cloud_user_uid", retrieved!!.username)
+        assertEquals("FREELANCER", retrieved.role)
+    }
+
+    @Test
+    fun `getUserByFirebaseUid returns null when not found`() = runTest {
+        val retrieved = dao.getUserByFirebaseUid("nonexistent_uid")
+        assertNull("No user should match a non-existent firebaseUid", retrieved)
+    }
+
+    @Test
+    fun `getUserByFirebaseUid returns null for null firebaseUid users`() = runTest {
+        dao.insertUser(
+            UserAccount(
+                username = "pin_only",
+                role = "STUDENT",
+                hashedPassword = "hash_pin",
+                salt = "salt_pin",
+                firebaseUid = null
+            )
+        )
+        advanceUntilIdle()
+
+        // Querying by any non-null UID should not return the pin-only user
+        val retrieved = dao.getUserByFirebaseUid("some_uid")
+        assertNull("Null-firebaseUid user should not match any UID query", retrieved)
+    }
+
+    @Test
+    fun `updateFirebaseUid sets firebaseUid on existing user`() = runTest {
+        dao.insertUser(
+            UserAccount(
+                username = "link_me_uid",
+                role = "FREELANCER",
+                hashedPassword = "hash_link",
+                salt = "salt_link"
+            )
+        )
+        advanceUntilIdle()
+
+        dao.updateFirebaseUid("link_me_uid", "linked_uid_xyz")
+        advanceUntilIdle()
+
+        val user = dao.getUserByUsername("link_me_uid")
+        assertNotNull(user)
+        assertEquals("linked_uid_xyz", user!!.firebaseUid)
+    }
+
+    @Test
+    fun `updateFirebaseUid overwrites previous firebaseUid`() = runTest {
+        dao.insertUser(
+            UserAccount(
+                username = "relink_user",
+                role = "FREELANCER",
+                hashedPassword = "hash_rl",
+                salt = "salt_rl",
+                firebaseUid = "old_uid"
+            )
+        )
+        advanceUntilIdle()
+
+        dao.updateFirebaseUid("relink_user", "new_uid_2026")
+        advanceUntilIdle()
+
+        val user = dao.getUserByUsername("relink_user")
+        assertNotNull(user)
+        assertEquals("new_uid_2026", user!!.firebaseUid)
+    }
+
+    @Test
+    fun `persist and retrieve user with firebaseUid via Room round-trip`() = runTest {
+        val original = UserAccount(
+            username = "roundtrip_uid",
+            role = "TEACHER",
+            hashedPassword = "hash_rt",
+            salt = "salt_rt",
+            teacherCode = "TC-RT",
+            points = 300,
+            skillLevel = "Advanced",
+            firebaseUid = "uid_roundtrip_test"
+        )
+        dao.insertUser(original)
+        advanceUntilIdle()
+
+        val byUid = dao.getUserByFirebaseUid("uid_roundtrip_test")
+        assertNotNull(byUid)
+        assertEquals("roundtrip_uid", byUid!!.username)
+        assertEquals("TEACHER", byUid.role)
+        assertEquals("TC-RT", byUid.teacherCode)
+        assertEquals(300, byUid.points)
+        assertEquals("Advanced", byUid.skillLevel)
+        assertEquals("uid_roundtrip_test", byUid.firebaseUid)
+    }
 }

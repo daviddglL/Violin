@@ -1,6 +1,7 @@
 package com.violinmaster.app.data.remote
 
 import android.content.Intent
+import com.violinmaster.app.data.auth.GoogleSignInResult
 import com.violinmaster.app.data.auth.GoogleUser
 import com.violinmaster.app.data.auth.IGoogleAuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -145,8 +146,8 @@ class GeminiAuthInterceptorTest {
         private val token: String?
     ) : IGoogleAuthRepository {
         override val signedInFlow = MutableStateFlow(isSignedIn)
-        override suspend fun signIn(idToken: String): Result<GoogleUser> =
-            Result.success(GoogleUser("fake", "fake@test.com", "Fake", null))
+        override suspend fun signIn(idToken: String, usernameToLink: String?): Result<GoogleSignInResult> =
+            Result.success(GoogleSignInResult(GoogleUser("fake", "fake@test.com", "Fake", null), null))
         override suspend fun signOut() {}
         override fun getAccessToken(): String? = token
         override fun isSignedIn(): Boolean = isSignedIn

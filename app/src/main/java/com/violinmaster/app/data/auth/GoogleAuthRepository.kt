@@ -18,7 +18,9 @@ import javax.inject.Singleton
  *
  * Migrated from deprecated GoogleSignInClient (play-services-auth 21+) to
  * Credential Manager API (androidx.credentials). Token acquisition is handled
- * by the UI layer; this repository exchanges ID tokens for Firebase credentials.
+ * by the UI layer; this repository exchanges ID tokens for Firebase credentials
+ * and reconciles the user's local [com.violinmaster.app.data.UserAccount] with
+ * Firestore via [AuthReconciler].
  *
  * Each user signs in with their own Google account → Gemini API calls use
  * that user's OAuth token, consuming their own Gemini quota.
@@ -26,7 +28,8 @@ import javax.inject.Singleton
 @Singleton
 open class GoogleAuthRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val credentialManager: CredentialManager
+    private val credentialManager: CredentialManager,
+    private val authReconciler: AuthReconciler
 ) : IGoogleAuthRepository {
     // Lazily initialized to avoid Firebase instantiation in unit tests
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
@@ -36,12 +39,21 @@ open class GoogleAuthRepository @Inject constructor(
 
     /**
      * Exchanges a Google Sign-In ID token (obtained via CredentialManager in the UI)
-     * for Firebase Auth credentials and signs the user in to Firebase.
+     * for Firebase Auth credentials, signs the user in to Firebase, and reconciles
+     * the local [com.violinmaster.app.data.UserAccount] with Firestore.
+     *
+     * REQ-AUTH-001: Google Sign-In links Firebase UID.
+     * REQ-AUTH-002: Migration of existing PIN-only users (when usernameToLink is provided).
+     * REQ-AUTH-003: New user Google flow auto-creates account.
      *
      * @param idToken The ID token from a successful Google Sign-In.
-     * @return [Result] containing [GoogleUser] on success or an exception on failure.
+     * @param usernameToLink Optional existing Room username to link to this Google account.
+     * @return [Result] containing [GoogleSignInResult] on success or an exception on failure.
      */
-    override open suspend fun signIn(idToken: String): Result<GoogleUser> {
+    override open suspend fun signIn(
+        idToken: String,
+        usernameToLink: String?
+    ): Result<GoogleSignInResult> {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
             val authResult = auth.signInWithCredential(credential).await()
@@ -56,7 +68,25 @@ open class GoogleAuthRepository @Inject constructor(
                 displayName = firebaseUser.displayName ?: "Google User",
                 photoUrl = firebaseUser.photoUrl?.toString()
             )
-            Result.success(googleUser)
+
+            // Reconcile UserAccount with Firestore
+            val userAccount = if (usernameToLink != null) {
+                // REQ-AUTH-002: Existing PIN user linking Google for the first time
+                authReconciler.linkExistingUserToFirebaseUid(
+                    username = usernameToLink,
+                    firebaseUid = firebaseUser.uid,
+                    googleDisplayName = googleUser.displayName
+                )
+            } else {
+                // REQ-AUTH-001 / REQ-AUTH-003: New or returning Google user
+                authReconciler.reconcileAfterGoogleSignIn(
+                    firebaseUid = firebaseUser.uid,
+                    googleEmail = googleUser.email,
+                    googleDisplayName = googleUser.displayName
+                )
+            }
+
+            Result.success(GoogleSignInResult(googleUser, userAccount))
         } catch (e: Exception) {
             _signedInFlow.value = false
             Result.failure(e)

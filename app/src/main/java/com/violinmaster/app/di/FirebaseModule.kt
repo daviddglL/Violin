@@ -4,6 +4,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.violinmaster.app.data.ChatRepository
 import com.violinmaster.app.data.IChatRepository
+import com.violinmaster.app.data.firebase.FirestoreUsers
+import com.violinmaster.app.data.firebase.IFirestoreUsers
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -26,6 +28,10 @@ abstract class FirebaseModule {
     @Binds
     @Singleton
     abstract fun bindChatRepository(impl: ChatRepository): IChatRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFirestoreUsers(impl: FirestoreUsers): IFirestoreUsers
 
     companion object {
         @Provides

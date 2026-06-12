@@ -94,9 +94,14 @@ fun AuthenticationScreen(
                 val credential = result.credential
                 if (credential is GoogleIdTokenCredential) {
                     val idToken = credential.idToken
+                    // REQ-AUTH-001: signIn now reconciles UserAccount with Firestore
                     val signInResult = googleAuthRepository.signIn(idToken)
-                    signInResult.onSuccess {
+                    signInResult.onSuccess { result ->
                         authManager.setGoogleSignedIn(true)
+                        // If reconciliation produced a UserAccount, save it as current user
+                        result.userAccount?.let { account ->
+                            authManager.saveCurrentUser(account)
+                        }
                     }.onFailure { error ->
                         snackbarHostState.showSnackbar(
                             "Google Sign-In failed: ${error.message ?: "Unknown error"}"

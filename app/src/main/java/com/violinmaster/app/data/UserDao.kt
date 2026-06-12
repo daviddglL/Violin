@@ -23,6 +23,12 @@ interface UserDao {
     @Query("SELECT * FROM user_accounts ORDER BY username ASC")
     fun getAllUsers(): Flow<List<UserAccount>>
 
+    @Query("SELECT * FROM user_accounts WHERE firebaseUid = :uid LIMIT 1")
+    suspend fun getUserByFirebaseUid(uid: String): UserAccount?
+
+    @Query("UPDATE user_accounts SET firebaseUid = :uid WHERE username = :username")
+    suspend fun updateFirebaseUid(username: String, uid: String)
+
     @Delete
     suspend fun deleteUser(user: UserAccount)
 }

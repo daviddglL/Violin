@@ -28,7 +28,7 @@ open class CloudConfig {
      * routes operations through FirestoreSyncRepository. When false,
      * operations go directly to Room DAOs.
      */
-    open val cloudSyncEnabled: Boolean = false
+    open val cloudSyncEnabled: Boolean = true
 
     /**
      * Fetches the latest RemoteConfig values from the server.

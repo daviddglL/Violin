@@ -8,6 +8,7 @@ import com.violinmaster.app.audio.tuner.YinPitchDetector
 import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.di.UserPreferencesManager
 import com.violinmaster.app.domain.model.Instrument
+import com.violinmaster.app.ui.state.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,18 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Content data class for TunerViewModel UiState.
+ */
+data class TunerContent(
+    val selectedNote: String? = "A",
+    val isListening: Boolean = false,
+    val pitchOffsetCents: Float = 0f,
+    val autoDetect: Boolean = true,
+    val referencePitchA: Int = 440,
+    val instrument: Instrument = Instrument.VIOLIN
+)
+
 @HiltViewModel
 class TunerViewModel @Inject constructor(
     private val audioEngine: ViolinAudioEngine,
@@ -24,6 +37,25 @@ class TunerViewModel @Inject constructor(
     private val userPreferencesManager: UserPreferencesManager,
     private val analyticsHelper: AnalyticsHelper
 ) : ViewModel() {
+
+    // ── Unified UiState (REQ-UISTATE-001) ──────────────────────────
+    private val _uiState = MutableStateFlow<UiState<TunerContent>>(
+        UiState.Content(TunerContent())
+    )
+    val uiState: StateFlow<UiState<TunerContent>> = _uiState.asStateFlow()
+
+    private fun updateContent() {
+        _uiState.value = UiState.Content(
+            TunerContent(
+                selectedNote = _tunerSelectedNote.value,
+                isListening = _isListeningTuner.value,
+                pitchOffsetCents = _tunerPitchOffsetCents.value,
+                autoDetect = _tunerAutoDetect.value,
+                referencePitchA = _referencePitchA.value,
+                instrument = selectedInstrument.value
+            )
+        )
+    }
 
     // --- Active Instrument ---
     val selectedInstrument: StateFlow<Instrument> = userPreferencesManager.selectedInstrument
@@ -58,6 +90,7 @@ class TunerViewModel @Inject constructor(
                 audioEngine.playStringTone(note, pitch, selectedInstrument.value)
             }
         }
+        updateContent()
     }
 
     // --- Tuner Control State ---
@@ -86,6 +119,7 @@ class TunerViewModel @Inject constructor(
         } else {
             audioEngine.stopTone()
         }
+        updateContent()
     }
 
     fun playCustomFrequency(hz: Double) {
@@ -102,16 +136,15 @@ class TunerViewModel @Inject constructor(
 
     fun toggleListeningTuner() {
         if (_isListeningTuner.value) {
-            // Stop listening
             _isListeningTuner.value = false
             stopPitchCollection()
             _tunerPitchOffsetCents.value = 0f
         } else {
-            // Start listening
             selectTunerNote(null)
             _isListeningTuner.value = true
             startPitchCollection()
         }
+        updateContent()
     }
 
     private fun startPitchCollection() {
@@ -149,6 +182,7 @@ class TunerViewModel @Inject constructor(
 
     fun toggleTunerAutoDetect() {
         _tunerAutoDetect.value = !_tunerAutoDetect.value
+        updateContent()
     }
 
     /**

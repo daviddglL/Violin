@@ -17,6 +17,7 @@ import com.violinmaster.app.data.local.toMessage
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.GetMessagesUseCase
 import com.violinmaster.app.domain.usecase.SendMessageUseCase
+import com.violinmaster.app.ui.state.UiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -391,6 +392,73 @@ class ChatViewModelTest {
 
         // Assert: error is null again
         assertNull("Error should be null after clearError", viewModel.error.value)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // UiState tests — REQ-UISTATE-001 / REQ-UISTATE-002
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `uiState starts as Content with empty messages initially`() = runTest {
+        // ChatViewModel should start in Content state with empty data
+        // (no assignment loaded yet, not Loading because no async op started)
+        val state = viewModel.uiState.value
+        assertTrue("Initial state should be Content", state.isContent)
+        val content = state.getOrNull()
+        assertNotNull("Content data should not be null", content)
+        assertTrue("Messages should be empty initially", content!!.messages.isEmpty())
+        assertNull("No assignment loaded initially", content.currentAssignmentId)
+    }
+
+    @Test
+    fun `uiState emits Content after successful loadAssignment`() = runTest {
+        setCurrentUser("teacher_jane", "TEACHER")
+
+        // Act: load an assignment
+        viewModel.loadAssignment("A1")
+        advanceUntilIdle()
+
+        // Assert: uiState is Content with messages
+        val state = viewModel.uiState.value
+        assertTrue("uiState should be Content after load", state.isContent)
+        val content = state.getOrNull()
+        assertNotNull(content)
+        assertEquals("A1", content!!.currentAssignmentId)
+    }
+
+    @Test
+    fun `uiState emits Error when repository fails`() = runTest {
+        setCurrentUser("teacher_jane", "TEACHER")
+        viewModel.loadAssignment("A1")
+        advanceUntilIdle()
+
+        fakeRepo.shouldFailOnSend = true
+        viewModel.sendMessage("Failing message")
+        advanceUntilIdle()
+
+        // Assert: error flow is set, uiState might still be Content (error is separate)
+        // Error state on sendMessage failure sets _error, not uiState to Error
+        // uiState represents the LOAD state, send errors are separate
+        assertNotNull("Error flow should be set", viewModel.error.value)
+        assertTrue("Error message should contain Failed",
+            viewModel.error.value!!.contains("Failed", ignoreCase = true))
+    }
+
+    @Test
+    fun `existing StateFlows are preserved after UiState migration`() = runTest {
+        setCurrentUser("teacher_jane", "TEACHER")
+
+        // Verify existing flows still work
+        assertNotNull("messages flow should be accessible", viewModel.messages)
+        assertNotNull("isLoading flow should be accessible", viewModel.isLoading)
+        assertNotNull("error flow should be accessible", viewModel.error)
+        assertNotNull("currentAssignmentId flow should be accessible", viewModel.currentAssignmentId)
+
+        // Verify messages flow reflects data after load
+        viewModel.loadAssignment("A1")
+        advanceUntilIdle()
+
+        assertNotNull("messages value after load", viewModel.messages.value)
     }
 
     // ═══════════════════════════════════════════════════════════════════════

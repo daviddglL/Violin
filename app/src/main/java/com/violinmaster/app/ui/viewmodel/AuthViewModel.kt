@@ -10,6 +10,7 @@ import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
 import com.violinmaster.app.security.SecurityUtils
 import com.violinmaster.app.security.VideoSecurityService
+import com.violinmaster.app.ui.state.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
+
+/**
+ * Content data class for AuthViewModel UiState.
+ */
+data class AuthContent(
+    val currentUser: UserAccount? = null
+)
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -38,6 +46,12 @@ class AuthViewModel @Inject constructor(
     private val _signupSuccess = MutableStateFlow<String?>(null)
     val signupSuccess: StateFlow<String?> = _signupSuccess.asStateFlow()
 
+    // ── Unified UiState (REQ-UISTATE-001) ──────────────────────────
+    private val _uiState = MutableStateFlow<UiState<AuthContent>>(
+        UiState.Content(AuthContent())
+    )
+    val uiState: StateFlow<UiState<AuthContent>> = _uiState.asStateFlow()
+
     // --- Secure Passcode & Privacy states ---
     private val _isSecurityLocked = MutableStateFlow(securityUtils.isPasscodeSet())
     val isSecurityLocked: StateFlow<Boolean> = _isSecurityLocked.asStateFlow()
@@ -56,6 +70,7 @@ class AuthViewModel @Inject constructor(
                 val dbUser = repository.getUserByUsername(savedUserId)
                 if (dbUser != null) {
                     _currentUser.value = dbUser
+                    _uiState.value = UiState.Content(AuthContent(currentUser = dbUser))
                 }
             }
         }
@@ -109,6 +124,7 @@ class AuthViewModel @Inject constructor(
             if (user != null) {
                 _currentUser.value = user
                 _loginError.value = null
+                _uiState.value = UiState.Content(AuthContent(currentUser = user))
             } else {
                 _loginError.value = "error_login_failed"
             }
@@ -117,6 +133,7 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         _currentUser.value = null
+        _uiState.value = UiState.Content(AuthContent(currentUser = null))
         authManager.clearSession()
         _loginError.value = null
         _signupSuccess.value = null
@@ -130,6 +147,7 @@ class AuthViewModel @Inject constructor(
             val updatedUser = userVal.copy(teacherCode = teacherCode)
             repository.insertUser(updatedUser)
             _currentUser.value = updatedUser
+            _uiState.value = UiState.Content(AuthContent(currentUser = updatedUser))
         }
     }
 

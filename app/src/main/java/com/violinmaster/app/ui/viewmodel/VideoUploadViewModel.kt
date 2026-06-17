@@ -9,11 +9,15 @@ import com.violinmaster.app.service.FaceBlurProcessor
 import com.violinmaster.app.service.VideoCompressionService
 import com.violinmaster.app.service.VideoRecordingService
 import com.violinmaster.app.service.VideoUploadService
+import com.violinmaster.app.ui.state.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -77,6 +81,19 @@ class VideoUploadViewModel @Inject constructor(
 
     private val _uploadState = MutableStateFlow<UploadState>(UploadState.Idle)
     val uploadState: StateFlow<UploadState> = _uploadState.asStateFlow()
+
+    /**
+     * Unified UiState derived from the existing UploadState machine.
+     * Maps [UploadState.Error] to [UiState.Error], all others to [UiState.Content].
+     */
+    val uiState: StateFlow<UiState<UploadState>> = _uploadState
+        .map { state ->
+            when (state) {
+                is UploadState.Error -> UiState.Error(message = state.message)
+                else -> UiState.Content(state)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, UiState.Content(UploadState.Idle))
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()

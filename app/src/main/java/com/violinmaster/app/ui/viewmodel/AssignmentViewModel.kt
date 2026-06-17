@@ -11,6 +11,7 @@ import com.violinmaster.app.domain.usecase.CompleteAssignmentUseCase
 import com.violinmaster.app.domain.usecase.DeleteAssignmentUseCase
 import com.violinmaster.app.domain.usecase.GetAssignmentsUseCase
 import com.violinmaster.app.domain.usecase.PublishAssignmentUseCase
+import com.violinmaster.app.ui.state.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+/**
+ * Content data class for AssignmentViewModel UiState.
+ */
+data class AssignmentContent(
+    val studentAssignments: List<Assignment> = emptyList(),
+    val teacherAssignments: List<Assignment> = emptyList(),
+    val allUsers: List<UserAccount> = emptyList()
+)
 
 @HiltViewModel
 class AssignmentViewModel @Inject constructor(
@@ -31,6 +41,12 @@ class AssignmentViewModel @Inject constructor(
     private val publishAssignmentUseCase: PublishAssignmentUseCase,
     private val deleteAssignmentUseCase: DeleteAssignmentUseCase
 ) : ViewModel() {
+
+    // ── Unified UiState (REQ-UISTATE-001) ──────────────────────────
+    private val _uiState = MutableStateFlow<UiState<AssignmentContent>>(
+        UiState.Content(AssignmentContent())
+    )
+    val uiState: StateFlow<UiState<AssignmentContent>> = _uiState.asStateFlow()
 
     // --- Student / Teacher Assignments flows ---
     private val _studentAssignments = MutableStateFlow<List<Assignment>>(emptyList())
@@ -53,18 +69,34 @@ class AssignmentViewModel @Inject constructor(
             authManager.currentUser.collect { user ->
                 assignmentsJob?.cancel()
                 if (user != null) {
+                    _uiState.value = UiState.Loading
                     assignmentsJob = viewModelScope.launch {
-                        getAssignmentsUseCase(user.username, user.role, user.teacherCode).collect { list ->
-                            if (user.role == "TEACHER") {
-                                _teacherAssignments.value = list
-                            } else if (user.role == "STUDENT") {
-                                _studentAssignments.value = list
+                        try {
+                            getAssignmentsUseCase(user.username, user.role, user.teacherCode).collect { list ->
+                                if (user.role == "TEACHER") {
+                                    _teacherAssignments.value = list
+                                } else if (user.role == "STUDENT") {
+                                    _studentAssignments.value = list
+                                }
+                                _uiState.value = UiState.Content(
+                                    AssignmentContent(
+                                        studentAssignments = _studentAssignments.value,
+                                        teacherAssignments = _teacherAssignments.value,
+                                        allUsers = allUsers.value
+                                    )
+                                )
                             }
+                        } catch (e: Exception) {
+                            _uiState.value = UiState.Error(
+                                message = "Failed to load assignments: ${e.message}",
+                                throwable = e
+                            )
                         }
                     }
                 } else {
                     _studentAssignments.value = emptyList()
                     _teacherAssignments.value = emptyList()
+                    _uiState.value = UiState.Content(AssignmentContent())
                 }
             }
         }

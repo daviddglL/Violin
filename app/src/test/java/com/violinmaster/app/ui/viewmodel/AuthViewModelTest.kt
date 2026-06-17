@@ -7,6 +7,7 @@ import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.CloudConfig
 import com.violinmaster.app.data.IAnalyticsService
 import com.violinmaster.app.data.ICrashReportingService
+import com.violinmaster.app.ui.state.UiState
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
@@ -363,6 +364,67 @@ class AuthViewModelTest {
         // Assert
         assertFalse(viewModel.isUserAuthenticated.value)
         assertNull(viewModel.securityErrorString.value)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // UiState tests — REQ-UISTATE-001 / REQ-UISTATE-002
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `uiState starts as Content with null user initially`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue("Initial state should be Content", state.isContent)
+        val authContent = state.getOrNull()
+        assertNotNull("AuthContent should not be null", authContent)
+        assertNull("User should be null initially (no saved session)", authContent!!.currentUser)
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `uiState emits Content with user after successful login`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
+
+        // Register first
+        vm.register("testuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+        vm.login("testuser", "1234")
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue("uiState should be Content after login", state.isContent)
+        val authContent = state.getOrNull()
+        assertNotNull("AuthContent should not be null", authContent)
+        assertEquals("testuser", authContent!!.currentUser?.username)
+        assertEquals("STUDENT", authContent.currentUser?.role)
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `uiState still accessible after logout`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
+
+        // Login then logout
+        vm.register("testuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+        vm.login("testuser", "1234")
+        advanceUntilIdle()
+        vm.logout()
+
+        val state = vm.uiState.value
+        assertTrue("uiState should still be Content after logout", state.isContent)
+        val authContent = state.getOrNull()
+        assertNotNull(authContent)
+        assertNull("User should be null after logout", authContent!!.currentUser)
+        Dispatchers.resetMain()
     }
 
     // ── Test doubles for AnalyticsHelper dependencies ──────────────────

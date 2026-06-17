@@ -8,6 +8,7 @@ import com.violinmaster.app.data.firebase.Message
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.GetMessagesUseCase
 import com.violinmaster.app.domain.usecase.SendMessageUseCase
+import com.violinmaster.app.ui.state.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,9 +18,23 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
+ * Content data class for ChatViewModel UiState.
+ *
+ * Groups all primary screen data into a single value object
+ * so the UiState<T> pattern has exactly one Content payload.
+ */
+data class ChatContent(
+    val messages: List<Message> = emptyList(),
+    val currentAssignmentId: String? = null
+)
+
+/**
  * ViewModel for teacher-student chat.
  *
  * REQ-CHAT-005: Exposes messages StateFlow, sendMessage(), and loading/error states.
+ * REQ-UISTATE-001: Unified UiState<ChatContent> pattern replaces individual is/error/loading flows.
+ * REQ-UISTATE-002: Screen consumes uiState.collectAsState() with when(is Loading/Error/Content).
+ *
  * Reads currentUser from AuthManager to populate sender identity on message send.
  *
  * @param chatRepository Repository for Firestore + Room message persistence.
@@ -33,6 +48,15 @@ class ChatViewModel @Inject constructor(
     private val sendMessageUseCase: SendMessageUseCase,
     private val getMessagesUseCase: GetMessagesUseCase
 ) : ViewModel() {
+
+    // ── Unified UiState (REQ-UISTATE-001) ──────────────────────────
+
+    private val _uiState = MutableStateFlow<UiState<ChatContent>>(
+        UiState.Content(ChatContent())
+    )
+    val uiState: StateFlow<UiState<ChatContent>> = _uiState.asStateFlow()
+
+    // ── Individual StateFlows (kept for backward compat, updated synchronously with _uiState) ──
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     val messages: StateFlow<List<Message>> = _messages.asStateFlow()
@@ -59,6 +83,9 @@ class ChatViewModel @Inject constructor(
     fun loadAssignment(assignmentId: String) {
         // Cancel previous subscription
         messagesJob?.cancel()
+
+        // Update both UiState and legacy flows synchronously
+        _uiState.value = UiState.Loading
         _isLoading.value = true
         _currentAssignmentId.value = assignmentId
         _messages.value = emptyList()
@@ -68,10 +95,19 @@ class ChatViewModel @Inject constructor(
                 getMessagesUseCase(assignmentId).collect { messageList ->
                     _messages.value = messageList
                     _isLoading.value = false
+                    _uiState.value = UiState.Content(
+                        ChatContent(
+                            messages = messageList,
+                            currentAssignmentId = assignmentId
+                        )
+                    )
                 }
             } catch (e: Exception) {
-                _error.value = "Failed to load messages: ${e.message}"
                 _isLoading.value = false
+                _uiState.value = UiState.Error(
+                    message = "Failed to load messages: ${e.message}",
+                    throwable = e
+                )
             }
         }
     }

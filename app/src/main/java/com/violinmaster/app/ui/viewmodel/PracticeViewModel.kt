@@ -19,6 +19,7 @@ import com.violinmaster.app.domain.usecase.ToggleLessonStatusUseCase
 import com.violinmaster.app.domain.usecase.UpdateLessonProgressUseCase
 import com.violinmaster.app.domain.usecase.UpdateSkillLevelUseCase
 import com.violinmaster.app.domain.util.ScoringPolicy
+import com.violinmaster.app.ui.state.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -31,6 +32,19 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
+
+/**
+ * Content data class for PracticeViewModel UiState.
+ *
+ * Groups core practice screen data into a single value object.
+ */
+data class PracticeContent(
+    val isPracticing: Boolean = false,
+    val practiceCategoryName: String = "General Practice",
+    val practiceElapsedSeconds: Int = 0,
+    val dailyGoalMinutes: Int = 60,
+    val dailyTasksCompleted: Set<String> = emptySet()
+)
 
 @HiltViewModel
 class PracticeViewModel @Inject constructor(
@@ -54,8 +68,27 @@ class PracticeViewModel @Inject constructor(
     private val _dailyGoalMinutes = MutableStateFlow(60)
     val dailyGoalMinutes: StateFlow<Int> = _dailyGoalMinutes.asStateFlow()
 
+    // ── Unified UiState (REQ-UISTATE-001) ──────────────────────────
+    private val _uiState = MutableStateFlow<UiState<PracticeContent>>(
+        UiState.Content(PracticeContent())
+    )
+    val uiState: StateFlow<UiState<PracticeContent>> = _uiState.asStateFlow()
+
+    private fun syncUiState() {
+        _uiState.value = UiState.Content(
+            PracticeContent(
+                isPracticing = _isPracticing.value,
+                practiceCategoryName = _practiceCategoryName.value,
+                practiceElapsedSeconds = _practiceElapsedSeconds.value,
+                dailyGoalMinutes = _dailyGoalMinutes.value,
+                dailyTasksCompleted = _dailyTasksCompleted.value
+            )
+        )
+    }
+
     fun updateDailyGoal(minutes: Int) {
         _dailyGoalMinutes.value = minutes
+        syncUiState()
     }
 
     // --- Database Flows ---
@@ -117,12 +150,14 @@ class PracticeViewModel @Inject constructor(
         _practiceCategoryName.value = category
         _practiceElapsedSeconds.value = 0
         _isPracticing.value = true
+        syncUiState()
 
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (true) {
                 delay(1000)
                 _practiceElapsedSeconds.value += 1
+                syncUiState()
             }
         }
     }
@@ -131,16 +166,19 @@ class PracticeViewModel @Inject constructor(
         timerJob?.cancel()
         timerJob = null
         _isPracticing.value = false
+        syncUiState()
     }
 
     fun resumePracticeTimer() {
         if (!_isPracticing.value) {
             _isPracticing.value = true
+            syncUiState()
             timerJob?.cancel()
             timerJob = viewModelScope.launch {
                 while (true) {
                     delay(1000)
                     _practiceElapsedSeconds.value += 1
+                    syncUiState()
                 }
             }
         }
@@ -178,6 +216,7 @@ class PracticeViewModel @Inject constructor(
 
         _practiceElapsedSeconds.value = 0
         _isPracticing.value = false
+        syncUiState()
     }
 
     fun cancelPracticeTimer() {
@@ -185,6 +224,7 @@ class PracticeViewModel @Inject constructor(
         timerJob = null
         _practiceElapsedSeconds.value = 0
         _isPracticing.value = false
+        syncUiState()
     }
 
     // --- Practice Data Methods ---
@@ -220,6 +260,7 @@ class PracticeViewModel @Inject constructor(
         val currentCompleted = _dailyTasksCompleted.value.toMutableSet()
         if (currentCompleted.add(taskId)) {
             _dailyTasksCompleted.value = currentCompleted
+            syncUiState()
             userPreferencesManager.saveDailyTaskCompleted(today, currentCompleted)
 
             val pointsEarned = ScoringPolicy.pointsForTaskCompletion(attempts)

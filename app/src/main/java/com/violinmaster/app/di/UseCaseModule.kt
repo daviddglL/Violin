@@ -14,12 +14,15 @@ import com.violinmaster.app.domain.usecase.GetPracticeSessionsUseCase
 import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.PublishAssignmentUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
+import com.violinmaster.app.domain.usecase.ResetPinUseCase
 import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
 import com.violinmaster.app.domain.usecase.SeedDefaultLessonsUseCase
 import com.violinmaster.app.domain.usecase.SendMessageUseCase
+import com.violinmaster.app.domain.usecase.SetRecoveryQuestionUseCase
 import com.violinmaster.app.domain.usecase.ToggleLessonStatusUseCase
 import com.violinmaster.app.domain.usecase.UpdateLessonProgressUseCase
 import com.violinmaster.app.domain.usecase.UpdateSkillLevelUseCase
+import com.violinmaster.app.domain.usecase.VerifyRecoveryAnswerUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -152,4 +155,23 @@ object UseCaseModule {
         repository: IPracticeRepository,
         authManager: AuthManager
     ): ToggleLessonStatusUseCase = ToggleLessonStatusUseCase(repository, authManager)
+
+    @Provides
+    @Singleton
+    fun provideSetRecoveryQuestionUseCase(
+        repository: IPracticeRepository
+    ): SetRecoveryQuestionUseCase = SetRecoveryQuestionUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun provideVerifyRecoveryAnswerUseCase(
+        repository: IPracticeRepository
+    ): VerifyRecoveryAnswerUseCase = VerifyRecoveryAnswerUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun provideResetPinUseCase(
+        repository: IPracticeRepository,
+        authManager: AuthManager
+    ): ResetPinUseCase = ResetPinUseCase(repository, authManager)
 }

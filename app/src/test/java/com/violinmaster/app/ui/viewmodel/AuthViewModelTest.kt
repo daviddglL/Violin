@@ -24,6 +24,9 @@ import com.violinmaster.app.data.firebase.UserSyncRepository
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
+import com.violinmaster.app.domain.usecase.SetRecoveryQuestionUseCase
+import com.violinmaster.app.domain.usecase.VerifyRecoveryAnswerUseCase
+import com.violinmaster.app.domain.usecase.ResetPinUseCase
 import com.violinmaster.app.security.SecurityUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,6 +60,9 @@ class AuthViewModelTest {
     private lateinit var analyticsHelper: AnalyticsHelper
     private lateinit var loginUseCase: LoginUseCase
     private lateinit var registerUseCase: RegisterUseCase
+    private lateinit var setRecoveryQuestionUseCase: SetRecoveryQuestionUseCase
+    private lateinit var verifyRecoveryAnswerUseCase: VerifyRecoveryAnswerUseCase
+    private lateinit var resetPinUseCase: ResetPinUseCase
     private lateinit var viewModel: AuthViewModel
 
     @Before
@@ -85,17 +91,20 @@ class AuthViewModelTest {
         )
         loginUseCase = LoginUseCase(repository, authManager)
         registerUseCase = RegisterUseCase(repository)
+        setRecoveryQuestionUseCase = SetRecoveryQuestionUseCase(repository)
+        verifyRecoveryAnswerUseCase = VerifyRecoveryAnswerUseCase(repository)
+        resetPinUseCase = ResetPinUseCase(repository, authManager)
         createViewModel()
     }
 
     private fun createViewModel() {
         Dispatchers.setMain(Dispatchers.Unconfined)
-        viewModel = AuthViewModel(repository, authManager, securityUtils, analyticsHelper, loginUseCase, registerUseCase)
+        viewModel = AuthViewModel(repository, authManager, securityUtils, analyticsHelper, loginUseCase, registerUseCase, setRecoveryQuestionUseCase, verifyRecoveryAnswerUseCase, resetPinUseCase)
     }
 
     /** Creates a ViewModel without touching the test-wide [viewModel] field. Used by [runTest]-based tests. */
     private fun createTestViewModel() = AuthViewModel(
-        repository, authManager, securityUtils, analyticsHelper, loginUseCase, registerUseCase
+        repository, authManager, securityUtils, analyticsHelper, loginUseCase, registerUseCase, setRecoveryQuestionUseCase, verifyRecoveryAnswerUseCase, resetPinUseCase
     )
 
     @After
@@ -424,6 +433,162 @@ class AuthViewModelTest {
         val authContent = state.getOrNull()
         assertNotNull(authContent)
         assertNull("User should be null after logout", authContent!!.currentUser)
+        Dispatchers.resetMain()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PIN Recovery tests — REQ-PINREC-001, REQ-PINREC-002, REQ-PINREC-004, REQ-PINREC-005
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `forgotPinUsername initial state is empty`() = runBlocking {
+        assertEquals("", viewModel.forgotPinUsername.value)
+    }
+
+    @Test
+    fun `recoveryAttempts initial state is zero`() = runBlocking {
+        assertEquals(0, viewModel.recoveryAttempts.value)
+    }
+
+    @Test
+    fun `recoveryLocked initial state is false`() = runBlocking {
+        assertFalse(viewModel.recoveryLocked.value)
+    }
+
+    @Test
+    fun `recoveryQuestion initial state is null`() = runBlocking {
+        assertNull(viewModel.recoveryQuestion.value)
+    }
+
+    @Test
+    fun `setRecoveryQuestion updates user in repository`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
+        // Register and login first
+        vm.register("recuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+        vm.login("recuser", "1234")
+        advanceUntilIdle()
+        assertNotNull(vm.currentUser.value)
+
+        // Set recovery question
+        vm.setRecoveryQuestion("recovery_q_first_pet", "Fluffy")
+        advanceUntilIdle()
+
+        // Verify the user was updated with recovery fields
+        val updatedUser = repository.getUserByUsername("recuser")
+        assertNotNull(updatedUser)
+        assertEquals("recovery_q_first_pet", updatedUser!!.securityQuestion)
+        assertTrue(updatedUser.securityAnswerSalt.isNotEmpty())
+        assertTrue(updatedUser.securityAnswerHash.isNotEmpty())
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `verifyRecoveryAnswer with correct answer returns true`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
+        // Register, login, set recovery
+        vm.register("recuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+        vm.login("recuser", "1234")
+        advanceUntilIdle()
+        vm.setRecoveryQuestion("recovery_q_first_pet", "Fluffy")
+        advanceUntilIdle()
+
+        // Verify correct answer
+        val result = vm.verifyRecoveryAnswer("recuser", "Fluffy")
+        assertTrue(result)
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `verifyRecoveryAnswer with wrong answer returns false and increments attempts`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
+        vm.register("recuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+        vm.login("recuser", "1234")
+        advanceUntilIdle()
+        vm.setRecoveryQuestion("recovery_q_first_pet", "Fluffy")
+        advanceUntilIdle()
+
+        val result = vm.verifyRecoveryAnswer("recuser", "WrongAnswer")
+        assertFalse(result)
+        assertEquals(1, vm.recoveryAttempts.value)
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `after 3 failed attempts, recovery is locked`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
+        vm.register("recuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+        vm.login("recuser", "1234")
+        advanceUntilIdle()
+        vm.setRecoveryQuestion("recovery_q_first_pet", "Fluffy")
+        advanceUntilIdle()
+
+        // 3 wrong attempts
+        vm.verifyRecoveryAnswer("recuser", "Wrong1")
+        vm.verifyRecoveryAnswer("recuser", "Wrong2")
+        vm.verifyRecoveryAnswer("recuser", "Wrong3")
+
+        assertEquals(3, vm.recoveryAttempts.value)
+        assertTrue(vm.recoveryLocked.value)
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `resetPin changes the pin and auto-logs in`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
+        vm.register("recuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+
+        // Reset pin
+        vm.resetPin("recuser", "9999")
+        advanceUntilIdle()
+
+        // Verify new pin works (user is logged in)
+        assertNotNull(vm.currentUser.value)
+        assertEquals("recuser", vm.currentUser.value?.username)
+
+        // Verify old pin no longer works
+        vm.logout()
+        advanceUntilIdle()
+        vm.login("recuser", "1234")
+        advanceUntilIdle()
+        assertEquals("error_login_failed", vm.loginError.value)
+
+        // Verify new pin works
+        vm.login("recuser", "9999")
+        advanceUntilIdle()
+        assertNull(vm.loginError.value)
+        assertNotNull(vm.currentUser.value)
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `setRecoveryQuestion populates recoveryQuestion StateFlow`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        val vm = createTestViewModel()
+        vm.register("recuser", "1234", "STUDENT", birthYear = 2000)
+        advanceUntilIdle()
+
+        vm.setRecoveryQuestion("recovery_q_birth_city", "Springfield")
+        advanceUntilIdle()
+
+        // The recovery question should be accessible
+        val question = vm.getRecoveryQuestionForUser("recuser")
+        assertEquals("recovery_q_birth_city", question)
         Dispatchers.resetMain()
     }
 

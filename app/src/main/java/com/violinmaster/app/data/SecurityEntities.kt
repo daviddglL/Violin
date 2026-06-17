@@ -13,7 +13,10 @@ data class UserAccount(
     val points: Int = 0,
     val skillLevel: String = "Beginner", // "Beginner", "Intermediate", "Advanced"
     val birthYear: Int = 0, // 0 = not set (legacy users). Required for new registrations.
-    val firebaseUid: String? = null // Firebase Auth UID; null for PIN-only users (REQ-AUTH-001, REQ-DB-006)
+    val firebaseUid: String? = null, // Firebase Auth UID; null for PIN-only users (REQ-AUTH-001, REQ-DB-006)
+    val securityQuestion: String = "", // Key of the security question for PIN recovery (REQ-PINREC-001)
+    val securityAnswerSalt: String = "", // Salt used to hash the security answer (REQ-PINREC-001)
+    val securityAnswerHash: String = "" // Hashed security answer (REQ-PINREC-001)
 ) {
     /** Whether the user is a minor (under 18). Computed from birthYear. */
     val isMinor: Boolean

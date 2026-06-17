@@ -26,6 +26,9 @@ import com.violinmaster.app.data.firebase.UserSyncRepository
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
+import com.violinmaster.app.domain.usecase.SetRecoveryQuestionUseCase
+import com.violinmaster.app.domain.usecase.VerifyRecoveryAnswerUseCase
+import com.violinmaster.app.domain.usecase.ResetPinUseCase
 import com.violinmaster.app.security.SecurityUtils
 import com.violinmaster.app.ui.viewmodel.AuthViewModel
 import org.junit.After
@@ -49,6 +52,9 @@ class MasterclassTabTest {
     private lateinit var securityUtils: SecurityUtils
     private lateinit var loginUseCase: LoginUseCase
     private lateinit var registerUseCase: RegisterUseCase
+    private lateinit var setRecoveryUseCase: SetRecoveryQuestionUseCase
+    private lateinit var verifyRecoveryUseCase: VerifyRecoveryAnswerUseCase
+    private lateinit var resetPinUseCase: ResetPinUseCase
 
     @Before
     fun setup() {
@@ -70,6 +76,9 @@ class MasterclassTabTest {
         securityUtils = SecurityUtils(context)
         loginUseCase = LoginUseCase(repository, authManager)
         registerUseCase = RegisterUseCase(repository)
+        setRecoveryUseCase = SetRecoveryQuestionUseCase(repository)
+        verifyRecoveryUseCase = VerifyRecoveryAnswerUseCase(repository)
+        resetPinUseCase = ResetPinUseCase(repository, authManager)
     }
 
     @After
@@ -81,7 +90,7 @@ class MasterclassTabTest {
     fun `VP-002a - no passcode set shows unlocked masterclass hub directly`() {
         // Arrange: clear any existing passcode
         securityUtils.clearPasscode()
-        val viewModel = AuthViewModel(repository, authManager, securityUtils, testAnalyticsHelper(), loginUseCase, registerUseCase)
+        val viewModel = AuthViewModel(repository, authManager, securityUtils, testAnalyticsHelper(), loginUseCase, registerUseCase, setRecoveryUseCase, verifyRecoveryUseCase, resetPinUseCase)
 
         composeTestRule.setContent {
             MasterclassTab(
@@ -97,7 +106,7 @@ class MasterclassTabTest {
     @Test
     fun `VP-002b - passcode set shows authentication lock screen`() {
         // Arrange: set a passcode, but don't authenticate
-        val viewModel = AuthViewModel(repository, authManager, securityUtils, testAnalyticsHelper(), loginUseCase, registerUseCase)
+        val viewModel = AuthViewModel(repository, authManager, securityUtils, testAnalyticsHelper(), loginUseCase, registerUseCase, setRecoveryUseCase, verifyRecoveryUseCase, resetPinUseCase)
         viewModel.setPasscodeLock("1234")
         // Lock the session so isUserAuthenticated becomes false
         viewModel.lockSessionPromptly()

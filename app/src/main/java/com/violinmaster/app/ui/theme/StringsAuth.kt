@@ -61,7 +61,24 @@ object StringsAuth {
     "error_pin_length" to "Passcode PIN must be exactly 4 digits.",
     "error_login_failed" to "Incorrect username or security PIN.",
     "error_user_exists" to "User already registered. Please login.",
-    "success_register" to "Account secured! Log in now."
+    "success_register" to "Account secured! Log in now.",
+
+    "forgot_pin" to "Forgot PIN?",
+    "recovery_enter_username" to "Enter your username to recover",
+    "recovery_question_label" to "Security question",
+    "recovery_answer_hint" to "Your answer",
+    "recovery_set_new_pin" to "Set a new PIN",
+    "recovery_wrong_answer" to "Incorrect answer",
+    "recovery_locked" to "Too many attempts. Try again in {0} minutes.",
+    "recovery_success" to "PIN reset successful!",
+    "recovery_google_sign_in" to "Sign in with Google",
+    "recovery_no_question" to "Recovery not configured. Use Google Sign-In.",
+
+    "recovery_q_first_pet" to "What was the name of your first pet?",
+    "recovery_q_birth_city" to "In what city were you born?",
+    "recovery_q_favorite_teacher" to "Who was your favorite teacher?",
+    "recovery_q_childhood_nickname" to "What was your childhood nickname?",
+    "recovery_q_first_instrument" to "What was your first musical instrument?"
   )
 
   val es = mapOf(
@@ -124,6 +141,23 @@ object StringsAuth {
     "error_pin_length" to "El PIN debe ser exactamente de 4 dígitos.",
     "error_login_failed" to "ID de usuario o PIN de seguridad incorrecto.",
     "error_user_exists" to "El usuario ya está registrado. Inicie sesión.",
-    "success_register" to "¡Cuenta registrada! Ya puedes iniciar sesión."
+    "success_register" to "¡Cuenta registrada! Ya puedes iniciar sesión.",
+
+    "forgot_pin" to "¿Olvidaste tu PIN?",
+    "recovery_enter_username" to "Ingresá tu usuario para recuperar",
+    "recovery_question_label" to "Pregunta de seguridad",
+    "recovery_answer_hint" to "Tu respuesta",
+    "recovery_set_new_pin" to "Creá un nuevo PIN",
+    "recovery_wrong_answer" to "Respuesta incorrecta",
+    "recovery_locked" to "Demasiados intentos. Probá de nuevo en {0} minutos.",
+    "recovery_success" to "¡PIN restablecido!",
+    "recovery_google_sign_in" to "Iniciar sesión con Google",
+    "recovery_no_question" to "Recuperación no configurada. Usá Google Sign-In.",
+
+    "recovery_q_first_pet" to "¿Cómo se llamaba tu primera mascota?",
+    "recovery_q_birth_city" to "¿En qué ciudad naciste?",
+    "recovery_q_favorite_teacher" to "¿Quién fue tu profesor/a favorito/a?",
+    "recovery_q_childhood_nickname" to "¿Cuál era tu apodo de la infancia?",
+    "recovery_q_first_instrument" to "¿Cuál fue tu primer instrumento musical?"
   )
 }

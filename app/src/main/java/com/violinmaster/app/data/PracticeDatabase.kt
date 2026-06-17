@@ -17,6 +17,7 @@ import com.violinmaster.app.data.local.CachedMessage
  * - v4: Add birthYear column to UserAccount for age verification.
  * - v5: Add cached_messages table for teacher-student chat offline cache.
  * - v6: Add firebaseUid column to UserAccount for cloud auth reconciliation (REQ-DB-002, REQ-DB-006).
+ * - v7: Add securityQuestion, securityAnswerSalt, securityAnswerHash columns to UserAccount for PIN recovery (REQ-PINREC-006).
  */
 @Database(
     entities = [
@@ -26,7 +27,7 @@ import com.violinmaster.app.data.local.CachedMessage
         Assignment::class,
         CachedMessage::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class PracticeDatabase : RoomDatabase() {
@@ -105,6 +106,28 @@ abstract class PracticeDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "ALTER TABLE user_accounts ADD COLUMN firebaseUid TEXT"
+                )
+            }
+        }
+
+        /**
+         * Migration from version 6 to version 7.
+         *
+         * Adds securityQuestion, securityAnswerSalt, and securityAnswerHash
+         * TEXT NOT NULL DEFAULT '' columns to user_accounts for PIN recovery.
+         * Existing users get empty strings — they have no recovery configured.
+         * REQ-PINREC-006.
+         */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE user_accounts ADD COLUMN securityQuestion TEXT NOT NULL DEFAULT ''"
+                )
+                db.execSQL(
+                    "ALTER TABLE user_accounts ADD COLUMN securityAnswerSalt TEXT NOT NULL DEFAULT ''"
+                )
+                db.execSQL(
+                    "ALTER TABLE user_accounts ADD COLUMN securityAnswerHash TEXT NOT NULL DEFAULT ''"
                 )
             }
         }

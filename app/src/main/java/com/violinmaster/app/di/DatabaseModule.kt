@@ -31,7 +31,8 @@ object DatabaseModule {
                 PracticeDatabase.MIGRATION_2_3,
                 PracticeDatabase.MIGRATION_3_4,
                 PracticeDatabase.MIGRATION_4_5,
-                PracticeDatabase.MIGRATION_5_6
+                PracticeDatabase.MIGRATION_5_6,
+                PracticeDatabase.MIGRATION_6_7
             )
             .build()
     }

@@ -17,7 +17,10 @@ data class User(
     val skillLevel: String = "Beginner",
     val points: Int = 0,
     val teacherCode: String = "",
-    val birthYear: Int = 0
+    val birthYear: Int = 0,
+    val securityQuestion: String = "",
+    val securityAnswerHash: String = "",
+    val securityAnswerSalt: String = ""
 ) {
     /** Whether the user is a minor (under 18). Computed from birthYear using java.time. */
     val isMinor: Boolean

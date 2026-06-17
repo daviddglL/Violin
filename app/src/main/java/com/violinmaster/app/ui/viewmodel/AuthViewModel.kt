@@ -8,6 +8,10 @@ import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
+import com.violinmaster.app.domain.usecase.SetRecoveryQuestionUseCase
+import com.violinmaster.app.domain.usecase.VerifyRecoveryAnswerUseCase
+import com.violinmaster.app.domain.usecase.ResetPinUseCase
+import com.violinmaster.app.domain.model.RecoveryQuestion
 import com.violinmaster.app.security.SecurityUtils
 import com.violinmaster.app.security.VideoSecurityService
 import com.violinmaster.app.ui.state.UiState
@@ -33,7 +37,10 @@ class AuthViewModel @Inject constructor(
     private val securityUtils: SecurityUtils,
     private val analyticsHelper: AnalyticsHelper,
     private val loginUseCase: LoginUseCase,
-    private val registerUseCase: RegisterUseCase
+    private val registerUseCase: RegisterUseCase,
+    private val setRecoveryQuestionUseCase: SetRecoveryQuestionUseCase,
+    private val verifyRecoveryAnswerUseCase: VerifyRecoveryAnswerUseCase,
+    private val resetPinUseCase: ResetPinUseCase
 ) : ViewModel() {
 
     // --- User Roles Authentication State ---
@@ -61,6 +68,19 @@ class AuthViewModel @Inject constructor(
 
     private val _securityErrorString = MutableStateFlow<String?>(null)
     val securityErrorString: StateFlow<String?> = _securityErrorString.asStateFlow()
+
+    // ── PIN Recovery State (REQ-PINREC-001, REQ-PINREC-002, REQ-PINREC-005) ──
+    private val _forgotPinUsername = MutableStateFlow("")
+    val forgotPinUsername: StateFlow<String> = _forgotPinUsername.asStateFlow()
+
+    private val _recoveryAttempts = MutableStateFlow(0)
+    val recoveryAttempts: StateFlow<Int> = _recoveryAttempts.asStateFlow()
+
+    private val _recoveryLocked = MutableStateFlow(false)
+    val recoveryLocked: StateFlow<Boolean> = _recoveryLocked.asStateFlow()
+
+    private val _recoveryQuestion = MutableStateFlow<String?>(null)
+    val recoveryQuestion: StateFlow<String?> = _recoveryQuestion.asStateFlow()
 
     init {
         // Restore user session from SharedPreferences
@@ -231,5 +251,105 @@ class AuthViewModel @Inject constructor(
     fun clearAuthMessages() {
         _loginError.value = null
         _signupSuccess.value = null
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PIN Recovery Methods (REQ-PINREC-001, REQ-PINREC-002, REQ-PINREC-004, REQ-PINREC-005)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Sets the recovery question and hashed answer for the currently logged-in user.
+     * During registration, call this after a successful registration.
+     */
+    fun setRecoveryQuestion(question: String, answer: String) {
+        val user = _currentUser.value ?: return
+        val recoveryEnum = RecoveryQuestion.entries.find { it.questionKey == question } ?: return
+        viewModelScope.launch {
+            setRecoveryQuestionUseCase(user.username, recoveryEnum, answer)
+        }
+    }
+
+    /**
+     * Verifies a recovery answer for a given username.
+     * Rate-limited: after 3 failed attempts, recovery is locked for 5 minutes.
+     */
+    fun verifyRecoveryAnswer(username: String, answer: String): Boolean {
+        if (_recoveryLocked.value) return false
+
+        val success = runBlockingOnMain {
+            verifyRecoveryAnswerUseCase(username, answer)
+        }
+
+        if (success) {
+            _recoveryAttempts.value = 0
+            _recoveryLocked.value = false
+        } else {
+            _recoveryAttempts.value += 1
+            if (_recoveryAttempts.value >= 3) {
+                _recoveryLocked.value = true
+            }
+        }
+        return success
+    }
+
+    /**
+     * Resets the PIN for a user after successful recovery verification.
+     * Auto-logs the user in after reset.
+     */
+    fun resetPin(username: String, newPin: String) {
+        viewModelScope.launch {
+            val success = resetPinUseCase(username, newPin)
+            if (success) {
+                // Reload the user after PIN reset
+                val updatedUser = repository.getUserByUsername(username)
+                if (updatedUser != null) {
+                    _currentUser.value = updatedUser
+                    _uiState.value = UiState.Content(AuthContent(currentUser = updatedUser))
+                    _loginError.value = null
+                }
+                // Reset recovery state
+                _recoveryAttempts.value = 0
+                _recoveryLocked.value = false
+            }
+        }
+    }
+
+    /**
+     * Retrieves the stored security question key for a user.
+     * Returns the question key string, or null if not configured.
+     */
+    fun getRecoveryQuestionForUser(username: String): String? {
+        val user = runBlockingOnMain { repository.getUserByUsername(username) }
+        return user?.securityQuestion?.takeIf { it.isNotBlank() }
+    }
+
+    /**
+     * Sets the username for the forgot-PIN flow.
+     */
+    fun setForgotPinUsername(username: String) {
+        _forgotPinUsername.value = username
+        // Reset recovery state when starting a new recovery flow
+        _recoveryAttempts.value = 0
+        _recoveryLocked.value = false
+    }
+
+    /**
+     * Resets the recovery lockout state (manually or after timeout).
+     */
+    fun resetRecoveryLock() {
+        _recoveryAttempts.value = 0
+        _recoveryLocked.value = false
+    }
+
+    // ── Private helpers ─────────────────────────────────────────────────
+
+    /**
+     * Runs a suspend function synchronously on the main thread.
+     * Used for methods that need to return a value immediately (non-suspending).
+     */
+    private fun <T> runBlockingOnMain(block: suspend () -> T): T {
+        return kotlinx.coroutines.runBlocking {
+            block()
+        }
     }
 }

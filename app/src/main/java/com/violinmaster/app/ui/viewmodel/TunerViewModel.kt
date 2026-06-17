@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
 import com.violinmaster.app.audio.tuner.YinPitchDetector
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.di.UserPreferencesManager
 import com.violinmaster.app.domain.model.Instrument
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +21,8 @@ import javax.inject.Inject
 class TunerViewModel @Inject constructor(
     private val audioEngine: ViolinAudioEngine,
     private val tunerEngine: TunerEngine,
-    private val userPreferencesManager: UserPreferencesManager
+    private val userPreferencesManager: UserPreferencesManager,
+    private val analyticsHelper: AnalyticsHelper
 ) : ViewModel() {
 
     // --- Active Instrument ---

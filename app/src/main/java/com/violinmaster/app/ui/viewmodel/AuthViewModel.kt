@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
@@ -22,6 +23,7 @@ class AuthViewModel @Inject constructor(
     private val repository: IPracticeRepository,
     private val authManager: AuthManager,
     private val securityUtils: SecurityUtils,
+    private val analyticsHelper: AnalyticsHelper,
     private val loginUseCase: LoginUseCase,
     private val registerUseCase: RegisterUseCase
 ) : ViewModel() {

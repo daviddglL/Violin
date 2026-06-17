@@ -10,6 +10,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.data.CloudConfig
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeDatabase
+import com.violinmaster.app.data.AnalyticsHelper
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.firebase.AssignmentDoc
 import com.violinmaster.app.data.firebase.AssignmentSyncRepository
@@ -78,7 +81,7 @@ class MasterclassTabTest {
     fun `VP-002a - no passcode set shows unlocked masterclass hub directly`() {
         // Arrange: clear any existing passcode
         securityUtils.clearPasscode()
-        val viewModel = AuthViewModel(repository, authManager, securityUtils, loginUseCase, registerUseCase)
+        val viewModel = AuthViewModel(repository, authManager, securityUtils, testAnalyticsHelper(), loginUseCase, registerUseCase)
 
         composeTestRule.setContent {
             MasterclassTab(
@@ -94,7 +97,7 @@ class MasterclassTabTest {
     @Test
     fun `VP-002b - passcode set shows authentication lock screen`() {
         // Arrange: set a passcode, but don't authenticate
-        val viewModel = AuthViewModel(repository, authManager, securityUtils, loginUseCase, registerUseCase)
+        val viewModel = AuthViewModel(repository, authManager, securityUtils, testAnalyticsHelper(), loginUseCase, registerUseCase)
         viewModel.setPasscodeLock("1234")
         // Lock the session so isUserAuthenticated becomes false
         viewModel.lockSessionPromptly()
@@ -108,5 +111,22 @@ class MasterclassTabTest {
         // VP-002(b): With passcode set and not authenticated, lock screen renders
         // The SecureAuthenticationLockScreen contains keypad buttons with test tags
         composeTestRule.onNodeWithTag("keypad_1").assertIsDisplayed()
+    }
+
+    // ── Test helper for AnalyticsHelper ───────────────────────────────
+
+    private fun testAnalyticsHelper(): AnalyticsHelper {
+        val analytics = object : IAnalyticsService {
+            override fun logEvent(name: String, params: Map<String, Any>) {}
+            override fun setUserProperty(key: String, value: String) {}
+            override fun setUserId(id: String) {}
+            override fun setCurrentScreen(screenName: String, screenClass: String) {}
+        }
+        val crash = object : ICrashReportingService {
+            override fun log(message: String) {}
+            override fun recordException(throwable: Throwable) {}
+            override fun setCustomKey(key: String, value: String) {}
+        }
+        return AnalyticsHelper(analytics, crash)
     }
 }

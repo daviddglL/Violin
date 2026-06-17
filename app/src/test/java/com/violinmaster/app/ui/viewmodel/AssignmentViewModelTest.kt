@@ -3,8 +3,11 @@ package com.violinmaster.app.ui.viewmodel
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.Assignment
 import com.violinmaster.app.data.CloudConfig
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
@@ -45,6 +48,7 @@ class AssignmentViewModelTest {
     private lateinit var database: PracticeDatabase
     private lateinit var repository: IPracticeRepository
     private lateinit var authManager: AuthManager
+    private lateinit var analyticsHelper: AnalyticsHelper
     private lateinit var getAssignmentsUseCase: GetAssignmentsUseCase
     private lateinit var completeAssignmentUseCase: CompleteAssignmentUseCase
     private lateinit var publishAssignmentUseCase: PublishAssignmentUseCase
@@ -66,12 +70,16 @@ class AssignmentViewModelTest {
         repository = PracticeRepository(sessionSync, lessonSync, userSync, assignmentSync,
             database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao(), CloudConfig())
         authManager = AuthManager(context)
+        analyticsHelper = AnalyticsHelper(
+            analyticsService = FakeAnalyticsService(),
+            crashReportingService = FakeCrashReportingService()
+        )
         getAssignmentsUseCase = GetAssignmentsUseCase(repository)
         completeAssignmentUseCase = CompleteAssignmentUseCase(repository, authManager)
         publishAssignmentUseCase = PublishAssignmentUseCase(repository, authManager)
         deleteAssignmentUseCase = DeleteAssignmentUseCase(repository)
         viewModel = AssignmentViewModel(
-            repository, authManager, getAssignmentsUseCase, completeAssignmentUseCase,
+            repository, authManager, analyticsHelper, getAssignmentsUseCase, completeAssignmentUseCase,
             publishAssignmentUseCase, deleteAssignmentUseCase
         )
     }
@@ -302,5 +310,20 @@ class AssignmentViewModelTest {
         val titles = teacherAssignments.map { it.title }
         assertTrue(titles.contains("Task 1"))
         assertTrue(titles.contains("Task 2"))
+    }
+
+    // ── Test doubles for AnalyticsHelper dependencies ──────────────────
+
+    private class FakeAnalyticsService : IAnalyticsService {
+        override fun logEvent(name: String, params: Map<String, Any>) {}
+        override fun setUserProperty(key: String, value: String) {}
+        override fun setUserId(id: String) {}
+        override fun setCurrentScreen(screenName: String, screenClass: String) {}
+    }
+
+    private class FakeCrashReportingService : ICrashReportingService {
+        override fun log(message: String) {}
+        override fun recordException(throwable: Throwable) {}
+        override fun setCustomKey(key: String, value: String) {}
     }
 }

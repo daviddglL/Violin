@@ -4,7 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.CloudConfig
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.data.LessonProgress
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.IPracticeRepository
@@ -56,6 +59,7 @@ class PracticeViewModelTest {
     private lateinit var repository: IPracticeRepository
     private lateinit var authManager: AuthManager
     private lateinit var userPreferencesManager: UserPreferencesManager
+    private lateinit var analyticsHelper: AnalyticsHelper
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var savePracticeSessionUseCase: SavePracticeSessionUseCase
     private lateinit var getPracticeSessionsUseCase: GetPracticeSessionsUseCase
@@ -94,6 +98,10 @@ class PracticeViewModelTest {
         )
         authManager = AuthManager(context)
         userPreferencesManager = UserPreferencesManager(context)
+        analyticsHelper = AnalyticsHelper(
+            analyticsService = FakeAnalyticsService(),
+            crashReportingService = FakeCrashReportingService()
+        )
         audioEngine = ViolinAudioEngine()
         savePracticeSessionUseCase = SavePracticeSessionUseCase(repository)
         getPracticeSessionsUseCase = GetPracticeSessionsUseCase(repository)
@@ -109,7 +117,7 @@ class PracticeViewModelTest {
 
     private fun createViewModel() {
         viewModel = PracticeViewModel(
-            repository, authManager, userPreferencesManager, audioEngine,
+            repository, authManager, userPreferencesManager, analyticsHelper, audioEngine,
             savePracticeSessionUseCase, getPracticeSessionsUseCase,
             updateLessonProgressUseCase, generateDemoHistoryUseCase,
             toggleLessonStatusUseCase, deletePracticeSessionUseCase,
@@ -501,5 +509,20 @@ class PracticeViewModelTest {
         val updatedUser = repository.getUserByUsername("quiz_blocked")
         assertNotNull(updatedUser)
         assertEquals("Beginner", updatedUser!!.skillLevel)
+    }
+
+    // ── Test doubles for AnalyticsHelper dependencies ──────────────────
+
+    private class FakeAnalyticsService : IAnalyticsService {
+        override fun logEvent(name: String, params: Map<String, Any>) {}
+        override fun setUserProperty(key: String, value: String) {}
+        override fun setUserId(id: String) {}
+        override fun setCurrentScreen(screenName: String, screenClass: String) {}
+    }
+
+    private class FakeCrashReportingService : ICrashReportingService {
+        override fun log(message: String) {}
+        override fun recordException(throwable: Throwable) {}
+        override fun setCustomKey(key: String, value: String) {}
     }
 }

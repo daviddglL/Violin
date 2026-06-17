@@ -2,6 +2,7 @@ package com.violinmaster.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.data.AnalyticsHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,7 +11,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MetronomeViewModel @Inject constructor(
-    private val audioEngine: ViolinAudioEngine
+    private val audioEngine: ViolinAudioEngine,
+    private val analyticsHelper: AnalyticsHelper
 ) : ViewModel() {
 
     // --- Metronome Control State ---

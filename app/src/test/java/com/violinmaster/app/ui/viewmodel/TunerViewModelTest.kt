@@ -5,6 +5,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
 import com.violinmaster.app.audio.tuner.YinPitchDetector
+import com.violinmaster.app.data.AnalyticsHelper
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.di.UserPreferencesManager
 import com.violinmaster.app.domain.model.Instrument
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,6 +33,7 @@ class TunerViewModelTest {
     private lateinit var audioEngine: ViolinAudioEngine
     private lateinit var tunerEngine: TunerEngine
     private lateinit var userPreferencesManager: UserPreferencesManager
+    private lateinit var analyticsHelper: AnalyticsHelper
     private lateinit var viewModel: TunerViewModel
 
     @Before
@@ -40,7 +44,11 @@ class TunerViewModelTest {
         audioEngine = ViolinAudioEngine()
         tunerEngine = TunerEngine()
         userPreferencesManager = UserPreferencesManager(context)
-        viewModel = TunerViewModel(audioEngine, tunerEngine, userPreferencesManager)
+        analyticsHelper = AnalyticsHelper(
+            analyticsService = FakeAnalyticsService(),
+            crashReportingService = FakeCrashReportingService()
+        )
+        viewModel = TunerViewModel(audioEngine, tunerEngine, userPreferencesManager, analyticsHelper)
     }
 
     @After
@@ -204,5 +212,20 @@ class TunerViewModelTest {
             "A",
             result.note
         )
+    }
+
+    // ── Test doubles for AnalyticsHelper dependencies ──────────────────
+
+    private class FakeAnalyticsService : IAnalyticsService {
+        override fun logEvent(name: String, params: Map<String, Any>) {}
+        override fun setUserProperty(key: String, value: String) {}
+        override fun setUserId(id: String) {}
+        override fun setCurrentScreen(screenName: String, screenClass: String) {}
+    }
+
+    private class FakeCrashReportingService : ICrashReportingService {
+        override fun log(message: String) {}
+        override fun recordException(throwable: Throwable) {}
+        override fun setCustomKey(key: String, value: String) {}
     }
 }

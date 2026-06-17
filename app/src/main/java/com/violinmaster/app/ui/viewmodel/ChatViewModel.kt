@@ -2,6 +2,7 @@ package com.violinmaster.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.IChatRepository
 import com.violinmaster.app.data.firebase.Message
 import com.violinmaster.app.di.AuthManager
@@ -28,6 +29,7 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val chatRepository: IChatRepository,
     internal val authManager: AuthManager,
+    private val analyticsHelper: AnalyticsHelper,
     private val sendMessageUseCase: SendMessageUseCase,
     private val getMessagesUseCase: GetMessagesUseCase
 ) : ViewModel() {

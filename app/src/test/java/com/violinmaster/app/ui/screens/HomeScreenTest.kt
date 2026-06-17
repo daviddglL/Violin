@@ -8,7 +8,10 @@ import androidx.compose.ui.test.performClick
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.CloudConfig
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.PracticeRepository
 import com.violinmaster.app.data.firebase.AssignmentDoc
@@ -88,7 +91,21 @@ class HomeScreenTest {
         val earnPointsUseCase = EarnPointsUseCase(repository, authManager)
         val updateSkillLevelUseCase = UpdateSkillLevelUseCase(repository, authManager)
         viewModel = PracticeViewModel(
-            repository, authManager, userPreferencesManager, audioEngine,
+            repository, authManager, userPreferencesManager,
+            AnalyticsHelper(
+                object : IAnalyticsService {
+                    override fun logEvent(name: String, params: Map<String, Any>) {}
+                    override fun setUserProperty(key: String, value: String) {}
+                    override fun setUserId(id: String) {}
+                    override fun setCurrentScreen(screenName: String, screenClass: String) {}
+                },
+                object : ICrashReportingService {
+                    override fun log(message: String) {}
+                    override fun recordException(throwable: Throwable) {}
+                    override fun setCustomKey(key: String, value: String) {}
+                }
+            ),
+            audioEngine,
             savePracticeSessionUseCase, getPracticeSessionsUseCase,
             updateLessonProgressUseCase, generateDemoHistoryUseCase,
             toggleLessonStatusUseCase, deletePracticeSessionUseCase,

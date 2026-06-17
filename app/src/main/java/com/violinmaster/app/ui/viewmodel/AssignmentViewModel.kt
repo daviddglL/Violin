@@ -2,6 +2,7 @@ package com.violinmaster.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.Assignment
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.UserAccount
@@ -24,6 +25,7 @@ import javax.inject.Inject
 class AssignmentViewModel @Inject constructor(
     private val repository: IPracticeRepository,
     private val authManager: AuthManager,
+    private val analyticsHelper: AnalyticsHelper,
     private val getAssignmentsUseCase: GetAssignmentsUseCase,
     private val completeAssignmentUseCase: CompleteAssignmentUseCase,
     private val publishAssignmentUseCase: PublishAssignmentUseCase,

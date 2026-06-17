@@ -2,6 +2,7 @@ package com.violinmaster.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.firebase.Message
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.service.FaceBlurProcessor
@@ -40,7 +41,8 @@ class VideoUploadViewModel @Inject constructor(
     private val faceBlurProcessor: FaceBlurProcessor,
     private val compressionService: VideoCompressionService,
     private val uploadService: VideoUploadService,
-    internal val authManager: AuthManager
+    internal val authManager: AuthManager,
+    private val analyticsHelper: AnalyticsHelper
 ) : ViewModel() {
 
     /**

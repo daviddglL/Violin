@@ -7,6 +7,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.core.app.ApplicationProvider
 import com.google.firebase.FirebaseApp
 import com.violinmaster.app.data.Assignment
+import com.violinmaster.app.data.AnalyticsHelper
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.LessonProgress
 import com.violinmaster.app.data.PracticeSession
@@ -63,9 +66,24 @@ class AssignmentCreationFormTest {
         fakeRepo = FakePracticeRepository()
         fakeRecordingService = FakeVideoRecordingService(context)
 
+        val analyticsHelper = AnalyticsHelper(
+            object : IAnalyticsService {
+                override fun logEvent(name: String, params: Map<String, Any>) {}
+                override fun setUserProperty(key: String, value: String) {}
+                override fun setUserId(id: String) {}
+                override fun setCurrentScreen(screenName: String, screenClass: String) {}
+            },
+            object : ICrashReportingService {
+                override fun log(message: String) {}
+                override fun recordException(throwable: Throwable) {}
+                override fun setCustomKey(key: String, value: String) {}
+            }
+        )
+
         assignmentVM = AssignmentViewModel(
             repository = fakeRepo,
             authManager = authManager,
+            analyticsHelper = analyticsHelper,
             getAssignmentsUseCase = GetAssignmentsUseCase(fakeRepo),
             completeAssignmentUseCase = CompleteAssignmentUseCase(fakeRepo, authManager),
             publishAssignmentUseCase = PublishAssignmentUseCase(fakeRepo, authManager),
@@ -77,7 +95,8 @@ class AssignmentCreationFormTest {
             faceBlurProcessor = FakeFaceBlurProcessor(),
             compressionService = FakeVideoCompressionService(),
             uploadService = FakeVideoUploadService(),
-            authManager = authManager
+            authManager = authManager,
+            analyticsHelper = analyticsHelper
         )
     }
 

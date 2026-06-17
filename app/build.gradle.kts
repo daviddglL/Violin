@@ -7,6 +7,7 @@ plugins {
   alias(libs.plugins.hilt.android.gradle.plugin)
   alias(libs.plugins.ktlint)
   alias(libs.plugins.google.services)
+  alias(libs.plugins.firebase.crashlytics)
   alias(libs.plugins.jacoco)
 }
 
@@ -44,6 +45,10 @@ android {
       isMinifyEnabled = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
+
+      firebaseCrashlytics {
+        mappingFileUploadEnabled = true
+      }
     }
     debug {
       enableUnitTestCoverage = true
@@ -91,13 +96,12 @@ dependencies {
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.hilt.android)
   implementation(libs.hilt.navigation.compose)
-  implementation(libs.androidx.credentials)
-  implementation(libs.androidx.credentials.play.services.auth)
-  implementation(libs.googleid)
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.converter.moshi)
   implementation(libs.firebase.auth)
+  implementation(libs.firebase.analytics.ktx)
+  implementation(libs.firebase.crashlytics.ktx)
   implementation(libs.firebase.firestore.ktx)
   implementation(libs.firebase.storage.ktx)
   implementation(libs.mlkit.face.detection)
@@ -105,7 +109,6 @@ dependencies {
   implementation(libs.media3.ui)
   implementation(libs.media3.ui.compose)
   implementation(libs.media3.common)
-  implementation(libs.play.services.auth)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)

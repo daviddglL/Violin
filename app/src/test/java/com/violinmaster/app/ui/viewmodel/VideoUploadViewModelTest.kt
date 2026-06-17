@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
+import com.violinmaster.app.data.AnalyticsHelper
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.service.VideoCompressionService
 import com.violinmaster.app.service.VideoRecordingService
@@ -47,6 +50,7 @@ class VideoUploadViewModelTest {
     private lateinit var fakeCompressionService: FakeVideoCompressionService
     private lateinit var fakeUploadService: FakeVideoUploadService
     private lateinit var authManager: AuthManager
+    private lateinit var analyticsHelper: AnalyticsHelper
     private lateinit var viewModel: VideoUploadViewModel
 
     @Before
@@ -68,12 +72,17 @@ class VideoUploadViewModelTest {
         fakeCompressionService = FakeVideoCompressionService()
         fakeUploadService = FakeVideoUploadService()
         authManager = AuthManager(context)
+        analyticsHelper = AnalyticsHelper(
+            analyticsService = FakeAnalyticsService(),
+            crashReportingService = FakeCrashReportingService()
+        )
         viewModel = VideoUploadViewModel(
             recordingService = fakeRecordingService,
             faceBlurProcessor = fakeFaceBlurProcessor,
             compressionService = fakeCompressionService,
             uploadService = fakeUploadService,
-            authManager = authManager
+            authManager = authManager,
+            analyticsHelper = analyticsHelper
         )
     }
 
@@ -414,5 +423,20 @@ class VideoUploadViewModelTest {
             onProgress(1.0f)
             return "https://firebasestorage.googleapis.com/v0/b/violin-app/o/videos%2F${teacherUsername}%2F${assignmentId}%2Ftest.mp4?alt=media"
         }
+    }
+
+    // ── Test doubles for AnalyticsHelper dependencies ──────────────────
+
+    private class FakeAnalyticsService : IAnalyticsService {
+        override fun logEvent(name: String, params: Map<String, Any>) {}
+        override fun setUserProperty(key: String, value: String) {}
+        override fun setUserId(id: String) {}
+        override fun setCurrentScreen(screenName: String, screenClass: String) {}
+    }
+
+    private class FakeCrashReportingService : ICrashReportingService {
+        override fun log(message: String) {}
+        override fun recordException(throwable: Throwable) {}
+        override fun setCustomKey(key: String, value: String) {}
     }
 }

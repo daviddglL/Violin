@@ -3,6 +3,7 @@ package com.violinmaster.app.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.LessonProgress
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeSession
@@ -36,6 +37,7 @@ class PracticeViewModel @Inject constructor(
     private val repository: IPracticeRepository,
     private val authManager: AuthManager,
     private val userPreferencesManager: UserPreferencesManager,
+    private val analyticsHelper: AnalyticsHelper,
     private val audioEngine: ViolinAudioEngine,
     private val savePracticeSessionUseCase: SavePracticeSessionUseCase,
     private val getPracticeSessionsUseCase: GetPracticeSessionsUseCase,

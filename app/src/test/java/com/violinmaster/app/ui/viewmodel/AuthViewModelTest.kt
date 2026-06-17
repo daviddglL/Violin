@@ -3,7 +3,10 @@ package com.violinmaster.app.ui.viewmodel
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.CloudConfig
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.data.PracticeDatabase
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.PracticeRepository
@@ -50,6 +53,7 @@ class AuthViewModelTest {
     private lateinit var repository: IPracticeRepository
     private lateinit var authManager: AuthManager
     private lateinit var securityUtils: SecurityUtils
+    private lateinit var analyticsHelper: AnalyticsHelper
     private lateinit var loginUseCase: LoginUseCase
     private lateinit var registerUseCase: RegisterUseCase
     private lateinit var viewModel: AuthViewModel
@@ -74,6 +78,10 @@ class AuthViewModelTest {
             database.sessionDao(), database.lessonDao(), database.userDao(), database.assignmentDao(), CloudConfig())
         authManager = AuthManager(context)
         securityUtils = SecurityUtils(context)
+        analyticsHelper = AnalyticsHelper(
+            analyticsService = FakeAnalyticsService(),
+            crashReportingService = FakeCrashReportingService()
+        )
         loginUseCase = LoginUseCase(repository, authManager)
         registerUseCase = RegisterUseCase(repository)
         createViewModel()
@@ -81,12 +89,12 @@ class AuthViewModelTest {
 
     private fun createViewModel() {
         Dispatchers.setMain(Dispatchers.Unconfined)
-        viewModel = AuthViewModel(repository, authManager, securityUtils, loginUseCase, registerUseCase)
+        viewModel = AuthViewModel(repository, authManager, securityUtils, analyticsHelper, loginUseCase, registerUseCase)
     }
 
     /** Creates a ViewModel without touching the test-wide [viewModel] field. Used by [runTest]-based tests. */
     private fun createTestViewModel() = AuthViewModel(
-        repository, authManager, securityUtils, loginUseCase, registerUseCase
+        repository, authManager, securityUtils, analyticsHelper, loginUseCase, registerUseCase
     )
 
     @After
@@ -339,32 +347,6 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `authManager isGoogleSignedIn defaults to false`() {
-        assertEquals(false, authManager.isGoogleSignedIn.value)
-        assertNull(authManager.getSavedUserId())
-    }
-
-    @Test
-    fun `authManager setGoogleSignedIn updates state`() = runBlocking {
-        // Initially false
-        assertEquals(false, authManager.isGoogleSignedIn.value)
-
-        // Act: set Google signed in
-        authManager.setGoogleSignedIn(true)
-
-
-        // Assert: state updated
-        assertEquals(true, authManager.isGoogleSignedIn.value)
-
-        // Act: set Google signed out
-        authManager.setGoogleSignedIn(false)
-
-
-        // Assert: state reverted
-        assertEquals(false, authManager.isGoogleSignedIn.value)
-    }
-
-    @Test
     fun `logout clears unlocked area and resets auth state`() = runBlocking {
         // Arrange
         securityUtils.savePasscode("4321")
@@ -381,5 +363,20 @@ class AuthViewModelTest {
         // Assert
         assertFalse(viewModel.isUserAuthenticated.value)
         assertNull(viewModel.securityErrorString.value)
+    }
+
+    // ── Test doubles for AnalyticsHelper dependencies ──────────────────
+
+    private class FakeAnalyticsService : IAnalyticsService {
+        override fun logEvent(name: String, params: Map<String, Any>) {}
+        override fun setUserProperty(key: String, value: String) {}
+        override fun setUserId(id: String) {}
+        override fun setCurrentScreen(screenName: String, screenClass: String) {}
+    }
+
+    private class FakeCrashReportingService : ICrashReportingService {
+        override fun log(message: String) {}
+        override fun recordException(throwable: Throwable) {}
+        override fun setCustomKey(key: String, value: String) {}
     }
 }

@@ -3,6 +3,9 @@ package com.violinmaster.app.ui.viewmodel
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.violinmaster.app.data.AnalyticsHelper
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.data.local.CachedMessage
 import com.violinmaster.app.data.IChatRepository
 import com.violinmaster.app.data.ChatDao
@@ -51,6 +54,7 @@ class ChatViewModelTest {
     private lateinit var dao: ChatDao
     private lateinit var fakeRepo: FakeChatRepository
     private lateinit var authManager: AuthManager
+    private lateinit var analyticsHelper: AnalyticsHelper
     private lateinit var sendMessageUseCase: SendMessageUseCase
     private lateinit var getMessagesUseCase: GetMessagesUseCase
     private lateinit var viewModel: ChatViewModel
@@ -66,9 +70,13 @@ class ChatViewModelTest {
         dao = database.chatDao()
         fakeRepo = FakeChatRepository(dao)
         authManager = AuthManager(context)
+        analyticsHelper = AnalyticsHelper(
+            analyticsService = FakeAnalyticsService(),
+            crashReportingService = FakeCrashReportingService()
+        )
         sendMessageUseCase = SendMessageUseCase(fakeRepo, authManager)
         getMessagesUseCase = GetMessagesUseCase(fakeRepo)
-        viewModel = ChatViewModel(fakeRepo, authManager, sendMessageUseCase, getMessagesUseCase)
+        viewModel = ChatViewModel(fakeRepo, authManager, analyticsHelper, sendMessageUseCase, getMessagesUseCase)
     }
 
     @After
@@ -420,5 +428,20 @@ class ChatViewModelTest {
         override suspend fun clearMessagesForAssignment(assignmentId: String) {
             dao.clearCachedMessagesForAssignment(assignmentId)
         }
+    }
+
+    // ── Test doubles for AnalyticsHelper dependencies ──────────────────
+
+    private class FakeAnalyticsService : IAnalyticsService {
+        override fun logEvent(name: String, params: Map<String, Any>) {}
+        override fun setUserProperty(key: String, value: String) {}
+        override fun setUserId(id: String) {}
+        override fun setCurrentScreen(screenName: String, screenClass: String) {}
+    }
+
+    private class FakeCrashReportingService : ICrashReportingService {
+        override fun log(message: String) {}
+        override fun recordException(throwable: Throwable) {}
+        override fun setCustomKey(key: String, value: String) {}
     }
 }

@@ -7,6 +7,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.core.app.ApplicationProvider
 import com.violinmaster.app.audio.TunerEngine
 import com.violinmaster.app.audio.ViolinAudioEngine
+import com.violinmaster.app.data.AnalyticsHelper
+import com.violinmaster.app.data.IAnalyticsService
+import com.violinmaster.app.data.ICrashReportingService
 import com.violinmaster.app.di.UserPreferencesManager
 import com.violinmaster.app.ui.theme.AppLanguage
 import com.violinmaster.app.ui.viewmodel.TunerViewModel
@@ -37,7 +40,20 @@ class TunerScreenTest {
         audioEngine = ViolinAudioEngine()
         tunerEngine = TunerEngine()
         userPreferencesManager = UserPreferencesManager(context)
-        viewModel = TunerViewModel(audioEngine, tunerEngine, userPreferencesManager)
+        val analyticsHelper = AnalyticsHelper(
+            object : IAnalyticsService {
+                override fun logEvent(name: String, params: Map<String, Any>) {}
+                override fun setUserProperty(key: String, value: String) {}
+                override fun setUserId(id: String) {}
+                override fun setCurrentScreen(screenName: String, screenClass: String) {}
+            },
+            object : ICrashReportingService {
+                override fun log(message: String) {}
+                override fun recordException(throwable: Throwable) {}
+                override fun setCustomKey(key: String, value: String) {}
+            }
+        )
+        viewModel = TunerViewModel(audioEngine, tunerEngine, userPreferencesManager, analyticsHelper)
     }
 
     @After

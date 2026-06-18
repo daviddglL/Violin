@@ -29,6 +29,23 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
+  flavorDimensions += "environment"
+  productFlavors {
+    create("dev") {
+      dimension = "environment"
+      applicationIdSuffix = ".dev"
+      buildConfigField("String", "FIREBASE_PROJECT_ID", "\"violin-app-dev\"")
+      buildConfigField("boolean", "IS_STAGING", "true")
+      buildConfigField("boolean", "ANALYTICS_DEBUG_ENABLED", "true")
+    }
+    create("prod") {
+      dimension = "environment"
+      buildConfigField("String", "FIREBASE_PROJECT_ID", "\"violin-app-795ee\"")
+      buildConfigField("boolean", "IS_STAGING", "false")
+      buildConfigField("boolean", "ANALYTICS_DEBUG_ENABLED", "false")
+    }
+  }
+
   signingConfigs {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "$rootDir/my-upload-key.jks"

@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "5542f3afc774bde89c4c44e318110bfc",
+    "identityHash": "584dbf5bca611fedbfd3709f1ebab2ad",
     "entities": [
       {
         "tableName": "user_accounts",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`username` TEXT NOT NULL, `role` TEXT NOT NULL, `hashedPassword` TEXT NOT NULL, `salt` TEXT NOT NULL, `teacherCode` TEXT NOT NULL, `points` INTEGER NOT NULL, `skillLevel` TEXT NOT NULL, `birthYear` INTEGER NOT NULL, `firebaseUid` TEXT, PRIMARY KEY(`username`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`username` TEXT NOT NULL, `role` TEXT NOT NULL, `hashedPassword` TEXT NOT NULL, `salt` TEXT NOT NULL, `teacherCode` TEXT NOT NULL, `points` INTEGER NOT NULL, `skillLevel` TEXT NOT NULL, `birthYear` INTEGER NOT NULL, `firebaseUid` TEXT, `fcmToken` TEXT NOT NULL, `securityQuestion` TEXT NOT NULL, `securityAnswerSalt` TEXT NOT NULL, `securityAnswerHash` TEXT NOT NULL, PRIMARY KEY(`username`))",
         "fields": [
           {
             "fieldPath": "username",
@@ -60,6 +60,30 @@
             "fieldPath": "firebaseUid",
             "columnName": "firebaseUid",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fcmToken",
+            "columnName": "fcmToken",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "securityQuestion",
+            "columnName": "securityQuestion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "securityAnswerSalt",
+            "columnName": "securityAnswerSalt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "securityAnswerHash",
+            "columnName": "securityAnswerHash",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -72,7 +96,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5542f3afc774bde89c4c44e318110bfc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '584dbf5bca611fedbfd3709f1ebab2ad')"
     ]
   }
 }

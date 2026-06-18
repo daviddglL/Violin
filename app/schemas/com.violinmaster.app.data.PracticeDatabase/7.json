@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 7,
-    "identityHash": "bfa7e670fe6d125b7470a81c9bee29e6",
+    "identityHash": "be4c9caf17534a4ebc99442ee33a2231",
     "entities": [
       {
         "tableName": "practice_sessions",
@@ -96,7 +96,7 @@
       },
       {
         "tableName": "user_accounts",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`username` TEXT NOT NULL, `role` TEXT NOT NULL, `hashedPassword` TEXT NOT NULL, `salt` TEXT NOT NULL, `teacherCode` TEXT NOT NULL, `points` INTEGER NOT NULL, `skillLevel` TEXT NOT NULL, `birthYear` INTEGER NOT NULL, `firebaseUid` TEXT, `securityQuestion` TEXT NOT NULL, `securityAnswerSalt` TEXT NOT NULL, `securityAnswerHash` TEXT NOT NULL, PRIMARY KEY(`username`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`username` TEXT NOT NULL, `role` TEXT NOT NULL, `hashedPassword` TEXT NOT NULL, `salt` TEXT NOT NULL, `teacherCode` TEXT NOT NULL, `points` INTEGER NOT NULL, `skillLevel` TEXT NOT NULL, `birthYear` INTEGER NOT NULL, `firebaseUid` TEXT, `fcmToken` TEXT NOT NULL, `securityQuestion` TEXT NOT NULL, `securityAnswerSalt` TEXT NOT NULL, `securityAnswerHash` TEXT NOT NULL, PRIMARY KEY(`username`))",
         "fields": [
           {
             "fieldPath": "username",
@@ -150,6 +150,12 @@
             "fieldPath": "firebaseUid",
             "columnName": "firebaseUid",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fcmToken",
+            "columnName": "fcmToken",
+            "affinity": "TEXT",
+            "notNull": true
           },
           {
             "fieldPath": "securityQuestion",
@@ -318,7 +324,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bfa7e670fe6d125b7470a81c9bee29e6')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'be4c9caf17534a4ebc99442ee33a2231')"
     ]
   }
 }

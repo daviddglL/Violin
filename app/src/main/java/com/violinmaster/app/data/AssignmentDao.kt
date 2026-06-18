@@ -37,4 +37,7 @@ interface AssignmentDao {
 
     @Query("DELETE FROM student_assignments WHERE id = :id")
     suspend fun deleteAssignmentById(id: Int)
+
+    @Query("DELETE FROM student_assignments")
+    suspend fun clearAllAssignments()
 }

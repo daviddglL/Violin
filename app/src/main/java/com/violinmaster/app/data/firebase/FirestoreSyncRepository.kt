@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
  *                   the test dispatcher for deterministic execution.
  */
 abstract class FirestoreSyncRepository<T, D>(
-    private val collection: IFirestoreCollection<D>,
+    protected val collection: IFirestoreCollection<D>,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     // ── Entity ↔ Document Mapping (implemented by subclasses) ────────────

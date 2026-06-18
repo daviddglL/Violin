@@ -29,6 +29,9 @@ interface IPracticeRepository {
 
     suspend fun insertUser(user: UserAccount)
     suspend fun getUserByUsername(username: String): UserAccount?
+    suspend fun getUserByFirebaseUid(uid: String): UserAccount? = null
+    suspend fun updateFirebaseUid(username: String, uid: String) = Unit
+    suspend fun deleteAllUserData(user: UserAccount) = Unit
 
     val allAssignments: Flow<List<Assignment>>
 

@@ -99,4 +99,42 @@ class FirestoreCollection<T>(
             }
         return { listener.remove() }
     }
+
+    /**
+     * Queries documents by a single field equality condition.
+     *
+     * Uses Firestore's [whereEqualTo] for server-side filtering.
+     * The query is executed as a one-shot get, not a real-time listener.
+     *
+     * @param field The document field name to filter on.
+     * @param value The value to match.
+     * @return List of matching documents.
+     */
+    override suspend fun queryByField(field: String, value: Any): List<T> {
+        val snapshot = firestore.collection(pathProvider())
+            .whereEqualTo(field, value)
+            .get()
+            .await()
+        return snapshot.documents.mapNotNull { it.toObject(docClass) }
+    }
+
+    /**
+     * Deletes all documents in a subcollection of this collection.
+     *
+     * Fetches all document IDs from the subcollection, then deletes each
+     * document individually. Firestore does not support bulk subcollection
+     * deletion, so this iterates with individual deletes.
+     *
+     * Used for GDPR cascading deletion of user data.
+     *
+     * @param subcollectionPath The subcollection path relative to this collection
+     *                          (e.g., "sessions" for users/{uid}/sessions).
+     */
+    override suspend fun deleteSubcollection(subcollectionPath: String) {
+        val fullPath = "${pathProvider()}/$subcollectionPath"
+        val snapshot = firestore.collection(fullPath).get().await()
+        for (doc in snapshot.documents) {
+            firestore.collection(fullPath).document(doc.id).delete().await()
+        }
+    }
 }

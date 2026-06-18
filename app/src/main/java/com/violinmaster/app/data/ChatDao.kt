@@ -36,4 +36,7 @@ interface ChatDao {
      */
     @Query("DELETE FROM cached_messages WHERE assignmentId = :assignmentId")
     suspend fun clearCachedMessagesForAssignment(assignmentId: String)
+
+    @Query("DELETE FROM cached_messages")
+    suspend fun clearAllCachedMessages()
 }

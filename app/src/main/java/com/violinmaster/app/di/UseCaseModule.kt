@@ -3,6 +3,7 @@ package com.violinmaster.app.di
 import com.violinmaster.app.data.IChatRepository
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.domain.usecase.CompleteAssignmentUseCase
+import com.violinmaster.app.domain.usecase.DataDeletionUseCase
 import com.violinmaster.app.domain.usecase.DeleteAssignmentUseCase
 import com.violinmaster.app.domain.usecase.DeletePracticeSessionUseCase
 import com.violinmaster.app.domain.usecase.EarnPointsUseCase
@@ -11,6 +12,7 @@ import com.violinmaster.app.domain.usecase.GetAssignmentsUseCase
 import com.violinmaster.app.domain.usecase.GetLeaderboardUseCase
 import com.violinmaster.app.domain.usecase.GetMessagesUseCase
 import com.violinmaster.app.domain.usecase.GetPracticeSessionsUseCase
+import com.violinmaster.app.domain.usecase.LinkGoogleAccountUseCase
 import com.violinmaster.app.domain.usecase.LoginUseCase
 import com.violinmaster.app.domain.usecase.PublishAssignmentUseCase
 import com.violinmaster.app.domain.usecase.RegisterUseCase
@@ -19,10 +21,12 @@ import com.violinmaster.app.domain.usecase.SavePracticeSessionUseCase
 import com.violinmaster.app.domain.usecase.SeedDefaultLessonsUseCase
 import com.violinmaster.app.domain.usecase.SendMessageUseCase
 import com.violinmaster.app.domain.usecase.SetRecoveryQuestionUseCase
+import com.violinmaster.app.domain.usecase.SignInWithGoogleUseCase
 import com.violinmaster.app.domain.usecase.ToggleLessonStatusUseCase
 import com.violinmaster.app.domain.usecase.UpdateLessonProgressUseCase
 import com.violinmaster.app.domain.usecase.UpdateSkillLevelUseCase
 import com.violinmaster.app.domain.usecase.VerifyRecoveryAnswerUseCase
+import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -174,4 +178,26 @@ object UseCaseModule {
         repository: IPracticeRepository,
         authManager: AuthManager
     ): ResetPinUseCase = ResetPinUseCase(repository, authManager)
+
+    @Provides
+    @Singleton
+    fun provideSignInWithGoogleUseCase(
+        firebaseAuth: FirebaseAuth,
+        repository: IPracticeRepository,
+        authManager: AuthManager
+    ): SignInWithGoogleUseCase = SignInWithGoogleUseCase(firebaseAuth, repository, authManager)
+
+    @Provides
+    @Singleton
+    fun provideLinkGoogleAccountUseCase(
+        firebaseAuth: FirebaseAuth,
+        repository: IPracticeRepository
+    ): LinkGoogleAccountUseCase = LinkGoogleAccountUseCase(firebaseAuth, repository)
+
+    @Provides
+    @Singleton
+    fun provideDataDeletionUseCase(
+        authManager: AuthManager,
+        userPrefsManager: UserPreferencesManager
+    ): DataDeletionUseCase = DataDeletionUseCase(authManager, userPrefsManager)
 }

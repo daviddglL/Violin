@@ -5,6 +5,8 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.violinmaster.app.data.local.CachedMessage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Room database for Violin Master app.
@@ -36,6 +38,25 @@ abstract class PracticeDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun assignmentDao(): AssignmentDao
     abstract fun chatDao(): ChatDao
+
+    /**
+     * Wipes all tables in a single transaction for GDPR cascading deletion.
+     *
+     * Uses [withContext] to ensure the operation runs on [Dispatchers.IO],
+     * preventing main-thread database access. Unlike the built-in
+     * [RoomDatabase.clearAllTables], this method can be called from a
+     * coroutine without requiring runInTransaction.
+     *
+     * REQ-GD-003: Room wipe phase of cascading deletion.
+     */
+    suspend fun wipeAllTables() {
+        withContext(Dispatchers.IO) {
+            sessionDao().clearAllSessions()
+            lessonDao().clearAllLessons()
+            assignmentDao().clearAllAssignments()
+            chatDao().clearAllCachedMessages()
+        }
+    }
 
     companion object {
         /**

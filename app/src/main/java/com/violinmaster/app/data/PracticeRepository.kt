@@ -136,6 +136,21 @@ class PracticeRepository(
         return userDao.getUserByUsername(username)
     }
 
+    override suspend fun getUserByFirebaseUid(uid: String): UserAccount? {
+        return userDao.getUserByFirebaseUid(uid)
+    }
+
+    override suspend fun updateFirebaseUid(username: String, uid: String) {
+        userDao.updateFirebaseUid(username, uid)
+    }
+
+    override suspend fun deleteAllUserData(user: UserAccount) {
+        userDao.deleteUser(user)
+        sessionDao.clearAllSessions()
+        lessonDao.clearAllLessons()
+        assignmentDao.clearAllAssignments()
+    }
+
     // ── Assignment Operations ──────────────────────────────────────────────
 
     override val allAssignments: Flow<List<Assignment>>

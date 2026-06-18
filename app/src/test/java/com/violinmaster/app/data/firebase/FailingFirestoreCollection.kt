@@ -57,6 +57,15 @@ class FailingFirestoreCollection<D> : IFirestoreCollection<D> {
         }
     }
 
+    override suspend fun queryByField(field: String, value: Any): List<D> {
+        throw RuntimeException("Simulated Firestore query failure")
+    }
+
+    override suspend fun deleteSubcollection(subcollectionPath: String) {
+        documents.removeAll { it.first.startsWith("$subcollectionPath/") }
+        notifySnapshot()
+    }
+
     fun getAllDocuments(): List<Pair<String, D>> = documents.toList()
 
     fun simulateError(error: Exception) {

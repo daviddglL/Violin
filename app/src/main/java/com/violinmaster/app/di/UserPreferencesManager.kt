@@ -60,11 +60,22 @@ class UserPreferencesManager @Inject constructor(
     return prefs.getStringSet("daily_completed_$today", emptySet()) ?: emptySet()
   }
 
-  fun saveDailyTaskCompleted(today: String, tasks: Set<String>) {
-    prefs.edit().putStringSet("daily_completed_$today", tasks).apply()
-  }
+    fun saveDailyTaskCompleted(today: String, tasks: Set<String>) {
+        prefs.edit().putStringSet("daily_completed_$today", tasks).apply()
+    }
 
-  companion object {
+    /**
+     * Clears all user preference keys for GDPR cascading deletion.
+     *
+     * REQ-GD-003: SharedPreferences clear phase of cascading deletion.
+     */
+    fun clearAll() {
+        _appLanguage.value = AppLanguage.ENGLISH
+        _selectedInstrument.value = Instrument.VIOLIN
+        prefs.edit().clear().apply()
+    }
+
+    companion object {
     private const val PREFS_NAME = "app_settings"
     private const val KEY_APP_LANG = "app_lang"
     private const val KEY_SELECTED_INSTRUMENT = "selected_instrument"

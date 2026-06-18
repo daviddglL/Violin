@@ -50,12 +50,22 @@ class AuthManager @Inject constructor(
     prefs.edit().putBoolean(KEY_GOOGLE_SIGNED_IN, signedIn).apply()
   }
 
-  fun clearSession() {
-    _currentUser.value = null
-    prefs.edit().remove(KEY_CURRENT_USER_ID).apply()
-  }
+    fun clearSession() {
+        _currentUser.value = null
+        prefs.edit().remove(KEY_CURRENT_USER_ID).apply()
+    }
 
-  companion object {
+    /**
+     * Clears all SharedPreferences data for GDPR cascading deletion.
+     *
+     * REQ-GD-003: SharedPreferences clear phase of cascading deletion.
+     */
+    fun clearAllData() {
+        _currentUser.value = null
+        prefs.edit().clear().apply()
+    }
+
+    companion object {
     private const val PREFS_NAME = "app_settings"
     private const val KEY_CURRENT_USER_ID = "current_user_id"
     private const val KEY_GOOGLE_SIGNED_IN = "google_signed_in"

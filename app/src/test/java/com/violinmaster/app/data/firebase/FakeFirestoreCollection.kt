@@ -44,6 +44,26 @@ class FakeFirestoreCollection<D> : IFirestoreCollection<D> {
         }
     }
 
+    override suspend fun queryByField(field: String, value: Any): List<D> {
+        return documents.filter { (_, doc) ->
+            val docValue = doc?.let { d ->
+                try {
+                    val f = d!!::class.java.getDeclaredField(field)
+                    f.isAccessible = true
+                    f.get(d)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            docValue == value
+        }.map { it.second }
+    }
+
+    override suspend fun deleteSubcollection(subcollectionPath: String) {
+        documents.removeAll { it.first.startsWith("$subcollectionPath/") }
+        notifySnapshot()
+    }
+
     // ── Test Helpers ─────────────────────────────────────────────────────
 
     /**

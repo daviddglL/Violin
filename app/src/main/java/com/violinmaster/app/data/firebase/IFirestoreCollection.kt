@@ -43,4 +43,26 @@ interface IFirestoreCollection<D> {
         onSnapshot: (List<D>) -> Unit,
         onError: (Exception) -> Unit
     ): () -> Unit
+
+    /**
+     * Queries documents by a single field equality condition.
+     *
+     * Used for cross-device login: find a user document by username
+     * when the local cache doesn't have it yet.
+     *
+     * @param field The document field name to filter on.
+     * @param value The value to match (supports String, Int, Boolean).
+     * @return List of matching documents (empty if none found).
+     */
+    suspend fun queryByField(field: String, value: Any): List<D>
+
+    /**
+     * Deletes all documents in a subcollection identified by the given path.
+     *
+     * Used for GDPR cascading deletion. Each document is fetched and deleted
+     * individually since Firestore does not support bulk subcollection deletion.
+     *
+     * @param subcollectionPath The subcollection path relative to this collection.
+     */
+    suspend fun deleteSubcollection(subcollectionPath: String)
 }

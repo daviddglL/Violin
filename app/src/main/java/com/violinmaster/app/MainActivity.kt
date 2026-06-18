@@ -141,8 +141,6 @@ fun MainLayout(
     ) { innerPadding ->
       AuthenticationScreen(
         authViewModel = authViewModel,
-        googleAuthRepository = googleAuthRepository,
-        credentialManager = credentialManager,
         authManager = authManager,
         appLanguage = lang,
         modifier = Modifier.padding(innerPadding)

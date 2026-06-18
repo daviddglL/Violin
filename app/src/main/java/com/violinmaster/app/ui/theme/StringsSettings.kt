@@ -16,6 +16,8 @@ object StringsSettings {
     "auth_role_label" to "LOGGED USER PROFILE",
     "change_role_btn" to "Switch or Log Out Profile",
     "delete_data" to "FACTORY RESET PRACTICE LOGS",
+    "privacy_policy" to "Privacy Policy",
+    "delete_data_confirm" to "This will sign you out. Your data remains on our servers. Full account deletion coming soon.",
     "reset_success" to "Logs flushed successfully.",
     "active_session_label" to "ACTIVE SESSION",
     "seed_db_title" to "EXPLORE SAMPLE HISTORY LOGS",

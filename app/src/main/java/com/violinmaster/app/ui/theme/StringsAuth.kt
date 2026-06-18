@@ -64,6 +64,7 @@ object StringsAuth {
     "success_register" to "Account secured! Log in now.",
 
     "forgot_pin" to "Forgot PIN?",
+    "sign_in_with_google" to "Sign in with Google",
     "recovery_enter_username" to "Enter your username to recover",
     "recovery_question_label" to "Security question",
     "recovery_answer_hint" to "Your answer",

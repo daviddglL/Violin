@@ -18,11 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
 import com.violinmaster.app.ui.component.AccountSection
 import com.violinmaster.app.ui.component.LanguageSelector
 import com.violinmaster.app.ui.component.SecuritySection
@@ -239,6 +241,94 @@ fun SettingsScreen(
                     Text(Localization.get("seed_db_button", lang), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                 }
             }
+        }
+
+        // ── Privacy & Data ──────────────────────────────────────────
+
+        // Privacy Policy
+        val privacyContext = LocalContext.current
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        data = android.net.Uri.parse("file:///android_asset/privacy_policy.html")
+                        addCategory(Intent.CATEGORY_BROWSABLE)
+                    }
+                    privacyContext.startActivity(intent)
+                }
+                .testTag("privacy_policy_row"),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.04f))
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Policy, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = Localization.get("privacy_policy", lang),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.White.copy(alpha = 0.3f))
+            }
+        }
+
+        // Delete My Data
+        var showDeleteDialog by remember { mutableStateOf(false) }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showDeleteDialog = true }
+                .testTag("delete_data_row"),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.04f))
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = Localization.get("delete_data", lang),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        // Delete confirmation dialog
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text(Localization.get("delete_data", lang)) },
+                text = { Text(Localization.get("delete_data_confirm", lang)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                            // TODO: Wire DataDeletionUseCase when AuthViewModel supports it
+                            authVM.logout()
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
 
         // --- VIOLIN TIP METICULOUS BOX ---

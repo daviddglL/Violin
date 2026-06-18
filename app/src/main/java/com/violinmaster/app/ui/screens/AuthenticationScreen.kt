@@ -20,12 +20,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.ui.component.AuthShieldHeader
 import com.violinmaster.app.ui.component.BirthYearSelector
@@ -208,6 +212,35 @@ fun AuthenticationScreen(
                         .padding(8.dp)
                         .testTag("forgot_pin_button")
                 )
+
+                // ── Google Sign-In button ──────────────────────────
+                Spacer(modifier = Modifier.height(8.dp))
+                val context = LocalContext.current
+                val googleSignInClient = remember {
+                    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(context.getString(android.R.string.ok))
+                        .requestEmail()
+                        .build()
+                    GoogleSignIn.getClient(context, gso)
+                }
+                OutlinedButton(
+                    onClick = {
+                        val signInIntent = googleSignInClient.signInIntent
+                        // Launch sign-in via Activity — the result is handled by the Activity's onActivityResult
+                        context.startActivity(signInIntent)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("google_sign_in_button"),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
+                ) {
+                    Text(
+                        text = Localization.get("sign_in_with_google", lang),
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                }
             }
 
             // ── Recovery Flow UI ───────────────────────────────────────

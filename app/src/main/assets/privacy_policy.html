@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy &mdash; Violin Master Pro</title>
+<style>
+  :root {
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #121212;
+    color: #e0e0e0;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.7;
+    padding: 24px 16px 48px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: 0.25em; color: #ffffff; }
+  .updated { font-size: 0.8rem; color: #9e9e9e; margin-bottom: 1.5em; }
+  h2 { font-size: 1.15rem; margin: 1.5em 0 0.5em; color: #bb86fc; border-bottom: 1px solid #2c2c2c; padding-bottom: 0.25em; }
+  p, li { margin-bottom: 0.75em; }
+  ul { padding-left: 1.25em; }
+  a { color: #bb86fc; }
+  hr { border: none; border-top: 1px solid #2c2c2c; margin: 2em 0 1em; }
+  .contact { font-size: 0.92rem; color: #bdbdbd; }
+</style>
+</head>
+<body>
+
+<h1>Privacy Policy</h1>
+<p class="updated">Last updated: June 18, 2026</p>
+
+<h2>1. Data We Collect</h2>
+<p>
+  Violin Master Pro collects the following data to provide and improve the service:
+</p>
+<ul>
+  <li><strong>Username</strong> &mdash; you choose a display name during registration. This is stored in Firebase Firestore alongside your account record.</li>
+  <li><strong>Practice data</strong> &mdash; your tuning sessions, metronome settings, lesson progress, quiz answers, and structured curriculum assignments. This data powers your personal practice history and teacher-student workflows.</li>
+  <li><strong>Video recordings</strong> &mdash; when you submit a practice video for teacher review, the video is uploaded to Firebase Cloud Storage and linked to your account. Videos are NOT analysed with biometrics.</li>
+</ul>
+
+<h2>2. Camera, Audio &amp; Face Detection</h2>
+<p>
+  The app requests camera and microphone access exclusively for:
+</p>
+<ul>
+  <li><strong>Video recording</strong> during practice submissions (camera + audio).</li>
+  <li><strong>Face detection</strong> powered by Google ML Kit, which runs <em>entirely on-device</em>. Face bounding-box coordinates are used to apply a real-time privacy blur to your face in the viewfinder and recording. No face images, facial landmarks, or biometric data leave your device at any time.</li>
+  <li><strong>Audio pitch detection</strong> for the tuner and metronome features. Raw audio samples are processed on-device and are never uploaded.</li>
+</ul>
+<p>
+  No biometric identifiers are created, stored, or transmitted. ML Kit face detection is stateless and per-frame.
+</p>
+
+<h2>3. Face Detection &amp; Minors</h2>
+<p>
+  The on-device face blur protects privacy by default for all users, including minors. Because face detection runs locally and no face data is stored or transmitted, the feature complies with child-safety best practices without requiring special opt-in flows.
+</p>
+
+<h2>4. Third-Party Services</h2>
+<p>
+  Violin Master Pro relies on the following third-party services to operate:
+</p>
+<ul>
+  <li><strong>Firebase</strong> (Google LLC) &mdash; Firebase Authentication for sign-in, Cloud Firestore for practice data and assignments, Cloud Storage for video uploads, Crashlytics for stability monitoring, and Cloud Messaging for push notifications. Firebase's privacy policy is available at <a href="https://firebase.google.com/support/privacy" rel="noopener noreferrer">firebase.google.com/support/privacy</a>.</li>
+  <li><strong>Google Gemini API</strong> (Google LLC) &mdash; if you request fingering suggestions or practice tips, your anonymised practice context (note name, string, position) is sent to the Gemini API. No personally identifiable information is included in these requests. Google's Generative AI Prohibited Use Policy applies.</li>
+</ul>
+
+<h2>5. Data Retention</h2>
+<p>
+  Your data is retained as long as your account is active. You may delete all your data at any time from the Settings screen by tapping <strong>Delete My Data</strong>. This action:
+</p>
+<ul>
+  <li>Removes your Firestore user document and all sub-collections (sessions, assignments, lesson progress).</li>
+  <li>Wipes local Room database tables on your device.</li>
+  <li>Clears all app SharedPreferences.</li>
+  <li>Deletes your Firebase Authentication account.</li>
+</ul>
+<p>
+  Deletion is permanent and irreversible. After deletion, you will be returned to the authentication screen.
+</p>
+
+<h2>6. Your Rights</h2>
+<p>
+  Under applicable data protection law (including GDPR for EEA/UK users), you have the right to:
+</p>
+<ul>
+  <li><strong>Access</strong> the personal data we hold about you.</li>
+  <li><strong>Rectify</strong> inaccurate or incomplete data.</li>
+  <li><strong>Erase</strong> all your data (see Section 5).</li>
+  <li><strong>Restrict</strong> or <strong>object</strong> to processing in certain circumstances.</li>
+  <li><strong>Data portability</strong> &mdash; receive your data in a structured, commonly used format.</li>
+</ul>
+<p>
+  To exercise any of these rights, contact us at the email address below.
+</p>
+
+<h2>7. No Tracking, No Ads</h2>
+<p>
+  Violin Master Pro does <strong>not</strong> include third-party advertising, tracking cookies, analytics pixels, or cross-app tracking identifiers. Firebase Crashlytics and Analytics are used solely for app stability and feature-usage insights; they do not track you across other apps or websites. Google Analytics for Firebase is configured with <code>ANALYTICS_DEBUG_ENABLED</code> disabled in production builds.
+</p>
+
+<h2>8. Contact</h2>
+<p>
+  If you have questions about this privacy policy or wish to exercise your data rights, contact us at:
+</p>
+<p class="contact">
+  Email: <a href="mailto:privacy@violinmaster.app">privacy@violinmaster.app</a>
+</p>
+
+<hr>
+<p class="contact">&copy; 2026 Violin Master Pro. All rights reserved.</p>
+
+</body>
+</html>

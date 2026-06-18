@@ -1,0 +1,11 @@
+default_platform(:android)
+
+platform :android do
+  desc "Capture Play Store screenshots using screengrab"
+  lane :screenshots do
+    screengrab(
+      locales: ['en-US'],
+      clear_previous_screenshots: true
+    )
+  end
+end

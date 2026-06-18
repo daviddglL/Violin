@@ -1,0 +1,1 @@
+Production readiness: Google Sign-In, privacy policy, GDPR compliance, push notifications, crash reporting, analytics

@@ -1,0 +1,35 @@
+Master the violin, viola, cello, or double bass with the most complete practice companion on Android. Violin Master Pro combines a professional-grade tuner, precision metronome, structured video curriculum, and an integrated teacher-student platform — all in one app.
+
+===== SMART TUNER =====
+
+Stop guessing. The chromatic tuner listens to your instrument in real time and shows exactly how close you are to pitch. Choose from multiple temperament settings (Equal, Pythagorean, Just), adjust the reference A4 frequency (415–466 Hz), and toggle between chromatic and scale-note modes. The tuner histogram tracks your pitch stability over time, so you can see your improvement with every session.
+
+===== PRECISION METRONOME =====
+
+Build rock-solid rhythm with a metronome that does more than click. Tap the tempo manually, dial in any BPM from 20 to 300, or choose from preset classical and folk rhythms — including compound and odd meters like 5/4 and 7/8. Adjustable subdivisions, accent patterns, and sound sets let you tailor the click to your practice style.
+
+===== STRUCTURED CURRICULUM =====
+
+Move beyond random YouTube tutorials. Violin Master Pro includes a step-by-step curriculum with video lessons taught by professional string instructors. Each lesson comes with a quiz to check your understanding before you advance. Track your progress across instrument-specific paths — whether you are a beginner holding the bow for the first time or an advanced player refining vibrato.
+
+===== TEACHER-STUDENT PLATFORM =====
+
+Teachers: create assignments, review student-submitted practice videos, and keep every student on track from one dashboard. Students: receive assignments directly in the app, record your practice with the built-in camera, apply a real-time face-blur for privacy, and submit for feedback. The assignment lifecycle — pending, submitted, reviewed — is fully managed inside the app.
+
+===== INSTRUMENT FLEXIBILITY =====
+
+Violin Master Pro supports Violin, Viola, Cello, and Double Bass. Every feature adapts to your instrument: tuner reference pitches, curriculum content, fingering suggestions, and teacher assignments. Switch instruments anytime from the home screen.
+
+===== PRIVACY BY DESIGN =====
+
+Your practice data belongs to you. Face detection runs entirely on-device via ML Kit — no face images or biometric data leave your phone. No third-party ads. No tracking cookies. No cross-app identifiers. A full privacy policy is available in-app (Settings > Privacy Policy) and at https://violinmaster.app/privacy. You can delete all your data permanently from the Settings screen at any time.
+
+===== CLOUD-SYNCED =====
+
+Sign in with a simple 4-digit PIN or your Google account. All your practice data — tuning sessions, lesson progress, teacher assignments — syncs automatically via Firebase Firestore. Move between devices without losing a single session.
+
+===== BUILT FOR MUSICIANS =====
+
+Violin Master Pro was designed with input from string teachers and conservatory students. The interface stays out of your way during practice, with dark theme by default and large, glanceable controls. Whether you are preparing for an audition or teaching a studio of 20 students, the app adapts to your workflow.
+
+Download Violin Master Pro and take your practice further.

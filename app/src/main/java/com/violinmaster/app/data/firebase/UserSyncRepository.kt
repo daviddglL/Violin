@@ -42,4 +42,32 @@ class UserSyncRepository(
     }
 
     override fun observeCache(): Flow<List<UserAccount>> = userDao.getAllUsers()
+
+    /**
+     * Updates the FCM push token for a user in both Firestore and local Room cache.
+     *
+     * @param firebaseUid The Firebase Auth UID identifying the user document.
+     * @param token The FCM registration token.
+     */
+    suspend fun updateFcmToken(firebaseUid: String, token: String) {
+        val user = userDao.getUserByFirebaseUid(firebaseUid) ?: return
+        val updated = user.copy(fcmToken = token)
+        userDao.insertUser(updated)
+        try {
+            collection.setDocument(firebaseUid, updated.toFirestoreDoc())
+        } catch (_: Exception) {
+            // Firestore write failed — token cached locally, will sync on next push
+        }
+    }
+
+    /**
+     * Fetches a user account from Firestore by username.
+     */
+    suspend fun fetchByUsername(username: String): UserAccount? {
+        val docs = collection.queryByField("username", username)
+        val userDoc = docs.firstOrNull() ?: return null
+        val user = userDoc.toEntity()
+        insertCache(user)
+        return user
+    }
 }

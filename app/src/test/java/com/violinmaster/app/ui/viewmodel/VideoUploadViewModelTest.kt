@@ -7,6 +7,8 @@ import com.google.firebase.FirebaseOptions
 import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.IAnalyticsService
 import com.violinmaster.app.data.ICrashReportingService
+import com.violinmaster.app.data.IPerformanceService
+import com.violinmaster.app.data.TraceHandle
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.service.VideoCompressionService
 import com.violinmaster.app.service.VideoRecordingService
@@ -82,7 +84,8 @@ class VideoUploadViewModelTest {
             compressionService = fakeCompressionService,
             uploadService = fakeUploadService,
             authManager = authManager,
-            analyticsHelper = analyticsHelper
+            analyticsHelper = analyticsHelper,
+            performanceService = FakePerformanceService()
         )
     }
 
@@ -438,5 +441,16 @@ class VideoUploadViewModelTest {
         override fun log(message: String) {}
         override fun recordException(throwable: Throwable) {}
         override fun setCustomKey(key: String, value: String) {}
+    }
+
+    private class FakePerformanceService : IPerformanceService {
+        override fun startTrace(name: String): TraceHandle = FakeTraceHandle()
+        override fun incrementMetric(traceName: String, metricName: String, incrementBy: Long) {}
+    }
+
+    private class FakeTraceHandle : TraceHandle {
+        override fun stop() {}
+        override fun putAttribute(key: String, value: String) {}
+        override fun incrementMetric(metricName: String, incrementBy: Long) {}
     }
 }

@@ -10,6 +10,8 @@ import com.violinmaster.app.data.Assignment
 import com.violinmaster.app.data.AnalyticsHelper
 import com.violinmaster.app.data.IAnalyticsService
 import com.violinmaster.app.data.ICrashReportingService
+import com.violinmaster.app.data.IPerformanceService
+import com.violinmaster.app.data.TraceHandle
 import com.violinmaster.app.data.IPracticeRepository
 import com.violinmaster.app.data.LessonProgress
 import com.violinmaster.app.data.PracticeSession
@@ -96,7 +98,8 @@ class AssignmentCreationFormTest {
             compressionService = FakeVideoCompressionService(),
             uploadService = FakeVideoUploadService(),
             authManager = authManager,
-            analyticsHelper = analyticsHelper
+            analyticsHelper = analyticsHelper,
+            performanceService = FakePerformanceService()
         )
     }
 
@@ -219,5 +222,16 @@ class AssignmentCreationFormTest {
             currentFile?.delete()
             currentFile = null
         }
+    }
+
+    private class FakePerformanceService : IPerformanceService {
+        override fun startTrace(name: String): TraceHandle = FakeTraceHandle()
+        override fun incrementMetric(traceName: String, metricName: String, incrementBy: Long) {}
+    }
+
+    private class FakeTraceHandle : TraceHandle {
+        override fun stop() {}
+        override fun putAttribute(key: String, value: String) {}
+        override fun incrementMetric(metricName: String, incrementBy: Long) {}
     }
 }

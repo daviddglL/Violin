@@ -20,9 +20,12 @@ import javax.inject.Singleton
  * REQ-RC-002: Minimum fetch interval: 1 hour in prod, 0 in debug.
  */
 @Singleton
-class CloudConfig @Inject constructor() {
-
-    private val remoteConfig: FirebaseRemoteConfig = FirebaseRemoteConfig.getInstance()
+open class CloudConfig @Inject constructor(
+    remoteConfig: FirebaseRemoteConfig? = null
+) {
+    private val remoteConfig: FirebaseRemoteConfig by lazy {
+        remoteConfig ?: FirebaseRemoteConfig.getInstance()
+    }
 
     /**
      * Whether cloud sync is enabled.
@@ -31,7 +34,7 @@ class CloudConfig @Inject constructor() {
      * (cloud sync ON) in remote_config_defaults.xml. Can be toggled
      * server-side for phased rollout or emergency disable.
      */
-    val cloudSyncEnabled: Boolean
+    open val cloudSyncEnabled: Boolean
         get() = remoteConfig.getBoolean(KEY_CLOUD_SYNC_ENABLED)
 
     /**

@@ -6,6 +6,10 @@ import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.emulators.EmulatedServiceSettings
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
 import com.violinmaster.app.push.NotificationHelper
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -37,6 +41,34 @@ class ViolinMasterApp : Application() {
         // FirebaseApp is auto-initialized by the ContentProvider from google-services.json.
         // Crashlytics and Analytics depend on FirebaseApp being ready.
         FirebaseApp.initializeApp(this)
+
+        // ── Firebase Emulators (dev flavor only) ────────────────────────
+        // In dev builds, all Firebase services connect to local emulators
+        // instead of production backends. This enables offline development
+        // and testing without affecting production data.
+        //
+        // Emulator hosts: 10.0.2.2 maps to host machine's localhost from
+        // the Android emulator. For physical devices, use your machine's
+        // LAN IP instead.
+        //
+        // REQ-EMULATOR-001: Firestore, Auth, and Storage connect to emulators in dev.
+        if (BuildConfig.USE_FIREBASE_EMULATORS) {
+            val firestoreHost = "${BuildConfig.FIRESTORE_EMULATOR_HOST}:${BuildConfig.FIRESTORE_EMULATOR_PORT}"
+            FirebaseFirestore.getInstance().useEmulator(
+                BuildConfig.FIRESTORE_EMULATOR_HOST,
+                BuildConfig.FIRESTORE_EMULATOR_PORT
+            )
+
+            FirebaseAuth.getInstance().useEmulator(
+                BuildConfig.AUTH_EMULATOR_HOST,
+                BuildConfig.AUTH_EMULATOR_PORT
+            )
+
+            FirebaseStorage.getInstance().useEmulator(
+                BuildConfig.STORAGE_EMULATOR_HOST,
+                BuildConfig.STORAGE_EMULATOR_PORT
+            )
+        }
 
         // ── Firebase App Check ──────────────────────────────────────────
         // App Check must be installed BEFORE any Firebase backend call.

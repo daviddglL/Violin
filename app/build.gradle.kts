@@ -37,12 +37,28 @@ android {
       buildConfigField("String", "FIREBASE_PROJECT_ID", "\"violin-app-dev\"")
       buildConfigField("boolean", "IS_STAGING", "true")
       buildConfigField("boolean", "ANALYTICS_DEBUG_ENABLED", "true")
+      // Firebase Emulator connection (local dev)
+      buildConfigField("String", "FIRESTORE_EMULATOR_HOST", "\"10.0.2.2\"")
+      buildConfigField("int", "FIRESTORE_EMULATOR_PORT", "8080")
+      buildConfigField("String", "AUTH_EMULATOR_HOST", "\"10.0.2.2\"")
+      buildConfigField("int", "AUTH_EMULATOR_PORT", "9099")
+      buildConfigField("String", "STORAGE_EMULATOR_HOST", "\"10.0.2.2\"")
+      buildConfigField("int", "STORAGE_EMULATOR_PORT", "9199")
+      buildConfigField("boolean", "USE_FIREBASE_EMULATORS", "true")
     }
     create("prod") {
       dimension = "environment"
       buildConfigField("String", "FIREBASE_PROJECT_ID", "\"violin-app-795ee\"")
       buildConfigField("boolean", "IS_STAGING", "false")
       buildConfigField("boolean", "ANALYTICS_DEBUG_ENABLED", "false")
+      buildConfigField("boolean", "USE_FIREBASE_EMULATORS", "false")
+      // Emulator fields present for compilation parity with dev flavor (unused in prod)
+      buildConfigField("String", "FIRESTORE_EMULATOR_HOST", "\"\"")
+      buildConfigField("int", "FIRESTORE_EMULATOR_PORT", "0")
+      buildConfigField("String", "AUTH_EMULATOR_HOST", "\"\"")
+      buildConfigField("int", "AUTH_EMULATOR_PORT", "0")
+      buildConfigField("String", "STORAGE_EMULATOR_HOST", "\"\"")
+      buildConfigField("int", "STORAGE_EMULATOR_PORT", "0")
     }
   }
 

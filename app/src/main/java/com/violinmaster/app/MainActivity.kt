@@ -1,6 +1,7 @@
 package com.violinmaster.app
 
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -93,11 +94,53 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
+    handleDeepLink(intent)
     setContent {
       MyApplicationTheme {
         MainLayout(userPreferencesManager, authManager, navigationManager, googleAuthRepository, credentialManager, networkMonitor)
       }
     }
+  }
+
+  /**
+   * Called when the activity is re-launched while already running
+   * (e.g., from a notification tap or deep link while app is in background).
+   *
+   * REQ-DEEPLINK-001: Handle deep links on activity re-launch.
+   */
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    handleDeepLink(intent)
+  }
+
+  /**
+   * Extracts navigation target from an intent and delegates to [NavigationManager].
+   *
+   * Two sources of navigation targets:
+   * 1. URI deep links: `violinmaster://assignment/abc123` → parses host as screen, path as targetId
+   * 2. Push notification extras: `notification_target_screen` + `notification_target_id`
+   *
+   * REQ-DEEPLINK-002: Parse both URI and push extra navigation targets.
+   */
+  private fun handleDeepLink(intent: Intent?) {
+    if (intent == null) return
+
+    // ── Source 1: Push notification extras ──────────────────────────
+    val pushTarget = intent.getStringExtra("notification_target_screen")
+    val pushTargetId = intent.getStringExtra("notification_target_id")
+
+    if (pushTarget != null) {
+      navigationManager.navigateToDeepLink(pushTarget, pushTargetId)
+      return
+    }
+
+    // ── Source 2: URI deep link ─────────────────────────────────────
+    val data = intent.data ?: return
+    if (data.scheme != "violinmaster") return
+
+    val screen = data.host           // e.g., "assignment", "chat", "stats"
+    val targetId = data.pathSegments.firstOrNull() // e.g., "abc123"
+    navigationManager.navigateToDeepLink(screen, targetId)
   }
 }
 

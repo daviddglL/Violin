@@ -1,50 +1,78 @@
 package com.violinmaster.app.data
 
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
+import com.violinmaster.app.R
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
+import javax.inject.Singleton
+
 /**
- * Feature flag configuration for cloud migration rollout.
+ * Firebase Remote Config-backed feature flag configuration.
  *
- * Controls whether cloud sync (Firestore) is enabled. Defaults to false
- * for safe phased rollout. When false, the app operates in Room-only mode
- * (current behavior). When true, PracticeRepository delegates writes and
- * observations to FirestoreSyncRepository instances.
+ * Provides server-controlled feature flags with local defaults.
+ * Flags can be updated in the Firebase Console without an app release.
  *
- * Currently uses an in-code default. When firebase-config dependency
- * is added, this class can be backed by Firebase RemoteConfig with
- * server-side flag control without changing the public API.
+ * Default values are loaded from res/xml/remote_config_defaults.xml.
  *
  * REQ-DI-009: Cloud sync enabled/disabled via feature flag.
+ * REQ-RC-001: Remote Config initialized with developer mode in debug.
+ * REQ-RC-002: Minimum fetch interval: 1 hour in prod, 0 in debug.
  */
-open class CloudConfig {
+@Singleton
+class CloudConfig @Inject constructor() {
 
-    companion object {
-        /** RemoteConfig key for the cloud sync feature flag. */
-        const val KEY_CLOUD_SYNC_ENABLED = "cloudSyncEnabled"
-    }
+    private val remoteConfig: FirebaseRemoteConfig = FirebaseRemoteConfig.getInstance()
 
     /**
      * Whether cloud sync is enabled.
      *
-     * Default is false for safe rollout. When true, PracticeRepository
-     * routes operations through FirestoreSyncRepository. When false,
-     * operations go directly to Room DAOs.
+     * Backed by RemoteConfig key "cloudSyncEnabled". Defaults to true
+     * (cloud sync ON) in remote_config_defaults.xml. Can be toggled
+     * server-side for phased rollout or emergency disable.
      */
-    open val cloudSyncEnabled: Boolean = true
+    val cloudSyncEnabled: Boolean
+        get() = remoteConfig.getBoolean(KEY_CLOUD_SYNC_ENABLED)
 
     /**
-     * Fetches the latest RemoteConfig values from the server.
-     * Currently a no-op; will delegate to FirebaseRemoteConfig.fetch()
-     * when firebase-config dependency is added.
+     * Initializes Remote Config with settings appropriate for the build type.
+     *
+     * Must be called once during app startup. In debug builds, the cache
+     * expiration is set to 0 for instant developer feedback.
+     *
+     * @param isDebug Whether the app is running in debug mode.
      */
-    suspend fun fetch() {
-        // No-op until firebase-config is integrated
+    fun initialize(isDebug: Boolean) {
+        val configSettings = FirebaseRemoteConfigSettings.Builder()
+            .setMinimumFetchIntervalInSeconds(
+                if (isDebug) 0 else 3600 // 0 in debug, 1 hour in production
+            )
+            .build()
+
+        remoteConfig.setConfigSettingsAsync(configSettings)
+        remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
     }
 
     /**
-     * Activates fetched RemoteConfig values.
-     * Currently a no-op; will delegate to FirebaseRemoteConfig.activate()
-     * when firebase-config dependency is added.
+     * Fetches and activates the latest Remote Config values from the server.
+     *
+     * Safe to call multiple times — respects the minimum fetch interval.
+     * On failure, cached values (or defaults) are used.
+     *
+     * @return Result containing success/failure for logging/monitoring.
      */
-    suspend fun activate() {
-        // No-op until firebase-config is integrated
+    suspend fun fetchAndActivate(): Result<Boolean> {
+        return try {
+            remoteConfig.fetch().await()
+            val activated = remoteConfig.activate().await()
+            Result.success(activated)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    companion object {
+        /** RemoteConfig key for the cloud sync feature flag. */
+        const val KEY_CLOUD_SYNC_ENABLED = "cloudSyncEnabled"
     }
 }

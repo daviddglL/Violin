@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Firebase Remote Config default values.
+
+  These values are used when:
+  - The app hasn't fetched server-side values yet
+  - The device is offline
+  - The fetch fails
+
+  Server-side values in Firebase Console override these defaults.
+  Keys here MUST match the keys configured in Firebase Console.
+
+  REQ-RC-001: Default values for all feature flags.
+-->
+<defaultsMap>
+    <!--
+      Cloud sync feature flag.
+      true = PracticeRepository routes through FirestoreSyncRepository.
+      false = Room-only mode (offline).
+
+      In production, this can be toggled server-side for phased rollouts
+      or emergency disable without an app release.
+    -->
+    <entry>
+        <key>cloudSyncEnabled</key>
+        <value>true</value>
+    </entry>
+</defaultsMap>

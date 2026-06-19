@@ -6,10 +6,10 @@ import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import com.google.firebase.emulators.EmulatedServiceSettings
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.violinmaster.app.data.CloudConfig
 import com.violinmaster.app.push.NotificationHelper
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -34,6 +34,7 @@ import javax.inject.Inject
 class ViolinMasterApp : Application() {
 
     @Inject lateinit var notificationHelper: NotificationHelper
+    @Inject lateinit var cloudConfig: CloudConfig
 
     override fun onCreate() {
         super.onCreate()
@@ -90,6 +91,11 @@ class ViolinMasterApp : Application() {
         // Enable Crashlytics collection for all builds.
         // Debug builds can be filtered in the Firebase Console by build type.
         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+
+        // ── Firebase Remote Config ──────────────────────────────────────
+        // Initialized early so feature flags are available before any
+        // repository or ViewModel reads them.
+        cloudConfig.initialize(isDebug = BuildConfig.DEBUG || BuildConfig.IS_STAGING)
 
         // Create notification channels for Android O+
         notificationHelper.createNotificationChannels()

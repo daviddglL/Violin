@@ -1,0 +1,5 @@
+# Ensure gradlew is always executable on Unix systems (CI, macOS, Linux)
+# even when committed from Windows where the executable bit is not preserved.
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+*.sh text eol=lf

@@ -26,12 +26,12 @@ class CloudConfigTest {
     // ── Default Value ──────────────────────────────────────────────────────
 
     @Test
-    fun `cloudSyncEnabled defaults to false`() {
+    fun `cloudSyncEnabled defaults to true`() {
         val cloudConfig = CloudConfig()
 
         val enabled = cloudConfig.cloudSyncEnabled
 
-        assertFalse("cloudSyncEnabled should default to false for safe rollout", enabled)
+        assertTrue("cloudSyncEnabled should default to true (cloud sync ON)", enabled)
     }
 
     @Test

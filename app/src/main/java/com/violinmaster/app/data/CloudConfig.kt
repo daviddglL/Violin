@@ -33,9 +33,13 @@ open class CloudConfig @Inject constructor(
      * Backed by RemoteConfig key "cloudSyncEnabled". Defaults to true
      * (cloud sync ON) in remote_config_defaults.xml. Can be toggled
      * server-side for phased rollout or emergency disable.
+     *
+     * Falls back to true (cloud sync ON) when Firebase is not initialized
+     * (e.g., in unit tests without Robolectric Firebase setup).
      */
     open val cloudSyncEnabled: Boolean
-        get() = remoteConfig.getBoolean(KEY_CLOUD_SYNC_ENABLED)
+        get() = runCatching { remoteConfig.getBoolean(KEY_CLOUD_SYNC_ENABLED) }
+            .getOrDefault(true)
 
     /**
      * Initializes Remote Config with settings appropriate for the build type.

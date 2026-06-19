@@ -2,9 +2,11 @@ package com.violinmaster.app.di
 
 import com.violinmaster.app.BuildConfig
 import com.violinmaster.app.data.IGeminiRepository
+import com.violinmaster.app.data.IPerformanceService
 import com.violinmaster.app.data.remote.GeminiApiService
 import com.violinmaster.app.data.remote.GeminiAuthInterceptor
 import com.violinmaster.app.data.remote.GeminiRepository
+import com.violinmaster.app.domain.util.CircuitBreaker
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -71,8 +73,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideGeminiRepository(
-        api: GeminiApiService
+        api: GeminiApiService,
+        performanceService: IPerformanceService,
+        circuitBreaker: CircuitBreaker
     ): IGeminiRepository {
-        return GeminiRepository(api)
+        return GeminiRepository(api, performanceService, circuitBreaker)
     }
 }

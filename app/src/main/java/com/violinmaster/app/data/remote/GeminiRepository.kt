@@ -1,6 +1,8 @@
 package com.violinmaster.app.data.remote
 
 import com.violinmaster.app.data.IGeminiRepository
+import com.violinmaster.app.data.IPerformanceService
+import com.violinmaster.app.domain.util.CircuitBreaker
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,7 +19,9 @@ import retrofit2.HttpException
  */
 @Singleton
 class GeminiRepository @Inject constructor(
-    private val api: GeminiApiService
+    private val api: GeminiApiService,
+    private val performanceService: IPerformanceService,
+    private val circuitBreaker: CircuitBreaker
 ) : IGeminiRepository {
 
     /**
@@ -30,6 +34,13 @@ class GeminiRepository @Inject constructor(
      * @return [Result] containing the generated text or an error message.
      */
     override suspend fun generateLessonFeedback(prompt: String): Result<String> {
+        // ── Circuit breaker gate ──────────────────────────────────────
+        if (!circuitBreaker.allowRequest()) {
+            performanceService.incrementMetric("gemini_circuit_open", "requests_blocked", 1)
+            return Result.failure(IOException("AI features temporarily unavailable. Please try again in a moment."))
+        }
+
+        val trace = performanceService.startTrace("gemini_api_call")
         return try{
             val request = GeminiRequest(
                 contents = listOf(
@@ -47,11 +58,21 @@ class GeminiRepository @Inject constructor(
                 ?.text
 
             if (text != null) {
+                trace.incrementMetric("success_count", 1)
+                trace.stop()
+                circuitBreaker.recordSuccess()
                 Result.success(text)
             } else {
+                trace.incrementMetric("empty_response_count", 1)
+                trace.stop()
+                circuitBreaker.recordFailure()
                 Result.failure(IOException("Empty response from Gemini API"))
             }
         } catch (e: HttpException) {
+            trace.putAttribute("http_status", e.code().toString())
+            trace.incrementMetric("http_error_count", 1)
+            trace.stop()
+            circuitBreaker.recordFailure()
             val message = when (e.code()) {
                 401, 403 -> "Authentication failed. Sign in with Google to use AI features."
                 429 -> "Too many requests. Try again in a moment."
@@ -59,6 +80,9 @@ class GeminiRepository @Inject constructor(
             }
             Result.failure(IOException(message))
         } catch (e: IOException) {
+            trace.incrementMetric("network_error_count", 1)
+            trace.stop()
+            circuitBreaker.recordFailure()
             Result.failure(IOException("Network unavailable. Check your connection."))
         }
     }

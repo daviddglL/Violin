@@ -63,6 +63,7 @@ import com.violinmaster.app.ui.screens.StatsScreen
 import com.violinmaster.app.ui.screens.SettingsScreen
 import com.violinmaster.app.ui.screens.TunerScreen
 import com.violinmaster.app.ui.screens.AuthenticationScreen
+import com.violinmaster.app.ui.component.OfflineBanner
 import com.violinmaster.app.ui.theme.DarkNavBarBg
 import com.violinmaster.app.ui.theme.MyApplicationTheme
 import com.violinmaster.app.ui.theme.Localization
@@ -73,6 +74,7 @@ import com.violinmaster.app.ui.viewmodel.MetronomeViewModel
 import com.violinmaster.app.ui.viewmodel.AssignmentViewModel
 import com.violinmaster.app.ui.viewmodel.ChatViewModel
 import com.violinmaster.app.data.auth.IGoogleAuthRepository
+import com.violinmaster.app.data.NetworkMonitor
 import com.violinmaster.app.di.AuthManager
 import com.violinmaster.app.di.NavigationManager
 import com.violinmaster.app.di.UserPreferencesManager
@@ -86,13 +88,14 @@ class MainActivity : ComponentActivity() {
   @Inject lateinit var navigationManager: NavigationManager
   @Inject lateinit var googleAuthRepository: IGoogleAuthRepository
   @Inject lateinit var credentialManager: CredentialManager
+  @Inject lateinit var networkMonitor: NetworkMonitor
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
       MyApplicationTheme {
-        MainLayout(userPreferencesManager, authManager, navigationManager, googleAuthRepository, credentialManager)
+        MainLayout(userPreferencesManager, authManager, navigationManager, googleAuthRepository, credentialManager, networkMonitor)
       }
     }
   }
@@ -105,7 +108,8 @@ fun MainLayout(
   authManager: AuthManager,
   navigationManager: NavigationManager,
   googleAuthRepository: IGoogleAuthRepository,
-  credentialManager: CredentialManager
+  credentialManager: CredentialManager,
+  networkMonitor: NetworkMonitor
 ) {
   val currentUser by authManager.currentUser.collectAsState()
   val lang by userPreferencesManager.appLanguage.collectAsState()
@@ -119,7 +123,9 @@ fun MainLayout(
   val chatViewModel: ChatViewModel = hiltViewModel()
 
   if (currentUser == null) {
-    Scaffold(
+    Box(modifier = Modifier.fillMaxSize()) {
+      OfflineBanner(networkMonitor = networkMonitor)
+      Scaffold(
       modifier = Modifier.fillMaxSize(),
       topBar = {
         TopAppBar(
@@ -146,8 +152,11 @@ fun MainLayout(
         modifier = Modifier.padding(innerPadding)
       )
     }
+    } // Close Box
   } else {
-    Scaffold(
+    Box(modifier = Modifier.fillMaxSize()) {
+      OfflineBanner(networkMonitor = networkMonitor)
+      Scaffold(
       modifier = Modifier.fillMaxSize(),
       topBar = {
         TopAppBar(
@@ -301,10 +310,11 @@ fun MainLayout(
               userPreferencesManager = userPreferencesManager,
               authManager = authManager
             )
-          }
-        }
       }
     }
+    } // Close Box
+  }
+}
   }
 }
 

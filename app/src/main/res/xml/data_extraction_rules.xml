@@ -1,19 +1,50 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Data extraction rules for API 31+ (Android 12+).
+
+  Android 12+ splits backup into two categories:
+  - cloud-backup: Auto-backup to Google Drive. STRICT exclusions here.
+  - device-transfer: Local device-to-device migration. More permissive.
+
+  Sensitive data (Room DB, auth tokens) is excluded from both.
+  Non-sensitive preferences are allowed in device transfer for UX continuity.
+
+  REQ-BACKUP-001: Exclude Room database from all backup.
+  REQ-BACKUP-002: Exclude auth tokens from cloud backup.
+  REQ-BACKUP-003: Allow device transfer of non-sensitive preferences.
 -->
 <data-extraction-rules>
+    <!-- ═══════════════════════════════════════════════════════════════
+         CLOUD BACKUP (Google Drive) — strict security
+         ═══════════════════════════════════════════════════════════════ -->
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Exclude the entire Room database from cloud backup.
+             Contains PIN hashes, security questions, private messages. -->
+        <exclude domain="database" path="violin_master_database" />
+
+        <!-- Exclude auth SharedPreferences from cloud backup.
+             Contains current_user_id and google_signed_in tokens. -->
+        <exclude domain="sharedpref" path="app_settings.xml" />
+
+        <!-- Exclude all internal files (Firebase, Crashlytics, OkHttp caches). -->
+        <exclude domain="file" path="." />
     </cloud-backup>
-    <!--
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         DEVICE TRANSFER (device-to-device migration) — user convenience
+         ═══════════════════════════════════════════════════════════════ -->
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <!-- Room database is still excluded — too risky to transfer
+             PIN hashes and private messages even locally. -->
+        <exclude domain="database" path="violin_master_database" />
+
+        <!-- SharedPreferences are safe for device transfer. Auth tokens
+             (current_user_id, google_signed_in) are device-specific and
+             won't work on the new device. Non-sensitive preferences
+             (language, instrument, daily tasks) survive migration. -->
+        <include domain="sharedpref" path="app_settings.xml" />
+
+        <!-- Exclude internal cache files from transfer. -->
+        <exclude domain="file" path="." />
     </device-transfer>
-    -->
 </data-extraction-rules>

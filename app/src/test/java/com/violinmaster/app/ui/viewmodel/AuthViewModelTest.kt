@@ -486,7 +486,7 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `verifyRecoveryAnswer with correct answer returns true`() = runTest {
+    fun `verifyRecoveryAnswer with correct answer returns success`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)
         val vm = createTestViewModel()
@@ -498,14 +498,15 @@ class AuthViewModelTest {
         vm.setRecoveryQuestion("recovery_q_first_pet", "Fluffy")
         advanceUntilIdle()
 
-        // Verify correct answer
-        val result = vm.verifyRecoveryAnswer("recuser", "Fluffy")
-        assertTrue(result)
+        // Verify correct answer (async — result delivered via StateFlow)
+        vm.verifyRecoveryAnswer("recuser", "Fluffy")
+        advanceUntilIdle()
+        assertTrue(vm.recoveryVerificationResult.value is RecoveryVerification.Success)
         Dispatchers.resetMain()
     }
 
     @Test
-    fun `verifyRecoveryAnswer with wrong answer returns false and increments attempts`() = runTest {
+    fun `verifyRecoveryAnswer with wrong answer returns failed and increments attempts`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)
         val vm = createTestViewModel()
@@ -516,8 +517,9 @@ class AuthViewModelTest {
         vm.setRecoveryQuestion("recovery_q_first_pet", "Fluffy")
         advanceUntilIdle()
 
-        val result = vm.verifyRecoveryAnswer("recuser", "WrongAnswer")
-        assertFalse(result)
+        vm.verifyRecoveryAnswer("recuser", "WrongAnswer")
+        advanceUntilIdle()
+        assertTrue(vm.recoveryVerificationResult.value is RecoveryVerification.Failed)
         assertEquals(1, vm.recoveryAttempts.value)
         Dispatchers.resetMain()
     }
@@ -536,8 +538,11 @@ class AuthViewModelTest {
 
         // 3 wrong attempts
         vm.verifyRecoveryAnswer("recuser", "Wrong1")
+        advanceUntilIdle()
         vm.verifyRecoveryAnswer("recuser", "Wrong2")
+        advanceUntilIdle()
         vm.verifyRecoveryAnswer("recuser", "Wrong3")
+        advanceUntilIdle()
 
         assertEquals(3, vm.recoveryAttempts.value)
         assertTrue(vm.recoveryLocked.value)
@@ -576,19 +581,24 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun `setRecoveryQuestion populates recoveryQuestion StateFlow`() = runTest {
+    fun `loadRecoveryQuestion populates recoveryQuestion StateFlow`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         Dispatchers.setMain(dispatcher)
         val vm = createTestViewModel()
         vm.register("recuser", "1234", "STUDENT", birthYear = 2000)
         advanceUntilIdle()
+        // setRecoveryQuestion requires currentUser to be set (logged in)
+        vm.login("recuser", "1234")
+        advanceUntilIdle()
 
         vm.setRecoveryQuestion("recovery_q_birth_city", "Springfield")
         advanceUntilIdle()
 
-        // The recovery question should be accessible
-        val question = vm.getRecoveryQuestionForUser("recuser")
-        assertEquals("recovery_q_birth_city", question)
+        // Load the question asynchronously (replaces old synchronous getRecoveryQuestionForUser)
+        vm.loadRecoveryQuestion("recuser")
+        advanceUntilIdle()
+        assertEquals("recovery_q_birth_city", vm.recoveryQuestion.value)
+        assertTrue(vm.recoveryQuestionLoaded.value)
         Dispatchers.resetMain()
     }
 

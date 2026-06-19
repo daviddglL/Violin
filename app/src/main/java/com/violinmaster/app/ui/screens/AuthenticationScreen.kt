@@ -69,6 +69,48 @@ fun AuthenticationScreen(
     val resolvedError = errKey?.let { Localization.get(it, lang) }
     val resolvedSuccess = successKey?.let { Localization.get(it, lang) }
 
+    // ── Recovery state (async, observed from ViewModel) ──────────────
+    val recoveryQuestionState by authViewModel.recoveryQuestion.collectAsState()
+    val recoveryQuestionLoaded by authViewModel.recoveryQuestionLoaded.collectAsState()
+    val recoveryVerificationResult by authViewModel.recoveryVerificationResult.collectAsState()
+
+    // ── React to recovery question loaded ────────────────────────────
+    LaunchedEffect(recoveryQuestionLoaded, recoveryQuestionState) {
+        // Only react when the load just completed and we're in step 0
+        if (!recoveryQuestionLoaded || recoveryStep != 0) return@LaunchedEffect
+        if (recoveryQuestionState != null) {
+            // Question loaded successfully — advance to step 1
+            recoveryError = null
+            recoveryStep = 1
+        } else {
+            // User has no recovery question configured
+            recoveryError = Localization.get("recovery_no_question", lang)
+        }
+    }
+
+    // ── React to recovery answer verification ────────────────────────
+    LaunchedEffect(recoveryVerificationResult) {
+        when (recoveryVerificationResult) {
+            is com.violinmaster.app.ui.viewmodel.RecoveryVerification.Success -> {
+                recoveryError = null
+                recoveryStep = 2
+            }
+            is com.violinmaster.app.ui.viewmodel.RecoveryVerification.Failed -> {
+                recoveryAnswer = ""
+                if (authViewModel.recoveryLocked.value) {
+                    recoveryError = Localization.get("recovery_locked", lang)
+                        .replace("{0}", "5")
+                } else {
+                    recoveryError = Localization.get("recovery_wrong_answer", lang)
+                }
+            }
+            is com.violinmaster.app.ui.viewmodel.RecoveryVerification.InProgress,
+            is com.violinmaster.app.ui.viewmodel.RecoveryVerification.Idle -> {
+                // No action needed
+            }
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -273,13 +315,11 @@ fun AuthenticationScreen(
                             onClick = {
                                 if (recoveryUsername.isBlank()) return@Button
                                 authViewModel.setForgotPinUsername(recoveryUsername)
-                                val question = authViewModel.getRecoveryQuestionForUser(recoveryUsername)
-                                if (question.isNullOrBlank()) {
-                                    recoveryError = Localization.get("recovery_no_question", lang)
-                                } else {
-                                    recoveryError = null
-                                    recoveryStep = 1
-                                }
+                                authViewModel.loadRecoveryQuestion(recoveryUsername)
+                                // Result delivered asynchronously via LaunchedEffect
+                                // watching recoveryQuestion — see top of composable.
+                                // If question is empty, set error immediately
+                                // (loadRecoveryQuestion sets null for empty).
                             },
                             modifier = Modifier.testTag("recovery_continue_button")
                         ) {
@@ -289,7 +329,9 @@ fun AuthenticationScreen(
 
                     // Step 1: Answer security question
                     1 -> {
-                        val questionKey = authViewModel.getRecoveryQuestionForUser(recoveryUsername)
+                        // recoveryQuestion is loaded asynchronously via loadRecoveryQuestion()
+                        // and observed via recoveryQuestionState (collected at top of composable).
+                        val questionKey = recoveryQuestionState
                         val questionText = questionKey?.let { Localization.get(it, lang) }
                             ?: Localization.get("recovery_question_label", lang)
                         Text(
@@ -317,19 +359,9 @@ fun AuthenticationScreen(
                         Button(
                             onClick = {
                                 if (authViewModel.recoveryLocked.value) return@Button
-                                val correct = authViewModel.verifyRecoveryAnswer(recoveryUsername, recoveryAnswer)
-                                if (correct) {
-                                    recoveryError = null
-                                    recoveryStep = 2
-                                } else {
-                                    recoveryAnswer = ""
-                                    if (authViewModel.recoveryLocked.value) {
-                                        recoveryError = Localization.get("recovery_locked", lang)
-                                            .replace("{0}", "5")
-                                    } else {
-                                        recoveryError = Localization.get("recovery_wrong_answer", lang)
-                                    }
-                                }
+                                authViewModel.verifyRecoveryAnswer(recoveryUsername, recoveryAnswer)
+                                // Result delivered asynchronously via LaunchedEffect
+                                // watching recoveryVerificationResult — see top of composable.
                             },
                             modifier = Modifier.testTag("recovery_verify_button")
                         ) {

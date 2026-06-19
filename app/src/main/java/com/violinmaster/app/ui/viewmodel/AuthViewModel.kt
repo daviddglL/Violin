@@ -30,6 +30,24 @@ data class AuthContent(
     val currentUser: UserAccount? = null
 )
 
+/**
+ * Result of a PIN recovery answer verification.
+ * Reset to [Idle] when a new recovery flow starts.
+ */
+sealed class RecoveryVerification {
+    /** No verification in progress / initial state. */
+    data object Idle : RecoveryVerification()
+
+    /** Verification is running (DB query in progress). */
+    data object InProgress : RecoveryVerification()
+
+    /** Answer was correct — proceed to set new PIN. */
+    data object Success : RecoveryVerification()
+
+    /** Answer was wrong. Check [AuthViewModel.recoveryAttempts] for count. */
+    data object Failed : RecoveryVerification()
+}
+
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val repository: IPracticeRepository,
@@ -81,6 +99,14 @@ class AuthViewModel @Inject constructor(
 
     private val _recoveryQuestion = MutableStateFlow<String?>(null)
     val recoveryQuestion: StateFlow<String?> = _recoveryQuestion.asStateFlow()
+
+    /** Result of the last recovery answer verification. Reset on new flow start. */
+    private val _recoveryVerificationResult = MutableStateFlow<RecoveryVerification>(RecoveryVerification.Idle)
+    val recoveryVerificationResult: StateFlow<RecoveryVerification> = _recoveryVerificationResult.asStateFlow()
+
+    /** Whether the recovery question has been loaded from the database. */
+    private val _recoveryQuestionLoaded = MutableStateFlow(false)
+    val recoveryQuestionLoaded: StateFlow<Boolean> = _recoveryQuestionLoaded.asStateFlow()
 
     init {
         // Restore user session from SharedPreferences
@@ -272,24 +298,33 @@ class AuthViewModel @Inject constructor(
     /**
      * Verifies a recovery answer for a given username.
      * Rate-limited: after 3 failed attempts, recovery is locked for 5 minutes.
+     *
+     * Result is delivered asynchronously via [recoveryVerificationResult] StateFlow.
+     * Callers MUST observe this flow instead of relying on a return value.
      */
-    fun verifyRecoveryAnswer(username: String, answer: String): Boolean {
-        if (_recoveryLocked.value) return false
-
-        val success = runBlockingOnMain {
-            verifyRecoveryAnswerUseCase(username, answer)
+    fun verifyRecoveryAnswer(username: String, answer: String) {
+        if (_recoveryLocked.value) {
+            _recoveryVerificationResult.value = RecoveryVerification.Failed
+            return
         }
 
-        if (success) {
-            _recoveryAttempts.value = 0
-            _recoveryLocked.value = false
-        } else {
-            _recoveryAttempts.value += 1
-            if (_recoveryAttempts.value >= 3) {
-                _recoveryLocked.value = true
+        _recoveryVerificationResult.value = RecoveryVerification.InProgress
+
+        viewModelScope.launch {
+            val success = verifyRecoveryAnswerUseCase(username, answer)
+
+            if (success) {
+                _recoveryAttempts.value = 0
+                _recoveryLocked.value = false
+                _recoveryVerificationResult.value = RecoveryVerification.Success
+            } else {
+                _recoveryAttempts.value += 1
+                if (_recoveryAttempts.value >= 3) {
+                    _recoveryLocked.value = true
+                }
+                _recoveryVerificationResult.value = RecoveryVerification.Failed
             }
         }
-        return success
     }
 
     /**
@@ -315,22 +350,34 @@ class AuthViewModel @Inject constructor(
     }
 
     /**
-     * Retrieves the stored security question key for a user.
-     * Returns the question key string, or null if not configured.
+     * Loads the stored security question key for a user from the database.
+     * Result is delivered asynchronously via [recoveryQuestion] StateFlow.
+     * Completion is signaled via [recoveryQuestionLoaded].
+     *
+     * Callers MUST observe [recoveryQuestion] instead of relying on a return value.
+     * When [recoveryQuestion] is null AND [recoveryQuestionLoaded] is true,
+     * the user has no recovery question configured.
      */
-    fun getRecoveryQuestionForUser(username: String): String? {
-        val user = runBlockingOnMain { repository.getUserByUsername(username) }
-        return user?.securityQuestion?.takeIf { it.isNotBlank() }
+    fun loadRecoveryQuestion(username: String) {
+        _recoveryQuestionLoaded.value = false
+        viewModelScope.launch {
+            val user = repository.getUserByUsername(username)
+            _recoveryQuestion.value = user?.securityQuestion?.takeIf { it.isNotBlank() }
+            _recoveryQuestionLoaded.value = true
+        }
     }
 
     /**
-     * Sets the username for the forgot-PIN flow.
+     * Sets the username for the forgot-PIN flow and resets all recovery state.
      */
     fun setForgotPinUsername(username: String) {
         _forgotPinUsername.value = username
         // Reset recovery state when starting a new recovery flow
         _recoveryAttempts.value = 0
         _recoveryLocked.value = false
+        _recoveryQuestion.value = null
+        _recoveryQuestionLoaded.value = false
+        _recoveryVerificationResult.value = RecoveryVerification.Idle
     }
 
     /**
@@ -342,14 +389,4 @@ class AuthViewModel @Inject constructor(
     }
 
     // ── Private helpers ─────────────────────────────────────────────────
-
-    /**
-     * Runs a suspend function synchronously on the main thread.
-     * Used for methods that need to return a value immediately (non-suspending).
-     */
-    private fun <T> runBlockingOnMain(block: suspend () -> T): T {
-        return kotlinx.coroutines.runBlocking {
-            block()
-        }
-    }
 }

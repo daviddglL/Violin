@@ -65,9 +65,19 @@ class VideoSecurityServiceTest {
     }
 
     @Test
-    fun `validateSigningTicket returns true for fallback_signature_err ticket`() {
+    fun `validateSigningTicket rejects magic fallback ticket (security fix)`() {
+        // REQ-SEC-VID-001: The "fallback_signature_err" magic string bypass
+        // has been removed. Any ticket that does not match the SHA-256
+        // of the expected input MUST be rejected, even if it was previously
+        // accepted as a fallback.
         val url = "https://cdn.violinmaster.secure/video-stream/vid_posture.mp4?expiration=9999999999&nonce=test&signed_ticket=fallback_signature_err"
-        assertTrue(VideoSecurityService.validateSigningTicket(url))
+        assertFalse(VideoSecurityService.validateSigningTicket(url))
+    }
+
+    @Test
+    fun `validateSigningTicket rejects empty ticket`() {
+        val url = "https://cdn.violinmaster.secure/video-stream/vid_posture.mp4?expiration=9999999999&nonce=test&signed_ticket="
+        assertFalse(VideoSecurityService.validateSigningTicket(url))
     }
 
     // --- GREP VERIFICATION (manual): ---

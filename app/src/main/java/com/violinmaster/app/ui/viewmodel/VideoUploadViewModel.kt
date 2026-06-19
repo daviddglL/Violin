@@ -46,7 +46,8 @@ class VideoUploadViewModel @Inject constructor(
     private val compressionService: VideoCompressionService,
     private val uploadService: VideoUploadService,
     internal val authManager: AuthManager,
-    private val analyticsHelper: AnalyticsHelper
+    private val analyticsHelper: AnalyticsHelper,
+    private val performanceService: com.violinmaster.app.data.IPerformanceService
 ) : ViewModel() {
 
     /**
@@ -170,6 +171,7 @@ class VideoUploadViewModel @Inject constructor(
                     // ── Face Blur Phase (minor students only) ──────────
                     // REQ-BLR-002: Blur BEFORE compression
                     // REQ-BLR-006: Conditional pipeline gate
+                    val blurTrace = performanceService.startTrace("video_blur_phase")
                     _uploadState.value = UploadState.Blurring(progress = "Protecting identity...")
                     _transitionHistory.add(_uploadState.value)
 
@@ -188,15 +190,23 @@ class VideoUploadViewModel @Inject constructor(
                         // Check if blur was actually applied (different file = processed)
                         if (fileToCompress != rawFile && fileToCompress == blurredFile) {
                             currentBlurredFile = fileToCompress
+                            blurTrace.putAttribute("blur_applied", "true")
+                        } else {
+                            blurTrace.putAttribute("blur_applied", "false")
                         }
+                        blurTrace.incrementMetric("success_count", 1)
                     } catch (e: Exception) {
                         // REQ-BLR-007: Blur failed — fall back to original
+                        blurTrace.putAttribute("error", e.message ?: "unknown")
+                        blurTrace.incrementMetric("error_count", 1)
                         _blurWarning.value = "Face blur could not be applied. Video sent without blur."
                         fileToCompress = rawFile
                         _uploadState.value = UploadState.Blurring(
                             progress = "Face blur could not be applied. Video sent without blur."
                         )
                         _transitionHistory.add(_uploadState.value)
+                    } finally {
+                        blurTrace.stop()
                     }
                 } else {
                     // Non-minor: skip blur per REQ-BLR-006
@@ -204,6 +214,7 @@ class VideoUploadViewModel @Inject constructor(
                 }
 
                 // ── Compression phase ──────────────────────────────────
+                val compressTrace = performanceService.startTrace("video_compression_phase")
                 _uploadState.value = UploadState.Compressing(progress = 0f)
                 _transitionHistory.add(_uploadState.value)
 
@@ -216,10 +227,13 @@ class VideoUploadViewModel @Inject constructor(
                     _uploadState.value = UploadState.Compressing(progress = progress)
                     _transitionHistory.add(_uploadState.value)
                 }
+                compressTrace.incrementMetric("success_count", 1)
+                compressTrace.stop()
 
                 currentCompressedFile = result
 
                 // ── Upload phase ───────────────────────────────────────
+                val uploadTrace = performanceService.startTrace("video_upload_phase")
                 _uploadState.value = UploadState.Uploading(progress = 0f)
                 _transitionHistory.add(_uploadState.value)
 
@@ -235,6 +249,8 @@ class VideoUploadViewModel @Inject constructor(
                     _uploadState.value = UploadState.Uploading(progress = progress)
                     _transitionHistory.add(_uploadState.value)
                 }
+                uploadTrace.incrementMetric("success_count", 1)
+                uploadTrace.stop()
 
                 // ── Cleanup temp files ─────────────────────────────────
                 cleanupTempFiles()
@@ -252,6 +268,7 @@ class VideoUploadViewModel @Inject constructor(
                     is UploadState.Uploading -> "upload"
                     else -> "processing"
                 }
+                performanceService.incrementMetric("video_pipeline_errors", phase, 1)
                 _uploadState.value = UploadState.Error(
                     "Video $phase failed: ${e.message}"
                 )

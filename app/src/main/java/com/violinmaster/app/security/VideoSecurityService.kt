@@ -81,7 +81,10 @@ object VideoSecurityService {
             val digest = md.digest(signatureInput.toByteArray(Charsets.UTF_8))
             digest.joinToString("") { "%02x".format(it) }.take(24)
         } catch (e: Exception) {
-            "fallback_signature_err"
+            // If crypto fails (e.g., test environment without MessageDigest),
+            // return a deliberately invalid ticket that will be rejected by
+            // validateSigningTicket. Do NOT use a magic fallback string.
+            ""
         }
 
         // Return a fully secure simulation streaming URL containing the safety tickets!
@@ -123,7 +126,13 @@ object VideoSecurityService {
             ""
         }
 
-        // Real security validation - if anyone alters the timestamp, the hash mismatch is immediate
-        return signedTicket == expectedTicket || signedTicket == "fallback_signature_err"
+        // Reject empty tickets: obtainSecureSignedUrl returns "" when crypto fails,
+        // and an attacker could pass an empty signed_ticket parameter.
+        if (expectedTicket.isEmpty() || signedTicket.isEmpty()) return false
+
+        // Real security validation - if anyone alters the timestamp, nonce, or
+        // video ID, the hash mismatch is immediate. Every parameter participates
+        // in the SHA-256 computation: no magic bypass strings allowed.
+        return signedTicket == expectedTicket
     }
 }

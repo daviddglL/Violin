@@ -95,7 +95,18 @@ android {
     compose = true
     buildConfig = true
   }
-  testOptions { unitTests { isIncludeAndroidResources = true } }
+  testOptions {
+    unitTests {
+      isIncludeAndroidResources = true
+      all {
+        // Fork a new JVM for each test class to isolate Firebase global state.
+        // Firebase can only be initialized once per JVM; without forking,
+        // test classes that run after Firebase initialization may get
+        // corrupted state (e.g., "Default FirebaseApp is not initialized").
+        it.forkEvery = 1
+      }
+    }
+  }
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files

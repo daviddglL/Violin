@@ -8,4 +8,24 @@ platform :android do
       clear_previous_screenshots: true
     )
   end
+
+  desc "Deploy AAB to Firebase App Distribution (free — no Play Console required)"
+  lane :deploy_firebase do
+    firebase_app_distribution(
+      app: "1:865401856375:android:c7460b973ac16f23ae4172",
+      apk_path: "app/build/outputs/bundle/prodRelease/app-prod-release.aab",
+      service_credentials_file: "fastlane/play-store-key.json",
+      groups: "testers",
+      release_notes: "CI Build \##{ENV['GITHUB_RUN_NUMBER']} — commit #{last_git_commit.commit_sha[0..6]}"
+    )
+  end
+
+  # Play Console deploy (requires $25 registration fee — uncomment when ready)
+  # desc "Deploy AAB to Google Play Console internal track"
+  # lane :deploy_internal do
+  #   upload_to_play_store(
+  #     track: 'internal',
+  #     aab: 'app/build/outputs/bundle/prodRelease/app-prod-release.aab'
+  #   )
+  # end
 end
